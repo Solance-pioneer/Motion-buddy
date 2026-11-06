@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v3.2.',
+    'Motion Buddy customer app, Expressive v3.3.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
@@ -53,6 +53,11 @@ mkdirSync(voiceFreeDir, { recursive: true })
 for (const name of ['celebration_three_squeaks_app_pcm16_48k.wav', 'proud_rise_beeps_app_pcm16_48k.wav']) {
   copyFileSync(join('src/assets/voice-free-v1/app', name), join(voiceFreeDir, name))
 }
+mkdirSync(join(dist, 'petting-v1'), { recursive: true })
+copyFileSync(
+  join('src/assets/petting-v1/app/curious_pet_glide_app_pcm16_48k.wav'),
+  join(dist, 'petting-v1/curious_pet_glide_app_pcm16_48k.wav'),
+)
 writeFileSync(
   join(dist, 'THIRD-PARTY.txt'),
   [
@@ -108,7 +113,7 @@ try {
 writeFileSync(
   join(dist, 'BUILD.txt'),
   [
-    'Motion Buddy customer build, Expressive v3.2.',
+    'Motion Buddy customer build, Expressive v3.3.',
     `source_commit: ${sourceCommit}`,
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
@@ -116,10 +121,10 @@ writeFileSync(
     '',
   ].join('\n'),
 )
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.2.zip'
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.3.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.2.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.3.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

@@ -1,7 +1,5 @@
 export const DOUBLE_MS = 280
 export const DRAG_PX = 14
-export const DRAG_CHIRP_MS = 480
-
 export interface TouchClock {
   down: boolean
   second: boolean
@@ -53,18 +51,14 @@ export function touchDown(clock: TouchClock, x: number, y: number, now: number):
 }
 
 export function touchMove(clock: TouchClock, x: number, y: number, now: number): TouchStep {
+  void now
   if (!clock.down) return blank(clock)
   const dx = x - clock.startX
   const dy = y - clock.startY
   const dragged = clock.dragged || Math.hypot(dx, dy) >= DRAG_PX
-  let chirp = false
-  let lastChirpAt = clock.lastChirpAt
-  if (dragged && now - clock.lastChirpAt >= DRAG_CHIRP_MS) {
-    chirp = true
-    lastChirpAt = now
-  }
+  const chirp = dragged && !clock.dragged
   return {
-    clock: { ...clock, x, y, dragged, pendingTapAt: dragged ? 0 : clock.pendingTapAt, second: dragged ? false : clock.second, lastChirpAt },
+    clock: { ...clock, x, y, dragged, pendingTapAt: dragged ? 0 : clock.pendingTapAt, second: dragged ? false : clock.second },
     openMenu: false,
     singleTap: false,
     chirp,

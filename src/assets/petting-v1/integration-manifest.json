@@ -1,0 +1,80 @@
+{
+  "status": "CREATED_NUMERICALLY_CHECKED_NOT_INTEGRATED",
+  "key": "curious_pet_glide",
+  "provenance": "Original mathematical sine oscillator/envelope synthesis for Michael Dicker. No voices, human imitation, sampled inputs, downloads, external audio or copied melodies. numpy is a calculation tool only.",
+  "user_direction": "2026-11-06: replace sharp repeated finger-interaction beep with long curious/enjoyable ooOOooo-like electronic sound.",
+  "source": "src/synthesize_curious_pet.py",
+  "source_sha256": "5c9e707f799abf5270fe8902434f671db0c43fd0f855cc8f225ccb4821e81083",
+  "master": {
+    "path": "masters/curious_pet_glide_master_f32_48k.wav",
+    "format": "IEEE float32 mono 48 kHz",
+    "sha256": "bf12a9c28633aee17a113c3d4bdd9c5be84811bbcfd9728bf90ed135a4a4e8cd"
+  },
+  "app": {
+    "path": "app/curious_pet_glide_app_pcm16_48k.wav",
+    "format": "PCM16 mono 48 kHz",
+    "sha256": "049d22052c692b90ec2c1f739341b2c9af12e316bca510b8841440e0da280bfd",
+    "metrics": {
+      "duration_seconds": 1.8,
+      "sample_peak_dbfs": -14.31916564607436,
+      "active_rms_dbfs": -20.97457797702059,
+      "rms_dbfs": -21.010819436813186,
+      "dc_offset": -1.0596704678394402e-09,
+      "start_sample": 0.0,
+      "end_sample": 0.0,
+      "energy_fraction_above_3khz": 8.565046248940932e-09
+    }
+  },
+  "audition": {
+    "path": "audition/Motion-Buddy-curious-petting-glide.wav",
+    "sha256": "049d22052c692b90ec2c1f739341b2c9af12e316bca510b8841440e0da280bfd"
+  },
+  "pitch_curve_hz": {
+    "times_seconds": [
+      0.0,
+      0.3,
+      0.82,
+      1.28,
+      1.8
+    ],
+    "pitches_hz": [
+      205.0,
+      235.0,
+      405.0,
+      305.0,
+      220.0
+    ],
+    "interpolation": "smoothstep"
+  },
+  "integration": {
+    "trigger": "once when a drag/petting gesture is recognized, not pointerdown or each move event",
+    "repeat_policy": "no automatic loop; at most once per contact for initial implementation",
+    "do_not_play": [
+      "menu/mute/control gestures",
+      "tap before drag is recognized",
+      "muted or audio not unlocked",
+      "concurrent reaction sound"
+    ],
+    "interruption": "fade current cue over 100-150 ms on release/cancel, mute, visibility loss or higher-priority face reaction; cancel pending cues",
+    "runtime_gain": "start at unity on app copy; do not normalize sustained cue up to sharp-beep peak",
+    "preserve": "remembered mute, initial-gesture audio unlocking, original short-tap chirp and unrelated reaction sounds"
+  },
+  "qa": {
+    "performed": [
+      "finite sample check",
+      "sample peak <= -13 dBFS",
+      "DC absolute mean <0.0001",
+      "zero endpoints",
+      "PCM format/duration/quantization roundtrip",
+      "energy above 3 kHz < 0.000001",
+      "SHA256 records"
+    ],
+    "not_performed": [
+      "human listening/perceived loudness validation",
+      "phone audition",
+      "app integration or browser test",
+      "deployment"
+    ]
+  },
+  "loudness_note": "Target active RMS -21 dBFS, quieter than short reaction chirps. Numeric balance is a starting point, not phone/perceived-loudness proof."
+}

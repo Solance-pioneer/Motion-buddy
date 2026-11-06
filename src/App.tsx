@@ -12,8 +12,9 @@ import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
-import { avoidFinger, DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
+import { advanceSound, claimChirp, fadePetGlide, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, startPetGlide, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { clearControl, desiredTravel, placeFace, roomFor, type FacePlace } from './logic/face-room.ts'
+import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -98,6 +99,84 @@ export function App() {
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
+  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, dragging: false })
+  const damp = (current: number, target: number, dt: number, ms: number) => {
+    if (ms <= 0) return target
+    return current + (target - current) * (1 - Math.exp(-dt / ms))
+  }
+  const measureRoom = () => {
+    const button = faceButtonRef.current
+    const svg = button?.querySelector('svg.face') as HTMLElement | null
+    if (!button || !svg) return null
+    const bounds = button.getBoundingClientRect()
+    const style = getComputedStyle(button)
+    const face = parseFloat(getComputedStyle(svg).width)
+    const padL = parseFloat(style.paddingLeft) || 0
+    const padR = parseFloat(style.paddingRight) || 0
+    const padT = parseFloat(style.paddingTop) || 0
+    const padB = parseFloat(style.paddingBottom) || 0
+    const left = bounds.left + padL + (bounds.width - padL - padR - face) / 2
+    const top = bounds.top + padT + (bounds.height - padT - padB - face) / 2
+    return {
+      room: roomFor(window.innerWidth, window.innerHeight, face, left, top, 8),
+      left,
+      top,
+      size: face,
+      svg,
+    }
+  }
+  const aimPet = (nx: number, ny: number, dragging: boolean) => {
+    const p = pet.current
+    p.dragging = dragging
+    if (engine.snapshot().reduced || !dragging) {
+      p.tx = 0
+      p.ty = 0
+      p.tsx = 1
+      p.tsy = 1
+      p.tox = 0.5
+      p.toy = 0.5
+      return
+    }
+    const measured = measureRoom()
+    if (!measured) return
+    const desired = desiredTravel(nx, ny, measured.room)
+    const raw: FacePlace = placeFace(desired.x, desired.y, measured.room)
+    const mute = document.querySelector('.mute-chip')?.getBoundingClientRect() ?? null
+    const placed = clearControl(
+      raw,
+      measured.left,
+      measured.top,
+      measured.size,
+      mute ? { left: mute.left, top: mute.top, right: mute.right, bottom: mute.bottom } : null,
+      measured.room,
+    )
+    p.tx = placed.x
+    p.ty = placed.y
+    p.tsx = placed.sx
+    p.tsy = placed.sy
+    p.tox = placed.originX
+    p.toy = placed.originY
+  }
+  const releasePet = () => aimPet(0, 0, false)
+  const stepPet = (dt: number) => {
+    const p = pet.current
+    const reduced = engine.snapshot().reduced
+    const posMs = reduced ? 0 : p.dragging ? 90 : 520
+    const squMs = reduced ? 0 : p.dragging ? 110 : 250
+    p.x = damp(p.x, reduced ? 0 : p.tx, dt, posMs)
+    p.y = damp(p.y, reduced ? 0 : p.ty, dt, posMs)
+    p.sx = damp(p.sx, reduced ? 1 : p.tsx, dt, squMs)
+    p.sy = damp(p.sy, reduced ? 1 : p.tsy, dt, squMs)
+    p.ox = damp(p.ox, p.tox, dt, squMs)
+    p.oy = damp(p.oy, p.toy, dt, squMs)
+    const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
+    if (svg) {
+      svg.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${p.sx.toFixed(3)}, ${p.sy.toFixed(3)})`
+      svg.style.transformOrigin = `${(p.ox * 100).toFixed(1)}% ${(p.oy * 100).toFixed(1)}%`
+    }
+    const root = rootRef.current
+    if (root) root.dataset.pet = `${p.x.toFixed(1)},${p.y.toFixed(1)},${p.sx.toFixed(2)},${p.sy.toFixed(2)}`
+  }
   const [muteLit, setMuteLit] = useState(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
@@ -155,6 +234,7 @@ export function App() {
     )
     originalArm.current = cue.arm
     if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
+    stepPet(dt)
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -274,8 +354,11 @@ export function App() {
     const stop = () => {
       loop.running = false
       engine.setHidden(true)
+      fadePetGlide(130)
       cancelAnimationFrame(loop.raf)
     }
+    const onBlur = () => fadePetGlide(130)
+    window.addEventListener('blur', onBlur)
     const onVisibility = () => {
       if (document.hidden) stop()
       else start()
@@ -284,6 +367,7 @@ export function App() {
     start()
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('blur', onBlur)
       stop()
     }
   }, [engine, publish])
@@ -455,13 +539,14 @@ export function App() {
           const rect = event.currentTarget.getBoundingClientRect()
           const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1
           const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1
-          const away = avoidFinger(nx, ny)
-          engine.feedLook(away.x, away.y)
-          if (step.chirp) playChirp()
+          if (step.chirp) startPetGlide()
+          aimPet(nx, ny, true)
         }}
         onPointerUp={() => {
           const step = touchUp(touch.current, performance.now())
           touch.current = step.clock
+          releasePet()
+          fadePetGlide(130)
           engine.feedLook(0, 0)
           if (step.openMenu) {
             setSeenControls(true)
@@ -473,6 +558,8 @@ export function App() {
         }}
         onPointerCancel={() => {
           touch.current = touchCancel(touch.current).clock
+          releasePet()
+          fadePetGlide(130)
           engine.feedLook(0, 0)
         }}
       >

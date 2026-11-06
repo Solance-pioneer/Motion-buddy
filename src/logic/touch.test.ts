@@ -35,7 +35,7 @@ describe('touch gestures', () => {
     const again = touchMove(drag.clock, DRAG_PX + 8, 1, 80)
     expect(again.chirp).toBe(false)
     const later = touchMove(again.clock, DRAG_PX + 10, 2, 30 + 480)
-    expect(later.chirp).toBe(true)
+    expect(later.chirp).toBe(false)
     const up = touchUp(later.clock, 800)
     expect(up.singleTap).toBe(false)
     expect(up.openMenu).toBe(false)

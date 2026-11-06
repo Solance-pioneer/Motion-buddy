@@ -1,5 +1,6 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
+import { PET_GLIDE_WAV_BASE64 } from './pet-glide-wav.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
@@ -396,6 +397,7 @@ export function prepareVoices(): Promise<void> {
 
 export function setSoundMuted(muted: boolean): void {
   gate.muted = muted
+  if (muted) fadePetGlide(130)
   try {
     window.localStorage.setItem(SOUND_KEY, JSON.stringify({ muted, volume: 0.4 }))
   } catch {
@@ -405,9 +407,51 @@ export function setSoundMuted(muted: boolean): void {
 
 let playingUntil = 0
 
+let petSource: AudioBufferSourceNode | null = null
+let petGain: GainNode | null = null
+let petQuietUntil = 0
+
+export function fadePetGlide(ms = 130): void {
+  if (!context || !petSource || !petGain) return
+  const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
+  const t = context.currentTime
+  petGain.gain.cancelScheduledValues(t)
+  petGain.gain.setValueAtTime(petGain.gain.value, t)
+  petGain.gain.linearRampToValueAtTime(0, t + seconds)
+  petSource.stop(t + seconds + 0.02)
+  petSource = null
+  petGain = null
+  petQuietUntil = performance.now() + ms
+}
+
+export function startPetGlide(): boolean {
+  if (!context || gate.muted || !gate.unlocked) return false
+  if (petSource || performance.now() < playingUntil || performance.now() < petQuietUntil) return false
+  const clip = pcm16('curious_pet_glide', PET_GLIDE_WAV_BASE64)
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  gain.gain.setValueAtTime(1, context.currentTime)
+  source.buffer = buffer
+  source.connect(gain)
+  gain.connect(context.destination)
+  source.start()
+  petSource = source
+  petGain = gain
+  source.onended = () => {
+    if (petSource === source) {
+      petSource = null
+      petGain = null
+    }
+  }
+  return true
+}
+
 export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
   const now = performance.now()
+  if (petSource) fadePetGlide(120)
   if (now < playingUntil) return false
   const spoken = kind === 'disapprove'
   const replacement = kind === 'celebration_three_squeaks' || kind === 'proud_rise_beeps'
