@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
 import type { Expression } from './logic/expressions.ts'
-import { applyPose, type FaceHandles } from './view/applyPose.ts'
+import { applyPose, type FaceHandles, type FaceStyle } from './view/applyPose.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
 import { Face } from './view/Face.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { useTilt } from './view/useTilt.ts'
+import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -15,6 +16,9 @@ type TestApi = {
   setPresence: (presence: Presence) => void
   previewWake: () => void
   feedMotion: (level: number) => void
+  feedAcceleration: (magnitude: number) => void
+  previewReaction: (kind: ReactionKind) => void
+  setReactionEnabled: (kind: ReactionKind, enabled: boolean) => void
   elapse: (ms: number) => void
   setHidden: (hidden: boolean) => void
 }
@@ -47,6 +51,9 @@ function viewKey(state: BuddyState): string {
     state.resting ? 'resting' : 'up',
     state.reduced ? 'reduced' : 'full',
     state.hidden ? 'hidden' : 'shown',
+    state.reaction,
+    state.allowStartled ? 'startled-on' : 'startled-off',
+    state.allowDizzy ? 'dizzy-on' : 'dizzy-off',
   ].join('|')
 }
 
@@ -69,6 +76,8 @@ export function App() {
   const [view, setView] = useState<BuddyState>(() => engine.snapshot())
   const [open, setOpen] = useState(false)
   const [accent, setAccent] = useState<AccentId>('white')
+  const [style, setStyle] = useState<FaceStyle>('soft')
+  const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
   const [faceFocus, setFaceFocus] = useState(false)
@@ -92,9 +101,12 @@ export function App() {
       root.dataset.reduced = state.reduced ? 'true' : 'false'
       root.dataset.paused = state.hidden ? 'true' : 'false'
       root.dataset.accent = accentRef.current
+      root.dataset.reaction = state.reaction
+      root.dataset.style = styleRef.current
+      root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
-    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.face)
+    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.face, styleRef.current)
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -113,12 +125,16 @@ export function App() {
     },
     [engine],
   )
+  const onAcceleration = useCallback((magnitude: number) => {
+    engine.feedAcceleration(magnitude)
+  }, [engine])
 
-  const tilt = useTilt(onSample)
+  const tilt = useTilt(onSample, onAcceleration)
   const wakeLock = useScreenWakeLock()
 
   useLayoutEffect(() => {
     accentRef.current = accent
+    styleRef.current = style
     publish(engine.snapshot())
   })
 
@@ -209,6 +225,17 @@ export function App() {
       feedMotion: (level: number) => {
         engine.feedMotion(level)
       },
+      feedAcceleration: (magnitude: number) => {
+        engine.feedAcceleration(magnitude)
+      },
+      previewReaction: (kind: ReactionKind) => {
+        engine.previewReaction(kind)
+        publish(engine.snapshot())
+      },
+      setReactionEnabled: (kind: ReactionKind, enabled: boolean) => {
+        engine.setReactionEnabled(kind, enabled)
+        publish(engine.snapshot())
+      },
       elapse,
       setHidden: (hidden: boolean) => {
         engine.setHidden(hidden)
@@ -226,12 +253,22 @@ export function App() {
   }, [])
 
   const showHint = !open && (hintOn || faceFocus)
-  const live = view.presence === 'rest' && view.wakefulness < 0.5
-    ? 'Motion Buddy is resting.'
-    : `Motion Buddy looks ${view.expression}.`
+  const live = view.reaction !== 'none'
+    ? `Motion Buddy looks ${view.reaction}.`
+    : view.presence === 'rest' && view.wakefulness < 0.5
+      ? 'Motion Buddy is resting.'
+      : `Motion Buddy looks ${view.expression}.`
 
   return (
-    <main ref={rootRef} className="app" data-controls={open ? 'open' : 'closed'} data-motion={tilt.status} data-wake-lock={wakeLock.status}>
+    <main
+        ref={rootRef}
+        className="app"
+        data-controls={open ? 'open' : 'closed'}
+        data-motion={tilt.status}
+        data-tilt={tilt.signals.tilt ? 'live' : 'off'}
+        data-movement={tilt.signals.movement ? 'live' : 'off'}
+        data-wake-lock={wakeLock.status}
+      >
       <button
         ref={faceButtonRef}
         type="button"
@@ -261,6 +298,11 @@ export function App() {
           selection={view.selection}
           autoSet={view.autoSet}
           accent={accent}
+          style={style}
+          sensitivity={view.sensitivity}
+          allowStartled={view.allowStartled}
+          allowDizzy={view.allowDizzy}
+          signals={tilt.signals}
           motionStatus={tilt.status}
           wakeLock={wakeLock.status}
           reduced={view.reduced}
@@ -280,6 +322,27 @@ export function App() {
           onAccent={(next) => {
             accentRef.current = next
             setAccent(next)
+            publish(engine.snapshot())
+          }}
+          onStyle={(next) => {
+            styleRef.current = next
+            setStyle(next)
+            publish(engine.snapshot())
+          }}
+          onSensitivity={(next: Sensitivity) => {
+            engine.setSensitivity(next)
+            publish(engine.snapshot())
+          }}
+          onToggleReaction={(kind, enabled) => {
+            engine.setReactionEnabled(kind, enabled)
+            publish(engine.snapshot())
+          }}
+          onPreviewGlance={() => {
+            engine.previewGlance(1)
+            publish(engine.snapshot())
+          }}
+          onPreviewReaction={(kind) => {
+            engine.previewReaction(kind)
             publish(engine.snapshot())
           }}
           onEnableMotion={() => {

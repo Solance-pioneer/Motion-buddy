@@ -27,6 +27,10 @@ export interface FacePose {
   eyeWide: number
   /** Positive lifts the outer corners. */
   eyeTilt: number
+  /** Drops the inner top edge. Used for a mild grump. */
+  skew: number
+  /** Extra tilt on the left eye, for a little asymmetry. */
+  asym: number
   mouthCurve: number
   /** 1 is a tiny dot, 0 is a short curve. */
   mouthOpen: number
@@ -35,17 +39,19 @@ export interface FacePose {
 }
 
 export const POSES: Record<Expression, FacePose> = {
-  curious: { eyeOpen: 1, eyeWide: 0.94, eyeTilt: 0, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.06 },
-  happy: { eyeOpen: 0.72, eyeWide: 1.08, eyeTilt: 8, mouthCurve: 1, mouthOpen: 0, lookX: 0, lookY: 0 },
-  grumpy: { eyeOpen: 0.56, eyeWide: 1.02, eyeTilt: -5, mouthCurve: -0.62, mouthOpen: 0, lookX: 0, lookY: 0.04 },
-  sleepy: { eyeOpen: 0.22, eyeWide: 1.1, eyeTilt: 0, mouthCurve: 0.08, mouthOpen: 0, lookX: 0, lookY: 0.08 },
+  curious: { eyeOpen: 1, eyeWide: 1, eyeTilt: 0, skew: 0, asym: 4, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.04 },
+  happy: { eyeOpen: 0.55, eyeWide: 1.04, eyeTilt: 10, skew: 0, asym: 0, mouthCurve: 1, mouthOpen: 0, lookX: 0, lookY: 0 },
+  grumpy: { eyeOpen: 0.78, eyeWide: 0.96, eyeTilt: 0, skew: 14, asym: 0, mouthCurve: -0.7, mouthOpen: 0, lookX: 0, lookY: 0.02 },
+  sleepy: { eyeOpen: 0.2, eyeWide: 1.02, eyeTilt: 0, skew: 0, asym: 0, mouthCurve: 0, mouthOpen: 0.85, lookX: 0, lookY: 0.04 },
 }
 
 /** Fully at rest. Flatter than the sleepy expression, which is still awake. */
 export const REST_POSE: FacePose = {
-  eyeOpen: 0.1,
-  eyeWide: 1.06,
+  eyeOpen: 0.12,
+  eyeWide: 1,
   eyeTilt: 0,
+  skew: 0,
+  asym: 0,
   mouthCurve: 0,
   mouthOpen: 0,
   lookX: 0,
@@ -61,6 +67,8 @@ export function lerpPose(a: FacePose, b: FacePose, t: number): FacePose {
     eyeOpen: lerp(a.eyeOpen, b.eyeOpen, t),
     eyeWide: lerp(a.eyeWide, b.eyeWide, t),
     eyeTilt: lerp(a.eyeTilt, b.eyeTilt, t),
+    skew: lerp(a.skew, b.skew, t),
+    asym: lerp(a.asym, b.asym, t),
     mouthCurve: lerp(a.mouthCurve, b.mouthCurve, t),
     mouthOpen: lerp(a.mouthOpen, b.mouthOpen, t),
     lookX: lerp(a.lookX, b.lookX, t),

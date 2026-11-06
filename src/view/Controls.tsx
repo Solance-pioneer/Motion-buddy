@@ -1,8 +1,10 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { EXPRESSIONS, type Expression } from '../logic/expressions.ts'
 import type { Presence, Selection } from '../logic/engine.ts'
+import type { ReactionKind, Sensitivity } from '../logic/reactions.ts'
 import { ACCENTS, type AccentId } from './accents.ts'
-import type { MotionUiStatus } from './useTilt.ts'
+import type { FaceStyle } from './applyPose.ts'
+import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 
 const EXPRESSION_LABEL: Record<Expression, string> = {
@@ -17,6 +19,11 @@ export function Controls({
   selection,
   autoSet,
   accent,
+  style,
+  sensitivity,
+  allowStartled,
+  allowDizzy,
+  signals,
   motionStatus,
   wakeLock,
   reduced,
@@ -25,14 +32,24 @@ export function Controls({
   onSelection,
   onToggleAuto,
   onAccent,
+  onStyle,
+  onSensitivity,
+  onToggleReaction,
   onEnableMotion,
   onPreviewWake,
+  onPreviewGlance,
+  onPreviewReaction,
   onToggleWakeLock,
 }: {
   presence: Presence
   selection: Selection
   autoSet: readonly Expression[]
   accent: AccentId
+  style: FaceStyle
+  sensitivity: Sensitivity
+  allowStartled: boolean
+  allowDizzy: boolean
+  signals: SensorSignals
   motionStatus: MotionUiStatus
   wakeLock: WakeLockUi
   reduced: boolean
@@ -41,8 +58,13 @@ export function Controls({
   onSelection: (selection: Selection) => void
   onToggleAuto: (expression: Expression) => void
   onAccent: (accent: AccentId) => void
+  onStyle: (style: FaceStyle) => void
+  onSensitivity: (sensitivity: Sensitivity) => void
+  onToggleReaction: (kind: ReactionKind, enabled: boolean) => void
   onEnableMotion: () => void
   onPreviewWake: () => void
+  onPreviewGlance: () => void
+  onPreviewReaction: (kind: ReactionKind) => void
   onToggleWakeLock: () => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -136,7 +158,52 @@ export function Controls({
               </button>
             ))}
           </div>
-          <p className="note">Auto keeps at least one. An unchecked expression is left out of Auto and out of motion.</p>
+          <p className="note">Auto keeps at least one idle face. Unchecked faces stay out of Auto and out of motion, including recovery.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Face style</legend>
+          <div className="choice-row">
+            <button type="button" aria-pressed={style === 'soft'} onClick={() => onStyle('soft')}>
+              Soft capsules
+            </button>
+            <button type="button" aria-pressed={style === 'tile'} onClick={() => onStyle('tile')}>
+              Bevelled tiles
+            </button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Movement reactions</legend>
+          <div className="choice-row">
+            <button type="button" aria-pressed={allowStartled} onClick={() => onToggleReaction('startled', !allowStartled)}>
+              Worried / startled
+            </button>
+            <button type="button" aria-pressed={allowDizzy} onClick={() => onToggleReaction('dizzy', !allowDizzy)}>
+              Dizzy / recovery
+            </button>
+          </div>
+          <div className="choice-grid">
+            {(['low', 'medium', 'high'] as const).map((level) => (
+              <button key={level} type="button" aria-pressed={sensitivity === level} onClick={() => onSensitivity(level)}>
+                {level[0].toUpperCase() + level.slice(1)} sensitivity
+              </button>
+            ))}
+          </div>
+          <p className="note">
+            Orientation tilts the face. A gentle held movement, from the phone’s movement sensor, plays worried then startled. A quicker move plays dizzy, then a calm recovery. Low sensitivity still notices a gentle deliberate move. Do not shake hard.
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Simulation, not the sensor</legend>
+          <div className="choice-grid">
+            <button type="button" onClick={onPreviewGlance}>Simulated glance</button>
+            <button type="button" onClick={() => onPreviewReaction('startled')} disabled={!allowStartled}>Simulate worried</button>
+            <button type="button" onClick={() => onPreviewReaction('dizzy')} disabled={!allowDizzy}>Simulate dizzy</button>
+            <button type="button" onClick={onPreviewWake} disabled={presence !== 'rest'}>Preview wake</button>
+          </div>
+          <p className="note">These try the faces without a sensor. They do not mean motion is on.</p>
         </fieldset>
 
         <fieldset>
@@ -159,21 +226,16 @@ export function Controls({
         </fieldset>
 
         <fieldset>
-          <legend>Tilt</legend>
-          <div className="choice-row">
-            <button
-              type="button"
-              onClick={onEnableMotion}
-              disabled={motionStatus === 'waiting' || motionStatus === 'active' || motionStatus === 'paused'}
-            >
-              {motionButton(motionStatus)}
-            </button>
-            <button type="button" onClick={onPreviewWake} disabled={presence !== 'rest'}>
-              Preview wake
-            </button>
-          </div>
+          <legend>This device</legend>
+          <button
+            type="button"
+            onClick={onEnableMotion}
+            disabled={motionStatus === 'waiting' || motionStatus === 'active' || motionStatus === 'paused'}
+          >
+            {motionButton(motionStatus)}
+          </button>
           <p className="note" role="status">
-            {motionCopy(motionStatus)}
+            {motionCopy(motionStatus, signals)}
           </p>
         </fieldset>
 
@@ -187,15 +249,15 @@ export function Controls({
           </p>
         </fieldset>
 
-        {reduced ? <p className="note">Calmer motion is on from your system setting. Blinks are rarer and expression changes are shorter.</p> : null}
+        {reduced ? <p className="note">Calmer motion is on. Expression changes stay still: no glance, lift, or dizzy wobble.</p> : null}
 
         <details className="help">
           <summary>Setup and limits</summary>
           <ul>
             <li>Motion Buddy runs only while this page is open and visible. It does not wake a locked or sleeping phone, and it stops if the browser suspends the tab.</li>
             <li>This is a browser preview, not an iPhone app or an Apple Watch app. A square screen here is only a layout check.</li>
-            <li>Tilt is optional. Motion counts as on only after orientation events arrive. The page has to be a secure context, such as HTTPS.</li>
-            <li>Preview wake is a stand-in so rest and wake can be tried without hardware. It is not a wrist raise.</li>
+            <li>Enable motion asks only after you tap. Tilt is device orientation. Worried and dizzy use movement readings. Motion is on only after numeric events arrive. The page has to be a secure context, such as HTTPS.</li>
+            <li>Simulation buttons are not a sensor and do not wake a locked phone.</li>
             <li>Screen wake lock, if the browser grants it, only keeps this visible page from dimming. It is not a system always-on switch.</li>
             <li>Maps, navigation apps, music, and accounts are not part of this preview.</li>
             <li>Warmth and battery use have not been measured.</li>
@@ -213,22 +275,24 @@ function motionButton(status: MotionUiStatus): string {
   return 'Enable motion'
 }
 
-function motionCopy(status: MotionUiStatus): string {
+function motionCopy(status: MotionUiStatus, signals: SensorSignals): string {
   switch (status) {
     case 'idle':
-      return 'Tilt is off. Enable motion asks this browser for orientation, and only after you tap.'
+      return 'Sensors are off. Enable motion asks this browser only after you tap.'
     case 'waiting':
-      return 'Waiting for an orientation event. Motion is not on yet.'
+      return 'Waiting for a numeric tilt or movement event. Motion is not on yet.'
     case 'active':
-      return 'Orientation events are arriving. Small jitters stay ignored.'
+      if (signals.tilt && signals.movement) return 'Tilt and movement events are arriving. Small jitters stay ignored.'
+      if (signals.tilt) return 'Tilt events are arriving, so the face can glance. Movement events have not arrived, so worried and dizzy will not come from the device.'
+      return 'Movement events are arriving. Tilt events have not, so glance stays off.'
     case 'denied':
-      return 'Motion permission was denied. Preview wake still works while resting.'
+      return 'Motion permission was denied. Simulation still works. The sensor is not on.'
     case 'unavailable':
-      return 'This page cannot read tilt. Use a secure page, or Preview wake.'
+      return 'This page cannot read device motion. Use a secure page, or the simulation buttons.'
     case 'no-events':
-      return 'No orientation events arrived, so motion was not turned on.'
+      return 'No tilt or movement events arrived, so motion was not turned on.'
     case 'paused':
-      return 'Tilt listening is paused while this page is hidden.'
+      return 'Sensor listening is paused while this page is hidden.'
   }
 }
 

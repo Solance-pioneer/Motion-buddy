@@ -65,10 +65,11 @@ body {
 }
 
 .face {
-  width: min(100%, 860px, calc(84dvh * 320 / 188));
+  width: min(72vmin, 72dvh, 560px);
   height: auto;
+  aspect-ratio: 1 / 1;
   display: block;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .hint {

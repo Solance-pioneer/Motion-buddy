@@ -7,8 +7,6 @@ const forbidden = [
   'mediaDevices',
   'geolocation',
   'AudioContext',
-  'devicemotion',
-  'accelerometer',
   'localStorage',
   'sessionStorage',
   'indexedDB',

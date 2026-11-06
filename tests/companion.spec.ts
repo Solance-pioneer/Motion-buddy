@@ -252,7 +252,7 @@ test('does not subscribe to tilt until Enable motion', async ({ page }) => {
     () => (window as unknown as { __motionSubs: { orientation: number; motion: number } }).__motionSubs,
   )
   expect(after.orientation).toBe(1)
-  expect(after.motion).toBe(0)
+  expect(after.motion).toBe(1)
 })
 
 test('denied permission is not described as motion on', async ({ page }) => {
@@ -307,6 +307,74 @@ test('motion turns on only after a numeric orientation event', async ({ page }) 
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'active')
   await expect(page.getByRole('button', { name: 'Motion on' })).toBeVisible()
   await expect(page.getByText(/events are arriving/)).toBeVisible()
+})
+
+test('simulation is labelled and does not mark the sensor on', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByText('Simulation, not the sensor')).toBeVisible()
+  await page.getByRole('button', { name: 'Simulate worried' }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-reaction', 'worried')
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'idle')
+  await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { elapse: (ms: number) => void } }).__motionBuddyTest
+    api.elapse(3_000)
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-reaction', 'none')
+})
+
+test('a quicker movement starts dizzy and a turned-off reaction stays off', async ({ page }) => {
+  await openApp(page)
+  await page.evaluate(() => {
+    const api = (window as unknown as {
+      __motionBuddyTest: {
+        feedAcceleration: (magnitude: number) => void
+        elapse: (ms: number) => void
+        setReactionEnabled: (kind: string, enabled: boolean) => void
+      }
+    }).__motionBuddyTest
+    api.setReactionEnabled('dizzy', false)
+    api.feedAcceleration(8)
+    api.elapse(1_000)
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-reaction', 'none')
+  await page.evaluate(() => {
+    const api = (window as unknown as {
+      __motionBuddyTest: {
+        setReactionEnabled: (kind: string, enabled: boolean) => void
+        feedAcceleration: (magnitude: number) => void
+        elapse: (ms: number) => void
+      }
+    }).__motionBuddyTest
+    api.setReactionEnabled('dizzy', true)
+    api.feedAcceleration(0)
+    api.elapse(200)
+    api.feedAcceleration(8)
+    api.elapse(700)
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-reaction', 'dizzy')
+})
+
+test('movement events are recognised only when the numbers arrive', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', {
+      configurable: true,
+      value: () => Promise.resolve('granted'),
+    })
+  })
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Enable motion' }).click()
+  await page.evaluate(() => window.dispatchEvent(new Event('devicemotion')))
+  await expect(page.locator('main')).toHaveAttribute('data-movement', 'off')
+  await page.evaluate(() => {
+    const event = new Event('devicemotion')
+    Object.defineProperty(event, 'acceleration', { value: { x: 2.4, y: 0, z: 0 } })
+    window.dispatchEvent(event)
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-movement', 'live')
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'active')
+  await expect(page.getByText(/Movement events are arriving/)).toBeVisible()
 })
 
 test('hiding the page pauses the engine and tilt listening', async ({ page }) => {

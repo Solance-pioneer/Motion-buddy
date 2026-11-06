@@ -9,18 +9,30 @@ export interface TiltSample {
   level: number
 }
 
+export interface SensorSignals {
+  tilt: boolean
+  movement: boolean
+}
+
 /**
  * Listens for device orientation only after a user action.
  * "Active" means numeric orientation events arrived. Permission alone is not enough.
  * The listener is removed while the page is hidden.
  */
-export function useTilt(onSample: (sample: TiltSample) => void) {
+export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: (magnitude: number) => void) {
   const [status, setStatus] = useState<MotionUiStatus>('idle')
+  const [signals, setSignals] = useState<SensorSignals>({ tilt: false, movement: false })
   const statusRef = useRef<MotionUiStatus>('idle')
   const enabledRef = useRef(false)
-  const listenerRef = useRef<((event: Event) => void) | null>(null)
+  const orientationRef = useRef<((event: Event) => void) | null>(null)
+  const movementRef = useRef<((event: Event) => void) | null>(null)
+  const gravityRef = useRef<{ x: number; y: number; z: number } | null>(null)
   const timeoutRef = useRef<number | null>(null)
   const originRef = useRef<{ gamma: number; beta: number } | null>(null)
+  const onAccelerationRef = useRef(onAcceleration)
+  useEffect(() => {
+    onAccelerationRef.current = onAcceleration
+  }, [onAcceleration])
   const onSampleRef = useRef(onSample)
   useEffect(() => {
     onSampleRef.current = onSample
@@ -32,9 +44,13 @@ export function useTilt(onSample: (sample: TiltSample) => void) {
   }, [])
 
   const detach = useCallback(() => {
-    if (listenerRef.current) {
-      window.removeEventListener('deviceorientation', listenerRef.current)
-      listenerRef.current = null
+    if (orientationRef.current) {
+      window.removeEventListener('deviceorientation', orientationRef.current)
+      orientationRef.current = null
+    }
+    if (movementRef.current) {
+      window.removeEventListener('devicemotion', movementRef.current)
+      movementRef.current = null
     }
     if (timeoutRef.current != null) {
       window.clearTimeout(timeoutRef.current)
@@ -42,11 +58,22 @@ export function useTilt(onSample: (sample: TiltSample) => void) {
     }
   }, [])
 
+  const noteArrival = useCallback((kind: 'tilt' | 'movement') => {
+    setSignals((current) => (current[kind] ? current : { ...current, [kind]: true }))
+    if (timeoutRef.current != null) {
+      window.clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (statusRef.current !== 'active') setMotionStatus('active')
+  }, [setMotionStatus])
+
   const beginListening = useCallback(() => {
     detach()
     originRef.current = null
+    gravityRef.current = null
+    setSignals({ tilt: false, movement: false })
     setMotionStatus('waiting')
-    const handler = (event: Event) => {
+    const onOrientation = (event: Event) => {
       const reading = readOrientation(event)
       if (!reading) return
       if (!originRef.current) originRef.current = reading
@@ -57,19 +84,23 @@ export function useTilt(onSample: (sample: TiltSample) => void) {
         y: lookFromDegrees(dy),
         level: wakeLevelFromDegrees(dx, dy),
       })
-      if (timeoutRef.current != null) {
-        window.clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-      if (statusRef.current !== 'active') setMotionStatus('active')
+      noteArrival('tilt')
     }
-    listenerRef.current = handler
-    window.addEventListener('deviceorientation', handler)
+    const onMovement = (event: Event) => {
+      const magnitude = readMovement(event, gravityRef)
+      if (magnitude == null) return
+      onAccelerationRef.current(magnitude)
+      noteArrival('movement')
+    }
+    orientationRef.current = onOrientation
+    movementRef.current = onMovement
+    window.addEventListener('deviceorientation', onOrientation)
+    window.addEventListener('devicemotion', onMovement)
     timeoutRef.current = window.setTimeout(() => {
       timeoutRef.current = null
       if (statusRef.current === 'waiting') setMotionStatus('no-events')
     }, readTimeout())
-  }, [detach, setMotionStatus])
+  }, [detach, noteArrival, setMotionStatus])
 
   useEffect(() => {
     const onVisibility = () => {
@@ -105,7 +136,32 @@ export function useTilt(onSample: (sample: TiltSample) => void) {
     beginListening()
   }, [beginListening, detach, setMotionStatus])
 
-  return { status, enable }
+  return { status, signals, enable }
+}
+
+function readMovement(
+  event: Event,
+  gravityRef: { current: { x: number; y: number; z: number } | null },
+): number | null {
+  const motion = event as {
+    acceleration?: { x?: number | null; y?: number | null; z?: number | null } | null
+    accelerationIncludingGravity?: { x?: number | null; y?: number | null; z?: number | null } | null
+  }
+  const user = axis(motion.acceleration)
+  if (user) return Math.hypot(user.x, user.y, user.z)
+  const gravity = axis(motion.accelerationIncludingGravity)
+  if (!gravity) return null
+  const previous = gravityRef.current
+  gravityRef.current = gravity
+  if (!previous) return null
+  return Math.hypot(gravity.x - previous.x, gravity.y - previous.y, gravity.z - previous.z)
+}
+
+function axis(value: { x?: number | null; y?: number | null; z?: number | null } | null | undefined) {
+  if (!value) return null
+  if (typeof value.x !== 'number' || typeof value.y !== 'number' || typeof value.z !== 'number') return null
+  if (Number.isNaN(value.x) || Number.isNaN(value.y) || Number.isNaN(value.z)) return null
+  return { x: value.x, y: value.y, z: value.z }
 }
 
 function readPermissionRequest(): (() => Promise<string>) | undefined {

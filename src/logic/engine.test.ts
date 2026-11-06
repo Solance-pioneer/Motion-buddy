@@ -50,6 +50,30 @@ describe('BuddyEngine', () => {
     expect(engine.snapshot().expression).not.toBe('happy')
   })
 
+  it('uses a gentle move for worried and a quicker move for dizzy, without stacking', () => {
+    const engine = new BuddyEngine({ random: () => 0.5 })
+    engine.feedAcceleration(2)
+    const worried = advance(engine, 900)
+    expect(worried.reaction === 'worried' || worried.reaction === 'startled').toBe(true)
+    engine.feedAcceleration(6)
+    const stillInReaction = advance(engine, 200)
+    expect(stillInReaction.reaction === 'worried' || stillInReaction.reaction === 'startled').toBe(true)
+    const settled = advance(engine, 4_000)
+    expect(settled.reaction).toBe('none')
+    expect(settled.expression).not.toBe('grumpy')
+  })
+
+  it('does not start a reaction the person turned off', () => {
+    const engine = new BuddyEngine({ random: () => 0.5 })
+    engine.setReactionEnabled('dizzy', false)
+    engine.feedAcceleration(8)
+    const state = advance(engine, 1_200)
+    expect(state.allowDizzy).toBe(false)
+    expect(state.reaction).toBe('none')
+    engine.previewReaction('dizzy')
+    expect(engine.snapshot().reaction).toBe('none')
+  })
+
   it('changes the manual expression without bobbing state', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     engine.setSelection('grumpy')

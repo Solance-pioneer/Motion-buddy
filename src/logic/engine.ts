@@ -13,6 +13,17 @@ import {
   type FacePose,
 } from './expressions.ts'
 import { MAX_FRAME_DT_MS, REST_HOLD_MS, smoothToward, WAKE_DEBOUNCE_MS, WAKE_LEVEL } from './motion.ts'
+import {
+  forceReaction,
+  initialReaction,
+  motionBand,
+  REACTION_POSES,
+  stepReaction,
+  type ReactionClock,
+  type ReactionKind,
+  type ReactionName,
+  type Sensitivity,
+} from './reactions.ts'
 
 export type Presence = 'awake' | 'rest'
 export type Selection = 'auto' | Expression
@@ -30,6 +41,10 @@ export interface BuddyState {
   reduced: boolean
   hidden: boolean
   motionLevel: number
+  reaction: ReactionName
+  sensitivity: Sensitivity
+  allowStartled: boolean
+  allowDizzy: boolean
 }
 
 const BLINK_HALF_MS = 140
@@ -57,6 +72,14 @@ export class BuddyEngine {
   private reduced = false
   private hidden = false
   private shown: FacePose = { ...POSES.curious }
+  private reaction: ReactionClock = initialReaction()
+  private sensitivity: Sensitivity = 'medium'
+  private allowStartled = true
+  private allowDizzy = true
+  private accelTarget = 0
+  private accelLevel = 0
+  private simLookX = 0
+  private simLookUntil = 0
   private readonly random: () => number
 
   constructor(options?: { random?: () => number }) {
@@ -122,6 +145,36 @@ export class BuddyEngine {
     this.highMs = 0
   }
 
+  setSensitivity(sensitivity: Sensitivity): void {
+    this.sensitivity = sensitivity
+  }
+
+  setReactionEnabled(kind: ReactionKind, enabled: boolean): void {
+    if (kind === 'startled') this.allowStartled = enabled
+    else this.allowDizzy = enabled
+  }
+
+  /** Labelled stand-in. It does not mark the sensor as on. */
+  previewReaction(kind: ReactionKind): void {
+    if (this.hidden) return
+    if (kind === 'startled' && !this.allowStartled) return
+    if (kind === 'dizzy' && !this.allowDizzy) return
+    this.reaction = forceReaction(kind)
+    this.resting = false
+    this.holdMs = REST_HOLD_MS
+  }
+
+  previewGlance(direction: -1 | 1): void {
+    if (this.hidden || this.reduced) return
+    this.simLookX = direction * 0.7
+    this.simLookUntil = this.uiElapsed + 1_400
+  }
+
+  feedAcceleration(magnitude: number): void {
+    if (this.hidden) return
+    this.accelTarget = Math.max(0, magnitude)
+  }
+
   feedMotion(level: number): void {
     if (this.hidden) return
     this.motionTarget = clamp01(level)
@@ -137,12 +190,13 @@ export class BuddyEngine {
     if (!this.hidden) {
       const dt = Math.max(0, Math.min(dtMs, MAX_FRAME_DT_MS))
       this.uiElapsed += dt
-      if (this.selection === 'auto' && this.presence === 'awake') this.autoElapsed += dt
+      if (this.selection === 'auto' && this.presence === 'awake' && this.reaction.name === 'none') this.autoElapsed += dt
       this.advanceMotion(dt)
+      this.advanceReaction(dt)
       this.advanceWake(dt)
       this.advanceBlink()
       const desired = this.desiredPose()
-      this.shown = smoothPose(this.shown, desired, dt, this.reduced ? 80 : 380)
+      this.shown = this.reduced ? desired : smoothPose(this.shown, desired, dt, 250)
     }
     return this.snapshot()
   }
@@ -162,6 +216,10 @@ export class BuddyEngine {
       reduced: this.reduced,
       hidden: this.hidden,
       motionLevel: this.motionLevel,
+      reaction: this.reaction.name,
+      sensitivity: this.sensitivity,
+      allowStartled: this.allowStartled,
+      allowDizzy: this.allowDizzy,
     }
   }
 
@@ -179,13 +237,32 @@ export class BuddyEngine {
   }
 
   private desiredPose(): FacePose {
-    const sample = this.logical()
-    const expressive = expressionPose(sample)
-    const idle = this.reduced || this.wakefulness < 0.75 ? 0 : Math.sin(this.uiElapsed / 2200) * 0.1
-    expressive.lookX = clampUnit(expressive.lookX + idle + this.lookX * 0.28)
-    expressive.lookY = clampUnit(expressive.lookY + this.lookY * 0.2)
-    if (this.presence === 'awake') return expressive
-    return lerpPose(REST_POSE, expressive, this.wakefulness)
+    const reactionName = this.reaction.name
+    const base = reactionName === 'none' ? expressionPose(this.logical()) : { ...REACTION_POSES[reactionName] }
+    if (!this.reduced && this.wakefulness >= 0.75 && reactionName === 'none') {
+      base.lookX = clampUnit(base.lookX + Math.sin(this.uiElapsed / 2200) * 0.08 + this.lookX * 0.35)
+      base.lookY = clampUnit(base.lookY + this.lookY * 0.2)
+    } else if (this.reduced) {
+      base.lookX = 0
+      base.lookY = 0
+    }
+    if (this.presence === 'awake' || reactionName !== 'none') return base
+    return lerpPose(REST_POSE, base, this.wakefulness)
+  }
+
+  private advanceReaction(dt: number): void {
+    this.accelLevel = smoothToward(this.accelLevel, this.accelTarget, dt, 140)
+    const before = this.reaction.name
+    this.reaction = stepReaction(this.reaction, dt, {
+      band: motionBand(this.accelLevel, this.sensitivity),
+      allowStartled: this.allowStartled,
+      allowDizzy: this.allowDizzy,
+    })
+    if (before === 'none' && this.reaction.name !== 'none') {
+      this.resting = false
+      this.holdMs = REST_HOLD_MS
+    }
+    if (this.uiElapsed < this.simLookUntil && !this.reduced) this.lookTargetX = this.simLookX
   }
 
   private advanceMotion(dt: number): void {
@@ -222,6 +299,14 @@ export class BuddyEngine {
       this.blink = 0
       return
     }
+    if (
+      this.reaction.name === 'recovery' &&
+      !this.reduced &&
+      this.blinkStart < 0 &&
+      this.reaction.elapsed < 180
+    ) {
+      this.nextBlinkAt = Math.min(this.nextBlinkAt, this.uiElapsed + 30)
+    }
     if (this.blinkStart < 0 && this.uiElapsed >= this.nextBlinkAt) this.blinkStart = this.uiElapsed
     if (this.blinkStart < 0) return
     const half = this.reduced ? BLINK_HALF_REDUCED_MS : BLINK_HALF_MS
@@ -230,7 +315,8 @@ export class BuddyEngine {
       this.blink = 0
       this.blinkStart = -1
       const double = !this.reduced && this.random() < 0.16
-      this.nextBlinkAt = this.uiElapsed + this.blinkGap(double)
+      const recoveryBlink = this.reaction.name === 'recovery' && !this.reduced
+      this.nextBlinkAt = this.uiElapsed + (recoveryBlink ? 260 : this.blinkGap(double))
       return
     }
     this.blink = u < 1 ? u : 2 - u

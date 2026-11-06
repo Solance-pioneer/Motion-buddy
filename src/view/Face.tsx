@@ -14,28 +14,38 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
     }
     onReady({
       glance: pick('glance') as SVGGElement,
-      eyeL: pick('eye-l') as SVGRectElement,
-      eyeR: pick('eye-r') as SVGRectElement,
+      eyeL: pick('eye-l') as SVGGElement,
+      eyeR: pick('eye-r') as SVGGElement,
+      softL: pick('soft-l') as SVGRectElement,
+      softR: pick('soft-r') as SVGRectElement,
+      tileL: pick('tile-l') as SVGRectElement,
+      tileR: pick('tile-r') as SVGRectElement,
       mouthCurve: pick('mouth-curve') as SVGPathElement,
       mouthOpen: pick('mouth-open') as SVGEllipseElement,
     })
   }, [onReady])
 
   return (
-    <svg ref={svgRef} className="face" viewBox="0 0 320 188" aria-hidden="true" data-testid="face">
+    <svg ref={svgRef} className="face" viewBox="0 0 100 100" aria-hidden="true" data-testid="face">
       <g data-part="glance">
-        <rect data-part="eye-l" x="22" y="42" width="128" height="72" rx="34" fill="#ffffff" stroke="none" />
-        <rect data-part="eye-r" x="170" y="42" width="128" height="72" rx="34" fill="#ffffff" stroke="none" />
-        <g data-part="mouth" transform="translate(160 154)">
+        <g data-part="eye-l">
+          <rect data-part="soft-l" x="29" y="32" width="10" height="22" rx="5" fill="#ffffff" stroke="none" />
+          <rect data-part="tile-l" x="29" y="32" width="10" height="22" rx="2.2" fill="#ffffff" stroke="none" visibility="hidden" />
+        </g>
+        <g data-part="eye-r">
+          <rect data-part="soft-r" x="61" y="32" width="10" height="22" rx="5" fill="#ffffff" stroke="none" />
+          <rect data-part="tile-r" x="61" y="32" width="10" height="22" rx="2.2" fill="#ffffff" stroke="none" visibility="hidden" />
+        </g>
+        <g data-part="mouth" transform="translate(50 64)">
           <path
             data-part="mouth-curve"
-            d="M -22 0 Q 0 0 22 0"
+            d="M -3 0 Q 0 0 3 0"
             fill="none"
             stroke="#ffffff"
-            strokeWidth="6"
+            strokeWidth="1.25"
             strokeLinecap="round"
           />
-          <ellipse data-part="mouth-open" cx="0" cy="0" rx="7" ry="7" fill="#ffffff" />
+          <ellipse data-part="mouth-open" cx="0" cy="0" rx="1.5" ry="1.7" fill="#ffffff" />
         </g>
       </g>
     </svg>

@@ -11,7 +11,17 @@ npm install
 npm run dev
 ```
 
-Vite serves the dev build on port 43123. There is no hosted preview in this project.
+Vite can serve a local dev build on port 43123. That address is not a phone website.
+
+Cursor’s Apps docs describe a preview tray and a separate Publish step where a person picks the public URL and Cursor runs security checks. Public sharing is off by default for team plans, and the docs do not state a hosting price. This unpublished Origin draft was not sent through that publish step, so there is no live HTTPS app URL.
+
+A downloadable static build is produced with:
+
+```bash
+npm run package:static
+```
+
+That writes `dist/` (`index.html`, assets, `motion-buddy.html`, and `DEPLOY.txt`) and `motion-buddy-phase1.zip`. Upload the unzipped folder to a static host. `motion-buddy.html` inlines the script and styles and does not load fonts or other remote files. Opening the file directly is not a secure-page sensor test.
 
 ## Using it
 
@@ -43,7 +53,7 @@ Auto timing and rest timing in the browser tests use `/?e2e=1` and `window.__mot
 
 Desktop Chromium via Playwright. Not a physical iPhone, and not a watch.
 
-Unit tests, 16 passed:
+Unit tests, 25 passed:
 
 - Auto walks only the selected expressions, and a single choice does not cycle.
 - The last Auto expression cannot be removed.
@@ -55,10 +65,13 @@ Unit tests, 16 passed:
 - Hidden time does not advance Auto or motion.
 - Blinks open again. Reduced motion does not blink during the normal gap.
 
-Browser tests, 23 passed, against `npm run build`:
+Browser tests, 26 passed, against `npm run build`:
 
 - The production page does not expose the test hook.
 - The companion view is black, the eyes are plain white filled shapes with no iris, pupil, or outline, and the expression controls stay hidden.
+- A labelled simulation starts worried without marking the sensor on, then returns to idle.
+- A quicker movement reading starts dizzy. Turning dizzy off blocks it, and it is not turned back on by itself.
+- A movement event counts only when the acceleration numbers arrive. Orientation and movement listeners are both added only after Enable motion.
 - Face mode shows no expression buttons or Enable motion until the face control is used. The hint is visible at first and then gone.
 - Opening controls, choosing Happy, and dismissing the dim area leaves Happy on the face.
 - Tab, Enter, and Escape open and close controls, and focus returns to the face.
