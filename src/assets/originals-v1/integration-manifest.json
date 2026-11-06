@@ -1,0 +1,320 @@
+{
+  "pack_id": "motion-buddy-originals-v1",
+  "status": "PORTABLE_INTEGRATION_PACK_READY",
+  "integration_state": "not_yet_integrated_or_deployed",
+  "created_note": "Europe/London box-local; muxes completed animation+audio workers without resynthesis.",
+  "source_approval_scope": {
+    "michael_rule": "2026-11-06 ~21:45 Europe/London: new original creations pre-approved; newly found online assets still need review before download; earlier approvals stand.",
+    "this_pack": "Original procedural animation+audio only. Specific frames/sounds not claimed as visually/auditorily owner-signed; creative blanket covers originals.",
+    "not_in_scope": [
+      "App repository edits",
+      "Cloud agent / deploy",
+      "Online asset downloads",
+      "Approved primarychirp or prior SFX rewrites"
+    ]
+  },
+  "provenance": {
+    "type": "original_procedural",
+    "animation": {
+      "type": "original_procedural",
+      "generator": "/workspace/motion-buddy-originals-v1/animation/src/generate_original_expressions_v1.py",
+      "references_read": [
+        "/workspace/motion-buddy-direction/MAPPING-v1.txt",
+        "/workspace/motion-buddy-direction/motion-buddy-direction-board-v1.png",
+        "/workspace/motion-buddy-direction/render_direction_board.py",
+        "/workspace/motion-buddy-v26/eye-contact-sheet.png"
+      ],
+      "not_used": [
+        "Rejected v25 almond eye sheet",
+        "No online downloads",
+        "No app repo edits",
+        "Audio folder not touched"
+      ],
+      "character_rules": "Rounded white LEVEL pill/arc eyes + tiny simple mouth on black; no pupils/bodies/human lips/slanted almond eyes.",
+      "creative_status": "Michael pre-approved original creations generally; these specific frames have not been owner-reviewed yet."
+    },
+    "audio": {
+      "batch": "motion-buddy-originals-v1-audio-reaction-chirps",
+      "synthesis_source": "src/synthesize_reaction_chirps.py",
+      "constraints_honored": [
+        "No downloads, services, spend, voice clones, or Japanese sound-alikes",
+        "No repository edits or cloud agents",
+        "Did not touch ../animation/",
+        "Did not modify approved sounds or primarychirp",
+        "Synthesis from math only (numpy + stdlib + ffmpeg encode/measure)",
+        "No phone audition claimed"
+      ]
+    },
+    "character_rules": "Rounded white LEVEL pill/arc eyes + tiny simple mouth on black; no pupils/bodies/human lips/slanted almond eyes."
+  },
+  "pairings": [
+    {
+      "animation_key": "original_sneeze",
+      "sound_key": "sneeze_zip",
+      "duration_s": 4.0,
+      "fps": 24,
+      "segment_index": 0,
+      "segment_start_s": 0.0,
+      "cue_within_expression_s": 1.1,
+      "cue_on_combined_timeline_s": 1.1,
+      "start_end_neutral": {
+        "start_neutral": true,
+        "end_neutral": true,
+        "start": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        },
+        "end": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        }
+      },
+      "summary": "Anticipatory eye-squeeze, closed-arc sneeze with O mouth, bold pop-open recovery.",
+      "paths": {
+        "pose_data": "animation/poses/original_sneeze.json",
+        "svg": "animation/svg/original_sneeze.svg",
+        "animation_generator": "animation/src/generate_original_expressions_v1.py",
+        "audio_app_copy": "audio/app/sneeze_zip_app_pcm16_48k.wav",
+        "audio_master": "audio/masters/sneeze_zip_master_f32_48k.wav",
+        "audio_synth_source": "audio/src/synthesize_reaction_chirps.py"
+      },
+      "sha256": {
+        "pose_data": "494a5dff072eecc8a577718fdc2e43cc1df71940369a0b18a030e1b49a4fee20",
+        "svg": "2d6c5b51fd3f518b381126c842d2cfd3e5ec08f91fcc04cd308bbf033eb57418",
+        "audio_app_copy": "ce1260e8b0d64c8413c01e507684ff76f11d92f4a948b39c7749bfa0a8344062",
+        "audio_master": "c1a887d7d6c80a7ff113c3abfd472ed5884dcce988346580c94dd0baf387f81d"
+      },
+      "loudness": {
+        "sample_peak_dbfs": -7.8240781256278105,
+        "active_rms_dbfs": -17.496370569943327,
+        "rms_dbfs": -18.030831093608906,
+        "ffmpeg_ebur128_app_copy": {
+          "raw_ok": true,
+          "method": "ffmpeg ebur128=peak=true",
+          "integrated_lufs": -18.5,
+          "lra_lu": 0.0,
+          "true_peak_dbfs": -7.8,
+          "limitation": "Integrated LUFS is unreliable for very short (<1s) isolated beeps; use sample_peak_dbfs and active_rms_dbfs for relative matching. No phone / device audition performed."
+        },
+        "limits_and_method": {
+          "primary_matching": "Sample peak ceiling ~-6.5 dBFS; active-region RMS nudged toward ~-17.5 dBFS (family ballpark from read-only metrics on already-approved short beeps wink/giggle at ~-7.54 peak / ~-17.8 active-ish RMS on 22.05 kHz drafts \u2014 those files were not rewritten).",
+          "ffmpeg_ebur128": "Also reported per file via ffmpeg ebur128=peak=true. Integrated LUFS for sub-1s beeps is imperfect / unstable; do not treat as universal loudness equivalence. Prefer sample_peak_dbfs + active_rms_dbfs.",
+          "limitations": "No listening test on phone speakers. Global app mix balance owned elsewhere. Short clips make I-LUFS a weak comparator.",
+          "note_astats_removed": "ffmpeg astats fields previously stored last-window values and conflicted with full-signal numpy/ebur128 metrics; removed as unusable for whole-clip reporting."
+        }
+      },
+      "audio_duration_s": 0.62
+    },
+    {
+      "animation_key": "original_peekaboo",
+      "sound_key": "peek_pop",
+      "duration_s": 4.0,
+      "fps": 24,
+      "segment_index": 1,
+      "segment_start_s": 4.0,
+      "cue_within_expression_s": 1.2,
+      "cue_on_combined_timeline_s": 5.2,
+      "start_end_neutral": {
+        "start_neutral": true,
+        "end_neutral": true,
+        "start": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        },
+        "end": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        }
+      },
+      "summary": "Both eyes compress/hide; left peeks, then right; both open playfully. Eyes only.",
+      "paths": {
+        "pose_data": "animation/poses/original_peekaboo.json",
+        "svg": "animation/svg/original_peekaboo.svg",
+        "animation_generator": "animation/src/generate_original_expressions_v1.py",
+        "audio_app_copy": "audio/app/peek_pop_app_pcm16_48k.wav",
+        "audio_master": "audio/masters/peek_pop_master_f32_48k.wav",
+        "audio_synth_source": "audio/src/synthesize_reaction_chirps.py"
+      },
+      "sha256": {
+        "pose_data": "f1389c1bb9fbe83585dcbc66abad225d0526e5be6881755b22b06aac1116c7de",
+        "svg": "3c452fce9be8fa72134e57b491d26e266822b1686b2d7a2a0b4b33606859f2d6",
+        "audio_app_copy": "ec6384948afcefaa3726f29b46c7af478fff6d2ae3c4976974e6830690712ff4",
+        "audio_master": "040ea67129b03cea15f9e52300836ed682f350c9d46ab85bd8109b56fee9e406"
+      },
+      "loudness": {
+        "sample_peak_dbfs": -8.843573914011204,
+        "active_rms_dbfs": -17.490777212809615,
+        "rms_dbfs": -20.74128201469428,
+        "ffmpeg_ebur128_app_copy": {
+          "raw_ok": true,
+          "method": "ffmpeg ebur128=peak=true",
+          "integrated_lufs": -20.3,
+          "lra_lu": 0.0,
+          "true_peak_dbfs": -8.8,
+          "limitation": "Integrated LUFS is unreliable for very short (<1s) isolated beeps; use sample_peak_dbfs and active_rms_dbfs for relative matching. No phone / device audition performed."
+        },
+        "limits_and_method": {
+          "primary_matching": "Sample peak ceiling ~-6.5 dBFS; active-region RMS nudged toward ~-17.5 dBFS (family ballpark from read-only metrics on already-approved short beeps wink/giggle at ~-7.54 peak / ~-17.8 active-ish RMS on 22.05 kHz drafts \u2014 those files were not rewritten).",
+          "ffmpeg_ebur128": "Also reported per file via ffmpeg ebur128=peak=true. Integrated LUFS for sub-1s beeps is imperfect / unstable; do not treat as universal loudness equivalence. Prefer sample_peak_dbfs + active_rms_dbfs.",
+          "limitations": "No listening test on phone speakers. Global app mix balance owned elsewhere. Short clips make I-LUFS a weak comparator.",
+          "note_astats_removed": "ffmpeg astats fields previously stored last-window values and conflicted with full-signal numpy/ebur128 metrics; removed as unusable for whole-clip reporting."
+        }
+      },
+      "audio_duration_s": 0.58
+    },
+    {
+      "animation_key": "original_pout_melt",
+      "sound_key": "pout_boop",
+      "duration_s": 4.0,
+      "fps": 24,
+      "segment_index": 2,
+      "segment_start_s": 8.0,
+      "cue_within_expression_s": 0.8,
+      "cue_on_combined_timeline_s": 8.8,
+      "start_end_neutral": {
+        "start_neutral": true,
+        "end_neutral": true,
+        "start": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        },
+        "end": {
+          "eye_mode": "open",
+          "eye_w": 12.0,
+          "eye_h": 22.0,
+          "mouth": "dot",
+          "group_dy": 0.0
+        }
+      },
+      "summary": "Narrow rounded pout + frown hold, then melts into happy arcs and recovers to neutral.",
+      "paths": {
+        "pose_data": "animation/poses/original_pout_melt.json",
+        "svg": "animation/svg/original_pout_melt.svg",
+        "animation_generator": "animation/src/generate_original_expressions_v1.py",
+        "audio_app_copy": "audio/app/pout_boop_app_pcm16_48k.wav",
+        "audio_master": "audio/masters/pout_boop_master_f32_48k.wav",
+        "audio_synth_source": "audio/src/synthesize_reaction_chirps.py"
+      },
+      "sha256": {
+        "pose_data": "8b5732e14ef7d3c6a9c933d3de08c76f1279171c75b4331e05fc37a174c600f8",
+        "svg": "40b90b640db5cdeb70537035a2df4f594698aae03fee0f8e6d5e9b5606a854ba",
+        "audio_app_copy": "70c26d2ec5fbb0cc18fe93aede87d1f74a42d05911826867d2f5f40079fdabf7",
+        "audio_master": "b14d048d7d521837a73a64eb02e1b8f576e91ef18d5a9da44a27d3f62606808d"
+      },
+      "loudness": {
+        "sample_peak_dbfs": -7.773284338694621,
+        "active_rms_dbfs": -17.49013944668052,
+        "rms_dbfs": -17.960088908324565,
+        "ffmpeg_ebur128_app_copy": {
+          "raw_ok": true,
+          "method": "ffmpeg ebur128=peak=true",
+          "integrated_lufs": -17.9,
+          "lra_lu": 0.0,
+          "true_peak_dbfs": -7.8,
+          "limitation": "Integrated LUFS is unreliable for very short (<1s) isolated beeps; use sample_peak_dbfs and active_rms_dbfs for relative matching. No phone / device audition performed."
+        },
+        "limits_and_method": {
+          "primary_matching": "Sample peak ceiling ~-6.5 dBFS; active-region RMS nudged toward ~-17.5 dBFS (family ballpark from read-only metrics on already-approved short beeps wink/giggle at ~-7.54 peak / ~-17.8 active-ish RMS on 22.05 kHz drafts \u2014 those files were not rewritten).",
+          "ffmpeg_ebur128": "Also reported per file via ffmpeg ebur128=peak=true. Integrated LUFS for sub-1s beeps is imperfect / unstable; do not treat as universal loudness equivalence. Prefer sample_peak_dbfs + active_rms_dbfs.",
+          "limitations": "No listening test on phone speakers. Global app mix balance owned elsewhere. Short clips make I-LUFS a weak comparator.",
+          "note_astats_removed": "ffmpeg astats fields previously stored last-window values and conflicted with full-signal numpy/ebur128 metrics; removed as unusable for whole-clip reporting."
+        }
+      },
+      "audio_duration_s": 0.48
+    }
+  ],
+  "combined_review_mp4": {
+    "path": "Motion-Buddy-three-original-reactions.mp4",
+    "sha256": "acb3a47965a05f5a3d95cd3c564359f2807733352c8ef87f5fb2c5e414238f92",
+    "bytes": 103678,
+    "duration_s": 12.0,
+    "video": {
+      "codec": "h264",
+      "width": 360,
+      "height": 408,
+      "pix_fmt": "yuv420p",
+      "fps": 24,
+      "nb_frames": 288,
+      "stream_handling": "bitstream copy from animation/originals-v1-three-expressions.mp4",
+      "decoded_md5_match_silent_source": true,
+      "decoded_md5": "MD5=4f7eafd3db1fd52ab9353c52adf8a163"
+    },
+    "audio": {
+      "codec": "aac",
+      "bitrate_target": "128k",
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "timeline": "12s PCM16 mono assembled by sample-accurate placement; no amix, no loudnorm/dynaudnorm/gain staging",
+      "placements": [
+        {
+          "key": "sneeze_zip",
+          "t0_s": 1.1,
+          "start_sample": 52800,
+          "n_samples": 29760,
+          "end_sample": 82560,
+          "end_s": 1.72,
+          "source": "audio/app/sneeze_zip_app_pcm16_48k.wav"
+        },
+        {
+          "key": "peek_pop",
+          "t0_s": 5.2,
+          "start_sample": 249600,
+          "n_samples": 27840,
+          "end_sample": 277440,
+          "end_s": 5.78,
+          "source": "audio/app/peek_pop_app_pcm16_48k.wav"
+        },
+        {
+          "key": "pout_boop",
+          "t0_s": 8.8,
+          "start_sample": 422400,
+          "n_samples": 23040,
+          "end_sample": 445440,
+          "end_s": 9.28,
+          "source": "audio/app/pout_boop_app_pcm16_48k.wav"
+        }
+      ],
+      "no_overlap_verified": true,
+      "within_12s_verified": true
+    },
+    "labels": "Visual margin labels only (from silent source); no voiceover/narration",
+    "phone_audition_claimed": false
+  },
+  "silent_source_mp4": {
+    "path": "animation/originals-v1-three-expressions.mp4",
+    "sha256": "5c1469780e91e0f2f1850d2bdb400a00aec4d8d16a25311f9fd876c373060afc",
+    "verified_sha256": "5c1469780e91e0f2f1850d2bdb400a00aec4d8d16a25311f9fd876c373060afc"
+  },
+  "contact_sheet": {
+    "path": "animation/originals-v1-contact-sheet.png",
+    "sha256": "ebc642c5796ed69c4963267a9c58591ffa1036c217ffe1161316dd89928bd6cd",
+    "verified_sha256": "ebc642c5796ed69c4963267a9c58591ffa1036c217ffe1161316dd89928bd6cd"
+  },
+  "component_manifests": {
+    "animation_manifest": "animation/animation-manifest.json",
+    "audio_manifest": "audio/audio-manifest.json"
+  },
+  "implementation_notes_path": "implementation-notes.md",
+  "qa_limitations": [
+    "No phone / hardware auditory or visual audition claimed for this mux.",
+    "Motion visual review runs separately on the same video.",
+    "Integrated LUFS weak for sub-1s beeps; prefer sample_peak_dbfs + active_rms_dbfs.",
+    "SVG SMIL support varies; pose JSON is runtime source of truth.",
+    "Not integrated into app; Solance owns volume/cooldown/UI wiring."
+  ]
+}

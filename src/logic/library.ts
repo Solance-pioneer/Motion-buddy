@@ -166,6 +166,9 @@ function voiceShowcase(idleMs: number): ShowcaseFrame | null {
     { id: 'eye-pop', at: 36_000, ms: 1_000 },
     { id: 'eye-bounce', at: 38_000, ms: 900 },
     { id: 'eye-sleepy', at: 40_000, ms: 2_200 },
+    { id: 'original_sneeze', at: 46_000, ms: 4_000 },
+    { id: 'original_peekaboo', at: 51_000, ms: 4_000 },
+    { id: 'original_pout_melt', at: 56_000, ms: 4_000 },
   ]
   for (const beat of eyes) {
     if (phase >= beat.at && phase < beat.at + beat.ms) return { id: beat.id, elapsed: phase - beat.at }

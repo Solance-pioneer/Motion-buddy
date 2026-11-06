@@ -11,6 +11,7 @@ import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
+import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { avoidFinger, DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
@@ -95,6 +96,7 @@ export function App() {
   const moves = useRef<MoveClock>(initialMoveClock())
   const faceTaps = useRef<TapClock>(initialTapClock())
   const touch = useRef<TouchClock>(initialTouch())
+  const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
   const [muteLit, setMuteLit] = useState(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
@@ -145,6 +147,14 @@ export function App() {
     if (handlesRef.current) {
       applyPose(handlesRef.current, features, state.blink, colors.face, state.gazeX, state.gazeY)
     }
+    const cue = stepOriginalCue(
+      originalArm.current,
+      state.showcase?.id ?? null,
+      state.showcase?.elapsed ?? 0,
+      !state.hidden && !state.reduced && soundStatus().unlocked && !soundStatus().muted,
+    )
+    originalArm.current = cue.arm
+    if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key

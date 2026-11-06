@@ -2,7 +2,9 @@ import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { VOICE_MP3_BASE64 } from './voice-mp3.ts'
 
-export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up' | 'disapprove'
+import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
+
+export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
 
 export const APPROVED_MS: Record<ApprovedCue, number> = {
@@ -15,6 +17,9 @@ export const APPROVED_MS: Record<ApprovedCue, number> = {
   clap: 1992,
   'level-up': 2496,
   disapprove: 104,
+  sneeze_zip: 620,
+  peek_pop: 580,
+  pout_boop: 480,
 }
 
 /**
@@ -35,6 +40,9 @@ export const PLAYBACK_GAIN: Record<ApprovedCue | 'chirp', number> = {
   clap: 0.3,
   'level-up': 0.3,
   disapprove: 0.2,
+  sneeze_zip: 0.62,
+  peek_pop: 0.7,
+  pout_boop: 0.62,
 }
 
 export const SOUND_KEY = 'motion-buddy-sound-v1'
@@ -307,13 +315,29 @@ export function decodeApprovedWav(bytes: Uint8Array): Float32Array {
 
 const approvedCache = new Map<ApprovedCue, Float32Array>()
 
-export function approvedSamples(kind: Exclude<ApprovedCue, 'clap' | 'level-up' | 'disapprove'>): Float32Array {
+export function approvedSamples(kind: 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy'): Float32Array {
   const cached = approvedCache.get(kind)
   if (cached) return cached
   const binary = Uint8Array.from(atob(APPROVED_WAV_BASE64[kind]), (char) => char.charCodeAt(0))
   const samples = decodeApprovedWav(binary)
   approvedCache.set(kind, samples)
   return samples
+}
+
+const originalCache = new Map<string, { samples: Float32Array; rate: number }>()
+
+export function originalSamples(kind: 'sneeze_zip' | 'peek_pop' | 'pout_boop'): { samples: Float32Array; rate: number } {
+  const cached = originalCache.get(kind)
+  if (cached) return cached
+  const binary = Uint8Array.from(atob(ORIGINAL_WAV_BASE64[kind]), (char) => char.charCodeAt(0))
+  const view = new DataView(binary.buffer, binary.byteOffset, binary.byteLength)
+  const rate = view.getUint32(24, true)
+  const dataLength = view.getUint32(40, true)
+  const samples = new Float32Array(dataLength / 2)
+  for (let i = 0; i < samples.length; i += 1) samples[i] = view.getInt16(44 + i * 2, true) / 32768
+  const parsed = { samples, rate }
+  originalCache.set(kind, parsed)
+  return parsed
 }
 
 let context: AudioContext | null = null
@@ -378,8 +402,9 @@ export function playCue(kind: Cue | null): boolean {
   const now = performance.now()
   if (now < playingUntil) return false
   const spoken = kind === 'clap' || kind === 'level-up' || kind === 'disapprove'
+  const original = kind === 'sneeze_zip' || kind === 'peek_pop' || kind === 'pout_boop'
   const approved = kind === 'scan' || kind === 'giggle' || kind === 'surprise' || kind === 'yawn' || kind === 'wink' || kind === 'dizzy'
-  if (!approved && !spoken && kind !== 'chirp') return false
+  if (!approved && !spoken && !original && kind !== 'chirp') return false
   const voice = spoken ? voicePcm.get(kind) : undefined
   if (spoken && !voice) return false
   let samples: Float32Array
@@ -387,6 +412,10 @@ export function playCue(kind: Cue | null): boolean {
   if (voice) {
     samples = voice.samples
     rate = voice.rate
+  } else if (original) {
+    const clip = originalSamples(kind)
+    samples = clip.samples
+    rate = clip.rate
   } else if (kind === 'chirp') {
     samples = renderCue('chirp', 22050)
     rate = 22050

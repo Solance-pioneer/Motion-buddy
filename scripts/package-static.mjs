@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v3.0.',
+    'Motion Buddy customer app, Expressive v3.1.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
@@ -42,6 +42,11 @@ for (const name of [
   '06_15_dizzy_ORIGINAL_DRAFT.wav',
 ]) {
   copyFileSync(join('src/assets/approved-sfx', name), join(soundDir, name))
+}
+const originalDir = join(dist, 'originals-v1')
+mkdirSync(originalDir, { recursive: true })
+for (const name of ['sneeze_zip_app_pcm16_48k.wav', 'peek_pop_app_pcm16_48k.wav', 'pout_boop_app_pcm16_48k.wav']) {
+  copyFileSync(join('src/assets/originals-v1/audio/app', name), join(originalDir, name))
 }
 writeFileSync(
   join(dist, 'THIRD-PARTY.txt'),
@@ -93,10 +98,27 @@ const customerJs = readFileSync(join(dist, scriptSrc.replace(/^\//, '')), 'utf8'
 for (const term of ['Export review', 'Face audition', 'Owner audition', 'motion-buddy-review', 'Try my companion']) {
   if (customerJs.includes(term)) throw new Error(`Customer bundle contains owner audition text: ${term}`)
 }
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.0.zip'
+let sourceCommit = 'unknown'
+try {
+  sourceCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
+} catch {
+  sourceCommit = 'unknown'
+}
+writeFileSync(
+  join(dist, 'BUILD.txt'),
+  [
+    'Motion Buddy customer build, Expressive v3.1.',
+    `source_commit: ${sourceCommit}`,
+    'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
+    'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
+    'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
+    '',
+  ].join('\n'),
+)
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.1.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.0.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.1.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

@@ -1,4 +1,5 @@
 import { face, featuresFor, eye, mouth, type FaceFeatures } from '../view/features.ts'
+import { sampleOriginal } from './originals.ts'
 import type { FaceStyle } from '../view/features.ts'
 
 export type CandidateKind = 'expression' | 'action'
@@ -193,6 +194,9 @@ export function sampleCandidate(id: string, elapsed: number, reduced = false, st
   const sleepy = featuresOf('sleepy', style)
   const pant = featuresOf('pant', style)
   const wink = featuresOf('wink', style)
+  if (id === 'original_sneeze' || id === 'original_peekaboo' || id === 'original_pout_melt') {
+    return sampleOriginal(id, time, reduced) ?? hold(base)
+  }
   if (id === 'eye-pop' || id === 'eye-bounce' || id === 'eye-sleepy') return sampleWebEye(id, time, reduced, style)
   if (id === 'clap') return sampleClap(time, reduced, style)
   if (id === 'level-up') return sampleLevelUp(time, reduced, style)
