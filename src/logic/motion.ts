@@ -2,7 +2,7 @@ import { clamp } from './math.ts'
 
 /**
  * Orientation only. Acceleration is unused, so a hard jerk is not a wake.
- * Wake uses a wider deadband than a tiny pupil drift.
+ * Wake uses a wider deadband than a small glance.
  */
 export const LOOK_DEADBAND_DEG = 4
 export const LOOK_CAP_DEG = 26

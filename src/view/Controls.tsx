@@ -113,6 +113,7 @@ export function Controls({
                 key={expression}
                 type="button"
                 aria-pressed={selection === expression}
+                disabled={!autoSet.includes(expression)}
                 onClick={() => onSelection(expression)}
               >
                 {EXPRESSION_LABEL[expression]}
@@ -135,7 +136,7 @@ export function Controls({
               </button>
             ))}
           </div>
-          <p className="note">Auto keeps at least one expression. It pauses while the face is resting.</p>
+          <p className="note">Auto keeps at least one. An unchecked expression is left out of Auto and out of motion.</p>
         </fieldset>
 
         <fieldset>
@@ -146,12 +147,12 @@ export function Controls({
                 key={item.id}
                 type="button"
                 className="swatch"
-                style={{ background: item.bg }}
+                style={{ background: '#000000' }}
                 aria-label={`Accent ${item.label}`}
                 aria-pressed={accent === item.id}
                 onClick={() => onAccent(item.id)}
               >
-                <span className="swatch-iris" style={{ background: item.iris }} />
+                <span className="swatch-iris" style={{ background: item.face }} />
               </button>
             ))}
           </div>

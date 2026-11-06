@@ -31,6 +31,25 @@ describe('BuddyEngine', () => {
     expect(engine.snapshot().autoSet).toEqual(['curious'])
   })
 
+  it('blocks an excluded expression for a manual choice and for motion wake', () => {
+    const engine = new BuddyEngine({ random: () => 0 })
+    engine.toggleAutoExpression('grumpy')
+    engine.setSelection('grumpy')
+    expect(engine.snapshot().selection).toBe('auto')
+    expect(engine.snapshot().expression).not.toBe('grumpy')
+    engine.setPresence('rest')
+    advance(engine, 400)
+    engine.previewWake()
+    const woken = advance(engine, 1_200)
+    expect(woken.autoSet).not.toContain('grumpy')
+    expect(woken.expression).not.toBe('grumpy')
+    engine.setPresence('awake')
+    engine.setSelection('happy')
+    engine.toggleAutoExpression('happy')
+    expect(engine.snapshot().selection).toBe('auto')
+    expect(engine.snapshot().expression).not.toBe('happy')
+  })
+
   it('changes the manual expression without bobbing state', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     engine.setSelection('grumpy')

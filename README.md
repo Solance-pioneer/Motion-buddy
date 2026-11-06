@@ -1,6 +1,6 @@
 # Motion Buddy
 
-Motion Buddy is a browser face for the screen you already have open. The page is mostly two eyes and a mouth. Controls stay hidden until you ask for them.
+Motion Buddy is a browser face for the screen you already have open. The page is black, with large plain white eye shapes and a tiny mouth. There are no pupils, outlines, or a body. Controls stay hidden until you ask for them. Accents tint those shapes; white is the default.
 
 This is a browser prototype only. It is not an iPhone app and not an Apple Watch app. A square window is a layout check for a possible later watch face, not a watch build. It does not wake a locked or sleeping phone, and it does not keep running if the browser suspends the tab.
 
@@ -19,9 +19,9 @@ The face fills the page, with a margin so the eyes and mouth stay on screen in p
 
 - **Awake** stays expressive while this page is open and visible.
 - **Rest until motion** rests until a clear tilt arrives, then stays up for about 12 seconds of calm. **Preview wake** runs that path with no sensor. Small jitters are ignored, and the wake level has to hold briefly before it counts.
-- **Auto** eases through the expressions you leave checked. Each one holds about 12 seconds, then eases for about 1.6 seconds. Auto pauses while the face is resting. At least one expression stays selected.
+- **Auto** eases through the expressions you leave checked. Each one holds about 12 seconds, then eases for about 1.6 seconds. Auto pauses while the face is resting. At least one expression stays selected. An unchecked expression is also blocked when the face wakes from motion.
 - **Curious, Happy, Grumpy, and Sleepy** hold that expression.
-- Four accents recolor the background and irises.
+- Four accents tint the eye and mouth shapes. The background stays black. White is the default.
 - **Enable motion** asks for device orientation only after you tap. The status says motion is on only after numeric orientation events arrive. Denied permission and a grant with no events stay worded that way.
 - **Keep screen on** uses the Screen Wake Lock when the browser has it. The browser drops it if you leave the page. If the API is missing, the control says so.
 
@@ -43,10 +43,11 @@ Auto timing and rest timing in the browser tests use `/?e2e=1` and `window.__mot
 
 Desktop Chromium via Playwright. Not a physical iPhone, and not a watch.
 
-Unit tests, 15 passed:
+Unit tests, 16 passed:
 
 - Auto walks only the selected expressions, and a single choice does not cycle.
 - The last Auto expression cannot be removed.
+- An expression left out of the set cannot be chosen by hand, and a motion wake will not show it.
 - Manual grumpy eases the mouth and eyes. There is no bobbing value.
 - A small movement does not wake rest. A sustained level does, after smoothing and a short debounce.
 - Preview wake lifts a resting face, then a calm hold lets it rest again.
@@ -54,9 +55,10 @@ Unit tests, 15 passed:
 - Hidden time does not advance Auto or motion.
 - Blinks open again. Reduced motion does not blink during the normal gap.
 
-Browser tests, 22 passed, against `npm run build`:
+Browser tests, 23 passed, against `npm run build`:
 
 - The production page does not expose the test hook.
+- The companion view is black, the eyes are plain white filled shapes with no iris, pupil, or outline, and the expression controls stay hidden.
 - Face mode shows no expression buttons or Enable motion until the face control is used. The hint is visible at first and then gone.
 - Opening controls, choosing Happy, and dismissing the dim area leaves Happy on the face.
 - Tab, Enter, and Escape open and close controls, and focus returns to the face.

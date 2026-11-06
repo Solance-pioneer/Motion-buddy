@@ -40,6 +40,17 @@ test('production build does not expose the test hook unless asked', async ({ pag
   expect(exposed).toBe(false)
 })
 
+test('companion view is black with plain white shapes and hidden controls', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  const paint = await page.locator('main').evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(paint).toBe('rgb(0, 0, 0)')
+  await expect(page.locator('[data-part="iris-l"], [data-part="pupil-l"], [data-part="spark-l"]')).toHaveCount(0)
+  await expect(page.locator('[data-part="eye-l"]')).toHaveAttribute('fill', '#ffffff')
+  await expect(page.locator('[data-part="eye-l"]')).toHaveAttribute('stroke', 'none')
+  await expect(page.getByRole('button', { name: 'Happy' })).toHaveCount(0)
+  await expect(page.locator('main')).toHaveAttribute('data-accent', 'white')
+})
+
 test('face mode has no control panel until a deliberate open', async ({ page }) => {
   await openApp(page)
   await expect(page.getByRole('button', { name: 'Happy' })).toHaveCount(0)
@@ -117,6 +128,7 @@ test('Auto can be limited to a chosen subset', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
   await page.getByRole('button', { name: 'Use Grumpy' }).click()
+  await expect(page.getByRole('button', { name: 'Grumpy', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Use Sleepy' }).click()
   await page.getByRole('button', { name: 'Use Curious' }).click()
   await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')

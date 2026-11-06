@@ -91,6 +91,7 @@ export class BuddyEngine {
   }
 
   setSelection(selection: Selection): void {
+    if (selection !== 'auto' && !this.autoSet.includes(selection)) return
     this.selection = selection
   }
 
@@ -101,6 +102,7 @@ export class BuddyEngine {
       ? this.autoSet.filter((item) => item !== expression)
       : orderedSet([...this.autoSet, expression])
     this.autoElapsed = 0
+    if (this.selection !== 'auto' && !this.autoSet.includes(this.selection)) this.selection = 'auto'
   }
 
   /** Jump the Auto clock. Tests use this instead of waiting out a dwell. */
@@ -164,14 +166,16 @@ export class BuddyEngine {
   }
 
   private logical() {
-    if (this.selection === 'auto') return sampleAuto(this.autoElapsed, this.autoSet)
-    return {
-      expression: this.selection,
-      phase: 'dwell' as const,
-      from: this.selection,
-      to: this.selection,
-      t: 0,
+    if (this.selection !== 'auto' && this.autoSet.includes(this.selection)) {
+      return {
+        expression: this.selection,
+        phase: 'dwell' as const,
+        from: this.selection,
+        to: this.selection,
+        t: 0,
+      }
     }
+    return sampleAuto(this.autoElapsed, this.autoSet)
   }
 
   private desiredPose(): FacePose {

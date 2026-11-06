@@ -21,31 +21,32 @@ export interface AutoSample {
 }
 
 export interface FacePose {
+  /** Vertical scale of the white eye shapes. */
   eyeOpen: number
-  lid: number
-  /** Positive lifts the outer eye corners. */
+  /** Horizontal scale of the white eye shapes. */
+  eyeWide: number
+  /** Positive lifts the outer corners. */
   eyeTilt: number
-  pupil: number
   mouthCurve: number
+  /** 1 is a tiny dot, 0 is a short curve. */
   mouthOpen: number
   lookX: number
   lookY: number
 }
 
 export const POSES: Record<Expression, FacePose> = {
-  curious: { eyeOpen: 1, lid: 0.02, eyeTilt: 0, pupil: 1, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.08 },
-  happy: { eyeOpen: 0.7, lid: 0.1, eyeTilt: 12, pupil: 1.04, mouthCurve: 1, mouthOpen: 0, lookX: 0, lookY: 0 },
-  grumpy: { eyeOpen: 0.62, lid: 0.22, eyeTilt: -6, pupil: 0.86, mouthCurve: -0.78, mouthOpen: 0, lookX: 0, lookY: 0.04 },
-  sleepy: { eyeOpen: 0.3, lid: 0.42, eyeTilt: 0, pupil: 0.72, mouthCurve: 0.12, mouthOpen: 0.04, lookX: 0, lookY: 0.16 },
+  curious: { eyeOpen: 1, eyeWide: 0.94, eyeTilt: 0, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.06 },
+  happy: { eyeOpen: 0.72, eyeWide: 1.08, eyeTilt: 8, mouthCurve: 1, mouthOpen: 0, lookX: 0, lookY: 0 },
+  grumpy: { eyeOpen: 0.56, eyeWide: 1.02, eyeTilt: -5, mouthCurve: -0.62, mouthOpen: 0, lookX: 0, lookY: 0.04 },
+  sleepy: { eyeOpen: 0.22, eyeWide: 1.1, eyeTilt: 0, mouthCurve: 0.08, mouthOpen: 0, lookX: 0, lookY: 0.08 },
 }
 
-/** Fully at rest. Distinct from the sleepy expression, which is still awake. */
+/** Fully at rest. Flatter than the sleepy expression, which is still awake. */
 export const REST_POSE: FacePose = {
-  eyeOpen: 0.07,
-  lid: 0.2,
+  eyeOpen: 0.1,
+  eyeWide: 1.06,
   eyeTilt: 0,
-  pupil: 0.65,
-  mouthCurve: 0.04,
+  mouthCurve: 0,
   mouthOpen: 0,
   lookX: 0,
   lookY: 0,
@@ -58,9 +59,8 @@ export function poseOf(expression: Expression): FacePose {
 export function lerpPose(a: FacePose, b: FacePose, t: number): FacePose {
   return {
     eyeOpen: lerp(a.eyeOpen, b.eyeOpen, t),
-    lid: lerp(a.lid, b.lid, t),
+    eyeWide: lerp(a.eyeWide, b.eyeWide, t),
     eyeTilt: lerp(a.eyeTilt, b.eyeTilt, t),
-    pupil: lerp(a.pupil, b.pupil, t),
     mouthCurve: lerp(a.mouthCurve, b.mouthCurve, t),
     mouthOpen: lerp(a.mouthOpen, b.mouthOpen, t),
     lookX: lerp(a.lookX, b.lookX, t),

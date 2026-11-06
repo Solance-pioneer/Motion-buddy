@@ -68,7 +68,7 @@ export function App() {
   const lastKey = useRef('')
   const [view, setView] = useState<BuddyState>(() => engine.snapshot())
   const [open, setOpen] = useState(false)
-  const [accent, setAccent] = useState<AccentId>('mist')
+  const [accent, setAccent] = useState<AccentId>('white')
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
   const [faceFocus, setFaceFocus] = useState(false)
@@ -92,10 +92,9 @@ export function App() {
       root.dataset.reduced = state.reduced ? 'true' : 'false'
       root.dataset.paused = state.hidden ? 'true' : 'false'
       root.dataset.accent = accentRef.current
-      root.style.setProperty('--bg', colors.bg)
-      root.style.setProperty('--iris', colors.iris)
+      root.style.setProperty('--face', colors.face)
     }
-    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.iris)
+    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.face)
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key

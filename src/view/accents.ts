@@ -1,8 +1,8 @@
 export const ACCENTS = [
-  { id: 'mist', label: 'Mist', bg: '#e4ebe6', iris: '#3f6f62' },
-  { id: 'dusk', label: 'Dusk', bg: '#e6e8f0', iris: '#3d5674' },
-  { id: 'clay', label: 'Clay', bg: '#f3e6d8', iris: '#8a5a42' },
-  { id: 'tide', label: 'Tide', bg: '#e2eef0', iris: '#2c6d76' },
+  { id: 'white', label: 'White', face: '#ffffff' },
+  { id: 'mist', label: 'Mist', face: '#d5ebe3' },
+  { id: 'dusk', label: 'Dusk', face: '#d7def5' },
+  { id: 'clay', label: 'Clay', face: '#f3d4c4' },
 ] as const
 
 export type AccentId = (typeof ACCENTS)[number]['id']
