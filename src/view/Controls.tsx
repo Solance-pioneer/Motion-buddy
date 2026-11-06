@@ -138,7 +138,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v2.5</p>
+          <p className="release">Expressive v2.6</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk

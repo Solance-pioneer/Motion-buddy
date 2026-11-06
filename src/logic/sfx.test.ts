@@ -1,4 +1,3 @@
-import { writeFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { encodeWav, gateCue, initialGate, renderCue } from './sfx.ts'
 
@@ -25,6 +24,5 @@ describe('sound cues', () => {
     expect(peak).toBeLessThanOrEqual(0.85)
     const wav = encodeWav(samples, 22050)
     expect(String.fromCharCode(...wav.slice(0, 4))).toBe('RIFF')
-    writeFileSync('/opt/cursor/artifacts/sfx_chirp.wav', wav)
   })
 })

@@ -48,13 +48,12 @@ describe('catalog', () => {
     }
     for (const eye of samples) {
       const path = eyePath(eye)
-      expect(path.includes(' H ') || path.includes(' V ')).toBe(false)
-      expect(path.split('Q').length).toBe(3)
-      const controls = [...path.matchAll(/Q [\d.-]+ ([\d.-]+)/g)].map((match) => Number(match[1]))
-      const top = Math.min(...controls)
-      const low = Math.max(...controls)
-      expect(eye.cy - top).toBeLessThanOrEqual(eye.w * 0.56)
-      expect(low - top).toBeGreaterThan(1.5)
+      expect(path.includes('Q')).toBe(false)
+      expect(path.split('C').length).toBe(5)
+      if (eye.peak <= 0) {
+        const right = eye.cx + eye.w / 2
+        expect(path).toContain(`${right.toFixed(1)} ${eye.cy.toFixed(1)}`)
+      }
     }
   })
 

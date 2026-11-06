@@ -64,24 +64,38 @@ export function lerpFeatures(a: FaceFeatures, b: FaceFeatures, t: number): FaceF
   }
 }
 
+const KAPPA = 0.5522847498
+
 /**
- * One continuous lens. Open eyes are symmetric pills. Closed eyes become
- * crescents by lifting the lower curve. There is no flat base and no center spike,
- * including while height and peak are halfway between two poses.
+ * One smooth outline for every eye. Open eyes are ellipses: the side tangents
+ * stay vertical, so the left and right ends are round, not almond points.
+ * A higher peak shortens the lower half into a crescent. The same four curves
+ * are used in between, so a morph never grows a flat base or a center spike.
  */
 export function eyePath(eye: EyeSpec): string {
-  const w = Math.max(4, eye.w)
-  const h = Math.max(3, eye.h)
-  const mid = eye.cx
-  const y = eye.cy
-  const left = mid - w / 2
-  const right = mid + w / 2
+  const rx = Math.max(2.2, eye.w) / 2
+  const ry = Math.max(1.6, eye.h) / 2
   const smile = Math.max(0, eye.peak)
-  const top = Math.min(h / 2 + smile * 0.2, w * 0.55)
-  let bottom = h / 2 - smile * 0.9
-  bottom = Math.max(bottom, -top * 0.42)
-  if (top - bottom < 2.4) bottom = top - 2.4
-  return `M ${n(left)} ${n(y)} Q ${n(mid)} ${n(y - top)} ${n(right)} ${n(y)} Q ${n(mid)} ${n(y + bottom)} ${n(left)} ${n(y)} Z`
+  const closure = smile <= 0 ? 0 : Math.min(1, smile / (smile + ry))
+  const top = ry * (1 - closure) + Math.min(rx * 0.62, ry * 0.35 + smile * 0.45) * closure
+  let bot = ry * (1 - closure) - top * 0.55 * closure
+  if (top + bot < 2.2) bot = 2.2 - top
+  const cx = eye.cx
+  const cy = eye.cy - closure * ry * 0.12
+  const yTop = cy - top
+  const yBot = cy + bot
+  const ySide = cy
+  const kx = rx * KAPPA
+  const kTop = top * KAPPA
+  const kBot = Math.abs(bot) * KAPPA
+  return [
+    `M ${n(cx)} ${n(yTop)}`,
+    `C ${n(cx + kx)} ${n(yTop)} ${n(cx + rx)} ${n(ySide - kTop)} ${n(cx + rx)} ${n(ySide)}`,
+    `C ${n(cx + rx)} ${n(ySide + kBot)} ${n(cx + kx)} ${n(yBot)} ${n(cx)} ${n(yBot)}`,
+    `C ${n(cx - kx)} ${n(yBot)} ${n(cx - rx)} ${n(ySide + kBot)} ${n(cx - rx)} ${n(ySide)}`,
+    `C ${n(cx - rx)} ${n(ySide - kTop)} ${n(cx - kx)} ${n(yTop)} ${n(cx)} ${n(yTop)}`,
+    'Z',
+  ].join(' ')
 }
 
 /** One filled loop for every mouth, so a smile can open, frown, or yawn without swapping shapes. */
