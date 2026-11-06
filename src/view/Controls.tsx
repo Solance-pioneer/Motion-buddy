@@ -52,6 +52,7 @@ export function Controls({
   onSensitivity,
   onToggleReaction,
   onEnableMotion,
+  onStopMotion,
   onPreviewWake,
   onPreviewGlance,
   onPreviewReaction,
@@ -80,6 +81,7 @@ export function Controls({
   onSensitivity: (sensitivity: Sensitivity) => void
   onToggleReaction: (kind: ReactionKind, enabled: boolean) => void
   onEnableMotion: () => void
+  onStopMotion: () => void
   onPreviewWake: () => void
   onPreviewGlance: () => void
   onPreviewReaction: (kind: ReactionKind) => void
@@ -127,7 +129,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v2</p>
+          <p className="release">Expressive v2.1</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk
@@ -269,6 +271,11 @@ export function Controls({
           >
             {motionButton(motionStatus)}
           </button>
+          {motionStatus === 'waiting' || motionStatus === 'active' || motionStatus === 'paused' ? (
+            <button type="button" onClick={onStopMotion}>
+              Turn motion off
+            </button>
+          ) : null}
           <p className="note" role="status">
             {motionCopy(motionStatus, signals)}
           </p>
@@ -291,7 +298,7 @@ export function Controls({
           <ul>
             <li>Motion Buddy runs only while this page is open and visible. It does not wake a locked or sleeping phone, and it stops if the browser suspends the tab.</li>
             <li>This is a browser preview, not an iPhone app or an Apple Watch app. A square screen here is only a layout check.</li>
-            <li>Enable motion asks only after you tap. Tilt is device orientation. Worried and dizzy use movement readings. Motion is on only after numeric events arrive. The page has to be a secure context, such as HTTPS.</li>
+            <li>On an iPhone, the first tap has to be Allow motion on the face. iOS will not show the permission prompt before that tap. Other browsers start listening as soon as the secure page opens. Turn motion off stops listening until you ask again.</li>
             <li>Simulation buttons are not a sensor and do not wake a locked phone.</li>
             <li>Screen wake lock, if the browser grants it, only keeps this visible page from dimming. It is not a system always-on switch.</li>
             <li>Maps, navigation apps, music, and accounts are not part of this preview.</li>
@@ -307,13 +314,16 @@ function motionButton(status: MotionUiStatus): string {
   if (status === 'waiting') return 'Waiting for tilt…'
   if (status === 'active') return 'Motion on'
   if (status === 'paused') return 'Motion paused'
+  if (status === 'off') return 'Enable motion'
   return 'Enable motion'
 }
 
 function motionCopy(status: MotionUiStatus, signals: SensorSignals): string {
   switch (status) {
     case 'idle':
-      return 'Sensors are off. Enable motion asks this browser only after you tap.'
+      return 'Motion has not started. On an iPhone, tap Allow motion on the face. That tap is what lets iOS show the permission prompt.'
+    case 'off':
+      return 'Motion is off until you tap Enable motion. The face keeps its own idle animation.'
     case 'waiting':
       return 'Waiting for a numeric tilt or movement event. Motion is not on yet.'
     case 'active':

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
 import type { PoseId } from './logic/library.ts'
 import { applyPose, type FaceHandles, type FaceStyle } from './view/applyPose.ts'
+import { FaceBlend } from './view/features.ts'
+import { glanceOffset } from './view/glance.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
 import { Face } from './view/Face.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
-import { useTilt } from './view/useTilt.ts'
+import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 
 type TestApi = {
@@ -17,6 +19,7 @@ type TestApi = {
   previewWake: () => void
   feedMotion: (level: number) => void
   feedAcceleration: (magnitude: number) => void
+  feedLook: (x: number, y: number) => void
   previewReaction: (kind: ReactionKind) => void
   setReactionEnabled: (kind: ReactionKind, enabled: boolean) => void
   elapse: (ms: number) => void
@@ -84,8 +87,10 @@ export function App() {
   const [hintOn, setHintOn] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
+  const blendRef = useRef(new FaceBlend())
+  const [promptDone, setPromptDone] = useState(false)
 
-  const publish = useCallback((state: BuddyState) => {
+  const publish = useCallback((state: BuddyState, dt = 0) => {
     const root = rootRef.current
     const colors = accentById(accentRef.current)
     if (root) {
@@ -111,17 +116,13 @@ export function App() {
       root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
+    const features = blendRef.current.sample(state.expression, styleRef.current, state.reduced, state.speed, dt)
+    if (root) {
+      root.dataset.eyeH = features.left.h.toFixed(2)
+      root.dataset.glanceX = glanceOffset(state.gazeX, state.gazeY).x.toFixed(2)
+    }
     if (handlesRef.current) {
-      applyPose(
-        handlesRef.current,
-        state.expression,
-        state.blink,
-        colors.face,
-        styleRef.current,
-        state.gazeX,
-        state.gazeY,
-        state.speed,
-      )
+      applyPose(handlesRef.current, features, state.blink, colors.face, state.gazeX, state.gazeY)
     }
     const key = viewKey(state)
     if (key !== lastKey.current) {
@@ -147,6 +148,13 @@ export function App() {
 
   const tilt = useTilt(onSample, onAcceleration)
   const wakeLock = useScreenWakeLock()
+  const enableMotion = tilt.enable
+  const askForMotion = motionNeedsGesture() && !promptDone && tilt.status === 'idle'
+
+  useEffect(() => {
+    if (motionNeedsGesture()) return
+    void enableMotion()
+  }, [enableMotion])
 
   useLayoutEffect(() => {
     accentRef.current = accent
@@ -159,7 +167,7 @@ export function App() {
     const frame = (now: number) => {
       const dt = now - loop.last
       loop.last = now
-      publish(engine.tick(dt))
+      publish(engine.tick(dt), dt)
       loop.raf = requestAnimationFrame(frame)
     }
     const start = () => {
@@ -216,7 +224,7 @@ export function App() {
       let left = ms
       while (left > 0) {
         const dt = Math.min(16, left)
-        publish(engine.tick(dt))
+        publish(engine.tick(dt), dt)
         left -= dt
       }
     }
@@ -243,6 +251,9 @@ export function App() {
       },
       feedAcceleration: (magnitude: number) => {
         engine.feedAcceleration(magnitude)
+      },
+      feedLook: (x: number, y: number) => {
+        engine.feedLook(x, y)
       },
       previewReaction: (kind: ReactionKind) => {
         engine.previewReaction(kind)
@@ -305,11 +316,28 @@ export function App() {
       >
         <Face onReady={onReady} />
         {showHint ? (
-          <span className="hint" data-testid="hint">
+          <span className={askForMotion ? 'hint hint-raised' : 'hint'} data-testid="hint">
             {coarse ? 'Tap for controls' : 'Click or press Enter for controls'}
           </span>
         ) : null}
       </button>
+      {askForMotion && !open ? (
+        <div className="launch">
+          <button
+            type="button"
+            className="allow-motion"
+            onClick={() => {
+              setPromptDone(true)
+              void tilt.enable()
+            }}
+          >
+            Allow motion
+          </button>
+          <button type="button" className="allow-skip" onClick={() => setPromptDone(true)}>
+            Not now
+          </button>
+        </div>
+      ) : null}
       {open ? (
         <Controls
           presence={view.presence}
@@ -369,7 +397,12 @@ export function App() {
             publish(engine.snapshot())
           }}
           onEnableMotion={() => {
+            setPromptDone(true)
             void tilt.enable()
+          }}
+          onStopMotion={() => {
+            setPromptDone(true)
+            tilt.stop()
           }}
           onPreviewWake={() => {
             engine.previewWake()

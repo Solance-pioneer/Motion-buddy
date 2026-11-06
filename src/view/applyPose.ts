@@ -1,7 +1,8 @@
-import type { PoseId } from '../logic/library.ts'
-import { silhouette } from './silhouettes.ts'
+import type { FaceFeatures, FaceStyle } from './features.ts'
+import { eyePath, mouthPath } from './features.ts'
+import { glanceTransform } from './glance.ts'
 
-export type FaceStyle = 'soft' | 'tile'
+export type { FaceStyle }
 
 export interface FaceHandles {
   glance: SVGGElement
@@ -19,35 +20,31 @@ export interface FaceHandles {
 
 export function applyPose(
   handles: FaceHandles,
-  pose: PoseId,
+  features: FaceFeatures,
   blink: number,
   face: string,
-  style: FaceStyle,
   gazeX: number,
   gazeY: number,
-  speed: boolean,
 ): void {
-  const art = silhouette(pose, style)
   const squash = Math.max(0.08, 1 - blink * 0.92)
-  handles.eyePathL.setAttribute('d', art.left)
-  handles.eyePathR.setAttribute('d', art.right)
-  handles.mouth.setAttribute('d', art.mouth)
-  for (const node of [handles.eyePathL, handles.eyePathR, handles.mouth, handles.sweat, handles.anger]) {
-    if (node.tagName === 'path' && node.getAttribute('fill') === 'none') node.setAttribute('stroke', face)
-    else node.setAttribute('fill', face)
+  handles.eyePathL.setAttribute('d', eyePath(features.left))
+  handles.eyePathR.setAttribute('d', eyePath(features.right))
+  handles.mouth.setAttribute('d', mouthPath(features.mouth))
+  for (const node of [handles.eyePathL, handles.eyePathR, handles.mouth, handles.sweat]) {
+    node.setAttribute('fill', face)
   }
   handles.anger.setAttribute('stroke', face)
   handles.speed.querySelector('path')?.setAttribute('stroke', face)
-  handles.eyeL.setAttribute('transform', `translate(33 40) scale(1 ${squash.toFixed(3)}) translate(-33 -40)`)
-  const dizzy = pose === 'dizzy' ? 18 : 0
-  handles.eyeR.setAttribute('transform', `translate(67 40) rotate(${dizzy}) scale(1 ${squash.toFixed(3)}) translate(-67 -40)`)
-  handles.glance.setAttribute(
-    'transform',
-    `translate(${(gazeX * 10).toFixed(2)} ${(gazeY * 7).toFixed(2)}) rotate(${(gazeX * 4).toFixed(2)} 50 48)`,
-  )
-  handles.blushL.setAttribute('opacity', art.blush ? '0.9' : '0')
-  handles.blushR.setAttribute('opacity', art.blush ? '0.9' : '0')
-  handles.sweat.setAttribute('opacity', art.sweat ? '0.95' : '0')
-  handles.anger.setAttribute('opacity', art.anger ? '1' : '0')
-  handles.speed.setAttribute('opacity', speed ? '1' : '0')
+  handles.eyeL.setAttribute('transform', eyeTransform(features.left, squash))
+  handles.eyeR.setAttribute('transform', eyeTransform(features.right, squash))
+  handles.glance.setAttribute('transform', glanceTransform(gazeX, gazeY))
+  handles.blushL.setAttribute('opacity', features.blush.toFixed(3))
+  handles.blushR.setAttribute('opacity', features.blush.toFixed(3))
+  handles.sweat.setAttribute('opacity', features.sweat.toFixed(3))
+  handles.anger.setAttribute('opacity', features.anger.toFixed(3))
+  handles.speed.setAttribute('opacity', features.speed.toFixed(3))
+}
+
+function eyeTransform(eye: FaceFeatures['left'], squash: number): string {
+  return `translate(${eye.cx.toFixed(2)} ${eye.cy.toFixed(2)}) rotate(${eye.rot.toFixed(2)}) scale(1 ${squash.toFixed(3)}) translate(${(-eye.cx).toFixed(2)} ${(-eye.cy).toFixed(2)})`
 }

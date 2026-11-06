@@ -175,7 +175,7 @@ export class BuddyEngine {
 
   previewGlance(direction: -1 | 1): void {
     if (this.hidden || this.reduced) return
-    this.simLookX = direction * 0.7
+    this.simLookX = direction
     this.simLookUntil = this.uiElapsed + 1_400
   }
 
@@ -255,8 +255,10 @@ export class BuddyEngine {
       frame = { pose: resolvePose('sleepy', allowed, this.profile), gazeX: 0, gazeY: 0, blink: 0, speed: false }
     }
     if (!this.reduced) {
-      frame.gazeX = clampUnit(frame.gazeX + this.lookX * 0.55)
-      frame.gazeY = clampUnit(frame.gazeY + this.lookY * 0.35)
+      const steerX = clampUnit(this.lookX)
+      const steerY = clampUnit(this.lookY)
+      frame.gazeX = clampUnit(frame.gazeX * (1 - Math.min(1, Math.abs(steerX))) + steerX)
+      frame.gazeY = clampUnit(frame.gazeY * (1 - Math.min(1, Math.abs(steerY))) + steerY)
     }
     return frame
   }
@@ -303,8 +305,8 @@ export class BuddyEngine {
 
   private advanceMotion(dt: number): void {
     this.motionLevel = smoothToward(this.motionLevel, this.motionTarget, dt, 180)
-    this.lookX = smoothToward(this.lookX, this.reduced ? 0 : this.lookTargetX, dt, 200)
-    this.lookY = smoothToward(this.lookY, this.reduced ? 0 : this.lookTargetY, dt, 200)
+    this.lookX = smoothToward(this.lookX, this.reduced ? 0 : this.lookTargetX, dt, 140)
+    this.lookY = smoothToward(this.lookY, this.reduced ? 0 : this.lookTargetY, dt, 140)
     if (this.presence !== 'rest') {
       this.highMs = 0
       return

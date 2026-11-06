@@ -20,9 +20,9 @@ describe('wake and look mapping', () => {
     expect(partial).toBeLessThan(WAKE_LEVEL)
   })
 
-  it('lets a smaller tilt move the eyes without counting as a wake', () => {
-    expect(Math.abs(lookFromDegrees(2))).toBe(0)
-    expect(Math.abs(lookFromDegrees(10))).toBeGreaterThan(0)
+  it('lets a modest tilt move the eyes a long way without counting as a wake', () => {
+    expect(Math.abs(lookFromDegrees(1))).toBe(0)
+    expect(Math.abs(lookFromDegrees(10))).toBeGreaterThan(0.7)
     expect(wakeLevelFromDegrees(10, 0)).toBeLessThan(WAKE_LEVEL)
   })
 })

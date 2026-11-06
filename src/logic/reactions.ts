@@ -32,8 +32,8 @@ export function initialReaction(): ReactionClock {
  * Low sensitivity asks for a clearer move. High sensitivity notices a smaller one.
  */
 export function motionBand(magnitude: number, sensitivity: Sensitivity): MotionBand {
-  const gentle = sensitivity === 'high' ? 1 : sensitivity === 'low' ? 1.7 : 1.35
-  const fast = sensitivity === 'high' ? 3.2 : sensitivity === 'low' ? 4.8 : 4
+  const gentle = sensitivity === 'high' ? 0.7 : sensitivity === 'low' ? 1.25 : 0.9
+  const fast = sensitivity === 'high' ? 2.8 : sensitivity === 'low' ? 4.2 : 3.4
   if (magnitude >= fast) return 'fast'
   if (magnitude >= gentle) return 'gentle'
   return 'still'

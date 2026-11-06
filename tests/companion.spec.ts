@@ -233,7 +233,7 @@ test('reduced motion still changes expression and rests', async ({ page }) => {
   expect(eyes).toBeLessThan(0.5)
 })
 
-test('does not subscribe to tilt until Enable motion', async ({ page }) => {
+test('listening starts on its own when the browser does not require a gesture', async ({ page }) => {
   await page.addInitScript(() => {
     const target = window as unknown as { __motionSubs: { orientation: number; motion: number } }
     target.__motionSubs = { orientation: 0, motion: 0 }
@@ -251,18 +251,45 @@ test('does not subscribe to tilt until Enable motion', async ({ page }) => {
     Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: undefined })
   })
   await openApp(page)
-  const before = await page.evaluate(
-    () => (window as unknown as { __motionSubs: { orientation: number; motion: number } }).__motionSubs,
-  )
-  expect(before).toEqual({ orientation: 0, motion: 0 })
-  await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await page.getByRole('button', { name: 'Enable motion' }).click()
+  await expect(page.getByRole('button', { name: 'Allow motion' })).toHaveCount(0)
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'waiting')
   const after = await page.evaluate(
     () => (window as unknown as { __motionSubs: { orientation: number; motion: number } }).__motionSubs,
   )
   expect(after.orientation).toBe(1)
   expect(after.motion).toBe(1)
+})
+
+test('Allow motion is on the face before any menu, and skipping it does not listen', async ({ page }) => {
+  await page.addInitScript(() => {
+    const target = window as unknown as { __motionSubs: { orientation: number; motion: number } }
+    target.__motionSubs = { orientation: 0, motion: 0 }
+    const original = EventTarget.prototype.addEventListener
+    EventTarget.prototype.addEventListener = function (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) {
+      if (this === window && type === 'deviceorientation') target.__motionSubs.orientation += 1
+      if (this === window && type === 'devicemotion') target.__motionSubs.motion += 1
+      return original.call(this, type, listener, options)
+    }
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', {
+      configurable: true,
+      value: () => Promise.resolve('granted'),
+    })
+  })
+  await openApp(page, 'e2e=1&hintMs=0')
+  await expect(page.getByRole('button', { name: 'Allow motion' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Enable motion' })).toHaveCount(0)
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'idle')
+  await page.getByRole('button', { name: 'Not now' }).click()
+  await expect(page.getByRole('button', { name: 'Allow motion' })).toHaveCount(0)
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'idle')
+  const skipped = await page.evaluate(
+    () => (window as unknown as { __motionSubs: { orientation: number; motion: number } }).__motionSubs,
+  )
+  expect(skipped).toEqual({ orientation: 0, motion: 0 })
 })
 
 test('denied permission is not described as motion on', async ({ page }) => {
@@ -512,7 +539,7 @@ test('a stationary ten seconds visits several gazes and a readable smile', async
 test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await expect(page.getByText('Expressive v2')).toBeVisible()
+  await expect(page.getByText('Expressive v2.1')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Car', exact: true }).click()
   await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
@@ -546,6 +573,42 @@ test('reduced motion keeps the new face still', async ({ page }) => {
   expect(still.gazeX).toBe(0)
   expect(still.gazeY).toBe(0)
   expect(still.blink).toBe(0)
+})
+
+test('an expression change travels through the current face', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  const result = await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { setSelection: (value: string) => void; elapse: (ms: number) => void } })
+      .__motionBuddyTest
+    const read = () => Number(document.querySelector('main')?.getAttribute('data-eye-h'))
+    const start = read()
+    api.setSelection('happy')
+    const immediate = read()
+    api.elapse(120)
+    const mid = read()
+    api.elapse(700)
+    const settled = read()
+    return { start, immediate, mid, settled }
+  })
+  expect(result.immediate).toBeCloseTo(result.start, 0)
+  expect(result.mid).toBeLessThan(result.start - 3)
+  expect(result.mid).toBeGreaterThan(result.settled + 3)
+  expect(result.settled).toBeLessThan(12)
+})
+
+test('a full look moves the rendered face by a clearly visible amount', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { feedLook: (x: number, y: number) => void; elapse: (ms: number) => void } })
+      .__motionBuddyTest
+    api.feedLook(1, 0)
+    api.elapse(800)
+  })
+  const transform = await page.locator('[data-part="glance"]').getAttribute('transform')
+  const x = Number(transform?.match(/translate\(([-\d.]+)/)?.[1])
+  expect(x).toBeGreaterThan(12)
+  const reported = Number(await page.locator('main').getAttribute('data-glance-x'))
+  expect(reported).toBeGreaterThan(12)
 })
 
 test.describe('phone portrait', () => {

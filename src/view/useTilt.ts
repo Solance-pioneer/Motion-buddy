@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, resolveMotionPermission, wakeLevelFromDegrees } from '../logic/motion.ts'
 
-export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events' | 'paused'
+export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events' | 'paused' | 'off'
 
 export interface TiltSample {
   x: number
@@ -29,6 +29,7 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
   const gravityRef = useRef<{ x: number; y: number; z: number } | null>(null)
   const timeoutRef = useRef<number | null>(null)
   const originRef = useRef<{ gamma: number; beta: number } | null>(null)
+  const generation = useRef(0)
   const onAccelerationRef = useRef(onAcceleration)
   useEffect(() => {
     onAccelerationRef.current = onAcceleration
@@ -115,17 +116,21 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
     }
     document.addEventListener('visibilitychange', onVisibility)
     return () => {
+      generation.current += 1
       document.removeEventListener('visibilitychange', onVisibility)
       detach()
     }
   }, [beginListening, detach, setMotionStatus])
 
   const enable = useCallback(async () => {
+    const mine = generation.current + 1
+    generation.current = mine
     const decision = await resolveMotionPermission({
       secure: window.isSecureContext,
       hasOrientationEvent: 'DeviceOrientationEvent' in window,
       requestPermission: readPermissionRequest(),
     })
+    if (mine !== generation.current) return
     if (decision !== 'listen') {
       enabledRef.current = false
       detach()
@@ -136,7 +141,18 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
     beginListening()
   }, [beginListening, detach, setMotionStatus])
 
-  return { status, signals, enable }
+  const stop = useCallback(() => {
+    generation.current += 1
+    enabledRef.current = false
+    detach()
+    setMotionStatus('off')
+  }, [detach, setMotionStatus])
+
+  return { status, signals, enable, stop }
+}
+
+export function motionNeedsGesture(): boolean {
+  return typeof readPermissionRequest() === 'function'
 }
 
 function readMovement(

@@ -4,8 +4,8 @@ import { clamp } from './math.ts'
  * Orientation only. Acceleration is unused, so a hard jerk is not a wake.
  * Wake uses a wider deadband than a small glance.
  */
-export const LOOK_DEADBAND_DEG = 4
-export const LOOK_CAP_DEG = 26
+export const LOOK_DEADBAND_DEG = 1.5
+export const LOOK_CAP_DEG = 12
 export const WAKE_DEADBAND_DEG = 8
 export const WAKE_CAP_DEG = 28
 export const WAKE_LEVEL = 0.55
