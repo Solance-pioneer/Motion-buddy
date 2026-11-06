@@ -30,7 +30,12 @@ export function desiredTravel(nx: number, ny: number, room: Room): { x: number; 
 }
 
 /** Clamp to the safe room. Extra push compresses toward 0.76 sideways and 0.80 vertically, anchored on the touched edge. */
-export function placeFace(desiredX: number, desiredY: number, room: Room): FacePlace {
+export function placeFace(
+  desiredX: number,
+  desiredY: number,
+  room: Room,
+  anchor = { left: 0, right: 1, top: 0, bottom: 1 },
+): FacePlace {
   const overX = desiredX < room.minX ? room.minX - desiredX : desiredX > room.maxX ? desiredX - room.maxX : 0
   const overY = desiredY < room.minY ? room.minY - desiredY : desiredY > room.maxY ? desiredY - room.maxY : 0
   const spanX = Math.max(48, room.maxX - room.minX)
@@ -42,8 +47,8 @@ export function placeFace(desiredX: number, desiredY: number, room: Room): FaceP
     y: Math.max(room.minY, Math.min(room.maxY, desiredY)),
     sx: 1 - 0.24 * px,
     sy: 1 - 0.2 * py,
-    originX: desiredX < room.minX ? 0 : desiredX > room.maxX ? 1 : 0.5,
-    originY: desiredY < room.minY ? 0 : desiredY > room.maxY ? 1 : 0.5,
+    originX: desiredX < room.minX ? anchor.left : desiredX > room.maxX ? anchor.right : 0.5,
+    originY: desiredY < room.minY ? anchor.top : desiredY > room.maxY ? anchor.bottom : 0.5,
   }
 }
 
@@ -54,14 +59,17 @@ export function clearControl(
   size: number,
   control: { left: number; top: number; right: number; bottom: number } | null,
   room: Room,
+  inset = { left: 0, top: 0, right: 0, bottom: 0 },
 ): FacePlace {
   if (!control) return place
   let x = place.x
   let y = place.y
-  const left = faceLeft + x
-  const top = faceTop + y
-  const overlapX = Math.min(left + size, control.right) - Math.max(left, control.left)
-  const overlapY = Math.min(top + size, control.bottom) - Math.max(top, control.top)
+  const left = faceLeft + x + inset.left
+  const top = faceTop + y + inset.top
+  const right = faceLeft + x + size - inset.right
+  const bottom = faceTop + y + size - inset.bottom
+  const overlapX = Math.min(right, control.right) - Math.max(left, control.left)
+  const overlapY = Math.min(bottom, control.bottom) - Math.max(top, control.top)
   if (overlapX > 0 && overlapY > 0) {
     if (overlapX <= overlapY) x -= overlapX
     else y += overlapY
@@ -74,10 +82,23 @@ export function clearControl(
 }
 
 export function roomFor(viewportW: number, viewportH: number, face: number, originX: number, originY: number, margin = 8): Room {
+  return roomForFeatures(viewportW, viewportH, face, originX, originY, { left: 0, top: 0, right: 0, bottom: 0 }, margin)
+}
+
+/** Room for the visible eye and mouth box. Insets are the empty padding inside the square face. */
+export function roomForFeatures(
+  viewportW: number,
+  viewportH: number,
+  face: number,
+  originX: number,
+  originY: number,
+  inset: { left: number; top: number; right: number; bottom: number },
+  margin = 8,
+): Room {
   return {
-    minX: margin - originX,
-    maxX: viewportW - margin - face - originX,
-    minY: margin - originY,
-    maxY: viewportH - margin - face - originY,
+    minX: margin - originX - inset.left,
+    maxX: viewportW - margin - originX - face + inset.right,
+    minY: margin - originY - inset.top,
+    maxY: viewportH - margin - originY - face + inset.bottom,
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { desiredTravel, placeFace, roomFor } from './face-room.ts'
+import { desiredTravel, placeFace, roomFor, roomForFeatures } from './face-room.ts'
 
 const room = roomFor(390, 844, 280, 55, 250)
 
@@ -18,6 +18,21 @@ describe('face travel', () => {
     expect(corner.sy).toBeLessThan(1)
     expect(corner.x).toBeCloseTo(room.minX, 0)
     expect(corner.y).toBeCloseTo(room.maxY, 0)
+  })
+
+  it('parks the visible eyes and mouth on the margin, not the empty face square', () => {
+    const inset = { left: 70, top: 64, right: 70, bottom: 58 }
+    const features = roomForFeatures(390, 844, 320, 35, 262, inset)
+    const far = placeFace(features.maxX + 400, features.maxY + 400, features, {
+      left: inset.left / 320,
+      right: 1 - inset.right / 320,
+      top: inset.top / 320,
+      bottom: 1 - inset.bottom / 320,
+    })
+    expect(35 + far.x + 320 - inset.right).toBeCloseTo(390 - 8, 3)
+    expect(262 + far.y + 320 - inset.bottom).toBeCloseTo(844 - 8, 3)
+    expect(far.originX).toBeCloseTo(1 - inset.right / 320, 3)
+    expect(far.originY).toBeCloseTo(1 - inset.bottom / 320, 3)
   })
 
   it('keeps a centered finger at rest', () => {

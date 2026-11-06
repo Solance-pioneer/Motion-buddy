@@ -25,6 +25,22 @@ async function stateOf(page: Page): Promise<BuddyState> {
   })
 }
 
+async function featureBounds(page: Page) {
+  return page.evaluate(() => {
+    const rects = ['eye-l-path', 'eye-r-path', 'mouth'].map((part) => {
+      const node = document.querySelector(`[data-part="${part}"]`)
+      const box = node?.getBoundingClientRect()
+      return box && box.width > 0.5 && box.height > 0.5 ? box : null
+    }).filter((box): box is DOMRect => Boolean(box))
+    if (rects.length === 0) throw new Error('eyes and mouth are not drawn')
+    const x = Math.min(...rects.map((box) => box.x))
+    const y = Math.min(...rects.map((box) => box.y))
+    const right = Math.max(...rects.map((box) => box.right))
+    const bottom = Math.max(...rects.map((box) => box.bottom))
+    return { x, y, width: right - x, height: bottom - y }
+  })
+}
+
 async function elapse(page: Page, ms: number) {
   await page.evaluate((amount) => {
     ;(window as unknown as { __motionBuddyTest: { elapse: (value: number) => void } }).__motionBuddyTest.elapse(amount)
@@ -129,17 +145,18 @@ test('a drag looks away from the finger and the mute chip does not poke the face
   await page.mouse.move(box.x + box.width * 0.28, y)
   await page.mouse.down()
   await page.mouse.move(box.x + box.width * 0.08, y)
-  await page.waitForTimeout(250)
+  await page.waitForTimeout(700)
   await expect(page.getByRole('button', { name: 'Mute' })).toBeVisible()
   const pet = await page.locator('main').getAttribute('data-pet')
   const petX = Number(pet?.split(',')[0] ?? '0')
   expect(petX, `pet=${pet}`).toBeGreaterThan(40)
-  const faceBox = await page.locator('svg.face').boundingBox()
-  if (!faceBox) throw new Error('face missing during drag')
+  const faceBox = await featureBounds(page)
+  const view = page.viewportSize()!
   expect(faceBox.x).toBeGreaterThanOrEqual(-2)
   expect(faceBox.y).toBeGreaterThanOrEqual(-2)
-  expect(faceBox.x + faceBox.width).toBeLessThanOrEqual(page.viewportSize()!.width + 2)
-  expect(faceBox.y + faceBox.height).toBeLessThanOrEqual(page.viewportSize()!.height + 2)
+  expect(faceBox.x + faceBox.width).toBeLessThanOrEqual(view.width + 2)
+  expect(faceBox.y + faceBox.height).toBeLessThanOrEqual(view.height + 2)
+  expect(view.width - (faceBox.x + faceBox.width)).toBeLessThan(28)
   await page.screenshot({ path: '/opt/cursor/artifacts/pet-dodge-right.png' })
   await page.mouse.up()
   for (const size of [
@@ -153,17 +170,20 @@ test('a drag looks away from the finger and the mute chip does not poke the face
     await page.mouse.move(again.x + again.width * 0.85, midY)
     await page.mouse.down()
     await page.mouse.move(again.x + again.width * 0.95, midY)
-    await page.waitForTimeout(300)
-    const box = await page.locator('svg.face').boundingBox()
-    if (!box) throw new Error('moved face missing')
+    await page.waitForTimeout(700)
+    const box = await featureBounds(page)
     expect(box.x).toBeGreaterThanOrEqual(-2)
     expect(box.y).toBeGreaterThanOrEqual(-2)
     expect(box.x + box.width).toBeLessThanOrEqual(size.width + 2)
     expect(box.y + box.height).toBeLessThanOrEqual(size.height + 2)
+    expect(box.x).toBeLessThan(24)
     const moved = await page.locator('main').getAttribute('data-pet')
     expect(Number(moved?.split(',')[0] ?? '0')).toBeLessThan(-8)
     await page.mouse.up()
   }
+  await page.mouse.move(24, 80)
+  await page.mouse.down()
+  await page.mouse.up()
   await page.getByRole('button', { name: 'Mute' }).click()
   await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(0)

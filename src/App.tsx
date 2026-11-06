@@ -13,8 +13,37 @@ import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, claimChirp, fadePetGlide, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, startPetGlide, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
-import { clearControl, desiredTravel, placeFace, roomFor, type FacePlace } from './logic/face-room.ts'
+import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
+
+function featureInset(svg: SVGSVGElement, size: number) {
+  const glance = svg.querySelector('[data-part="glance"]') as SVGGraphicsElement | null
+  const shift = glance?.transform.baseVal.consolidate()?.matrix
+  const gx = shift?.e ?? 0
+  const gy = shift?.f ?? 0
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const part of ['eye-l-path', 'eye-r-path', 'mouth']) {
+    const node = svg.querySelector(`[data-part="${part}"]`) as SVGGraphicsElement | null
+    if (!node) continue
+    const box = node.getBBox()
+    minX = Math.min(minX, box.x)
+    minY = Math.min(minY, box.y)
+    maxX = Math.max(maxX, box.x + box.width)
+    maxY = Math.max(maxY, box.y + box.height)
+  }
+  const empty = { left: 0, top: 0, right: 0, bottom: 0 }
+  if (!(maxX - minX > 4 && maxY - minY > 4)) return empty
+  const unit = size / 100
+  return {
+    left: (minX + gx) * unit,
+    top: (minY + gy) * unit,
+    right: (100 - (maxX + gx)) * unit,
+    bottom: (100 - (maxY + gy)) * unit,
+  }
+}
 
 type TestApi = {
   seek: (ms: number) => void
@@ -99,35 +128,40 @@ export function App() {
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
-  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, dragging: false })
+  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, dragging: false })
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
     return current + (target - current) * (1 - Math.exp(-dt / ms))
   }
   const measureRoom = () => {
     const button = faceButtonRef.current
-    const svg = button?.querySelector('svg.face') as HTMLElement | null
+    const svg = button?.querySelector('svg.face') as SVGSVGElement | null
     if (!button || !svg) return null
     const bounds = button.getBoundingClientRect()
     const style = getComputedStyle(button)
     const face = parseFloat(getComputedStyle(svg).width)
+    if (!(face > 0)) return null
     const padL = parseFloat(style.paddingLeft) || 0
     const padR = parseFloat(style.paddingRight) || 0
     const padT = parseFloat(style.paddingTop) || 0
     const padB = parseFloat(style.paddingBottom) || 0
     const left = bounds.left + padL + (bounds.width - padL - padR - face) / 2
     const top = bounds.top + padT + (bounds.height - padT - padB - face) / 2
+    const inset = featureInset(svg, face)
     return {
-      room: roomFor(window.innerWidth, window.innerHeight, face, left, top, 8),
+      room: roomForFeatures(window.innerWidth, window.innerHeight, face, left, top, inset, 8),
       left,
       top,
       size: face,
+      inset,
       svg,
     }
   }
   const aimPet = (nx: number, ny: number, dragging: boolean) => {
     const p = pet.current
     p.dragging = dragging
+    p.nx = nx
+    p.ny = ny
     if (engine.snapshot().reduced || !dragging) {
       p.tx = 0
       p.ty = 0
@@ -139,8 +173,14 @@ export function App() {
     }
     const measured = measureRoom()
     if (!measured) return
+    const anchor = {
+      left: measured.inset.left / measured.size,
+      right: 1 - measured.inset.right / measured.size,
+      top: measured.inset.top / measured.size,
+      bottom: 1 - measured.inset.bottom / measured.size,
+    }
     const desired = desiredTravel(nx, ny, measured.room)
-    const raw: FacePlace = placeFace(desired.x, desired.y, measured.room)
+    const raw: FacePlace = placeFace(desired.x, desired.y, measured.room, anchor)
     const mute = document.querySelector('.mute-chip')?.getBoundingClientRect() ?? null
     const placed = clearControl(
       raw,
@@ -149,6 +189,7 @@ export function App() {
       measured.size,
       mute ? { left: mute.left, top: mute.top, right: mute.right, bottom: mute.bottom } : null,
       measured.room,
+      measured.inset,
     )
     p.tx = placed.x
     p.ty = placed.y
@@ -160,6 +201,7 @@ export function App() {
   const releasePet = () => aimPet(0, 0, false)
   const stepPet = (dt: number) => {
     const p = pet.current
+    if (p.dragging) aimPet(p.nx, p.ny, true)
     const reduced = engine.snapshot().reduced
     const posMs = reduced ? 0 : p.dragging ? 90 : 520
     const squMs = reduced ? 0 : p.dragging ? 110 : 250
