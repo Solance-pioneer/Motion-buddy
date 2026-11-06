@@ -1,0 +1,30 @@
+{
+  "full_wav_decode_checks": [
+    {
+      "path": "app/celebration_three_squeaks_app_pcm16_48k.wav",
+      "ffmpeg_full_decode": "passed"
+    },
+    {
+      "path": "app/proud_rise_beeps_app_pcm16_48k.wav",
+      "ffmpeg_full_decode": "passed"
+    },
+    {
+      "path": "audition/Motion-Buddy-voice-free-replacements.wav",
+      "ffmpeg_full_decode": "passed"
+    },
+    {
+      "path": "masters/celebration_three_squeaks_master_f32_48k.wav",
+      "ffmpeg_full_decode": "passed"
+    },
+    {
+      "path": "masters/proud_rise_beeps_master_f32_48k.wav",
+      "ffmpeg_full_decode": "passed"
+    }
+  ],
+  "app_roundtrip": "assertions passed in synthesis source",
+  "limitations": [
+    "No human listening test",
+    "No phone test",
+    "No app integration or animation timing verification"
+  ]
+}

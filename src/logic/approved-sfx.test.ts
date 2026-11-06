@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { VOICE_MP3_BASE64 } from './voice-mp3.ts'
 import { describe, expect, it } from 'vitest'
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { POSE_IDS, sampleIdle, type PoseId } from './library.ts'
@@ -63,12 +62,8 @@ describe('approved expression sounds', () => {
     }
     const chirp = new Uint8Array(readFileSync('/opt/cursor/artifacts/sfx_chirp.wav'))
     expect(sha256(chirp)).toBe('7f566f44a10f9223b2903387376bff3f3afdf8c0c9e5b38bd928f060b7eba23c')
-    const clap = new Uint8Array(readFileSync('src/assets/private-voice/voice_13_1.mp3'))
-    const level = new Uint8Array(readFileSync('src/assets/private-voice/voice_16_1.mp3'))
-    expect(sha256(clap)).toBe('44dceb3afc7676c01f9ac0b204584560e82c7cd1959515345d1b2da2ca72411a')
-    expect(sha256(level)).toBe('11f7c3071f31de9b7502866bd0056b5c5aa872e06dce9a675207a9f4b44260d1')
-    expect(sha256(new Uint8Array(Buffer.from(VOICE_MP3_BASE64.clap, 'base64')))).toBe(sha256(clap))
-    expect(sha256(new Uint8Array(Buffer.from(VOICE_MP3_BASE64['level-up'], 'base64')))).toBe(sha256(level))
+    expect(cueForCandidate('clap')).toBe('celebration_three_squeaks')
+    expect(cueForCandidate('level-up')).toBe('proud_rise_beeps')
   })
 
   it('plays once per expression entrance and does not retrigger through a held or looping beat', () => {

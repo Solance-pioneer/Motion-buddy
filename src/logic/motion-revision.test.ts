@@ -86,7 +86,7 @@ describe('reviewed motion fixes', () => {
     expect(proud.features.mouth.curve).toBeGreaterThan(4)
     expect(hop.features.left.cy).toBeLessThan(proud.features.left.cy)
     expect(sampleCandidate('level-up', 200, true).features.left.cy).toBe(sampleCandidate('level-up', 1_800, true).features.left.cy)
-    const peaks = { scan: -7.5, giggle: -7.5, surprise: -7.5, yawn: -7.5, wink: -7.5, dizzy: -7.5, clap: -1.5, 'level-up': -1.6 }
+    const peaks = { scan: -7.5, giggle: -7.5, surprise: -7.5, yawn: -7.5, wink: -7.5, dizzy: -7.5, celebration_three_squeaks: -9.86, proud_rise_beeps: -9.5 }
     for (const [cue, peak] of Object.entries(peaks)) {
       const gain = PLAYBACK_GAIN[cue as keyof typeof PLAYBACK_GAIN]
       expect(peak + 20 * Math.log10(gain)).toBeLessThanOrEqual(-11.5)

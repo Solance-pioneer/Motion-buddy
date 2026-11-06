@@ -1,0 +1,152 @@
+{
+  "status": "CREATED_AND_NUMERICALLY_CHECKED_NOT_INTEGRATED",
+  "batch": "motion-buddy-voice-free-v1",
+  "provenance": "Original procedural oscillator/envelope synthesis for Michael Dicker. No voice, sampled inputs, downloads or external assets. No Japanese sound-alike imitation. numpy used as calculation tool, not audio content.",
+  "user_direction": "2026-11-06: remove all Japanese-source audio; keep beeps and squeaks matching animation excitement.",
+  "synthesis_source": "src/synthesize_voice_free.py",
+  "synthesis_source_sha256": "c080ddd2ab17027de8a1f94b69c1a60fdb835b329472417dc8cbb637e024ec05",
+  "sounds": [
+    {
+      "key": "celebration_three_squeaks",
+      "mapping": {
+        "pairs_with": "existing three-bounce clap face; keep animation",
+        "events": [
+          {
+            "onset_seconds": 0.04,
+            "energy_peak_seconds": 0.16,
+            "duration_seconds": 0.24
+          },
+          {
+            "onset_seconds": 0.36,
+            "energy_peak_seconds": 0.48,
+            "duration_seconds": 0.24
+          },
+          {
+            "onset_seconds": 0.68,
+            "energy_peak_seconds": 0.8,
+            "duration_seconds": 0.24
+          }
+        ],
+        "timing_status": "provisional until coordinator confirms existing bounce times; regenerate with --bounce-centers if needed",
+        "trigger": "start once with celebration reaction; do not layer legacy voice or another beep"
+      },
+      "master": {
+        "path": "masters/celebration_three_squeaks_master_f32_48k.wav",
+        "format": "IEEE float32 mono 48 kHz",
+        "sha256": "0ee18068d08d32cabdd6c245cba2cf63e45fcedea2b2b9f0609bc36dbb32f08a",
+        "metrics": {
+          "duration_seconds": 1.05,
+          "sample_peak_dbfs": -9.864448585402481,
+          "active_rms_dbfs": -17.46542620138166,
+          "rms_dbfs": -19.18696597979007,
+          "dc_offset": -3.5245175384925604e-20,
+          "start_sample": 0.0,
+          "end_sample": 0.0
+        }
+      },
+      "app": {
+        "path": "app/celebration_three_squeaks_app_pcm16_48k.wav",
+        "format": "PCM16 mono 48 kHz",
+        "sha256": "082f75e1dbc9be401d97c90a0a50f2aa8acab01d394114ccb2109884d4551421",
+        "metrics": {
+          "duration_seconds": 1.05,
+          "sample_peak_dbfs": -9.86429153267986,
+          "active_rms_dbfs": -17.462350929218328,
+          "rms_dbfs": -19.186965901174066,
+          "dc_offset": 4.238681871754269e-09,
+          "start_sample": 0.0,
+          "end_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "proud_rise_beeps",
+      "mapping": {
+        "pairs_with": "existing wide-eyed/proud level-up face; keep animation",
+        "note_onsets_seconds": [
+          0.025,
+          0.2,
+          0.375,
+          0.565
+        ],
+        "energy_peaks_seconds": [
+          0.105,
+          0.28,
+          0.46,
+          0.71
+        ],
+        "trigger": "start once with proud reaction; final squeak resolves at proud held pose",
+        "timing_status": "align to existing reaction in integration; no current live-animation timing verification claimed"
+      },
+      "master": {
+        "path": "masters/proud_rise_beeps_master_f32_48k.wav",
+        "format": "IEEE float32 mono 48 kHz",
+        "sha256": "678c6f531ddeb1c8c07d9609bdb1afdc308c7ad6d79158aab3295676191c382a",
+        "metrics": {
+          "duration_seconds": 0.92,
+          "sample_peak_dbfs": -9.502842477574017,
+          "active_rms_dbfs": -17.469478419724602,
+          "rms_dbfs": -18.270269271274856,
+          "dc_offset": -5.329875027638886e-19,
+          "start_sample": 0.0,
+          "end_sample": 0.0
+        }
+      },
+      "app": {
+        "path": "app/proud_rise_beeps_app_pcm16_48k.wav",
+        "format": "PCM16 mono 48 kHz",
+        "sha256": "dc69e1154687e670f9142dc80d1c70b70e6eb2164a39fdd220a15982c6bc66c3",
+        "metrics": {
+          "duration_seconds": 0.92,
+          "sample_peak_dbfs": -9.503017644184142,
+          "active_rms_dbfs": -17.46675885750679,
+          "rms_dbfs": -18.270270517333174,
+          "dc_offset": 1.1057430969664449e-08,
+          "start_sample": 0.0,
+          "end_sample": 0.0
+        }
+      }
+    }
+  ],
+  "audition": {
+    "path": "audition/Motion-Buddy-voice-free-replacements.wav",
+    "sha256": "635af3344ef4d8d2e6ce4008fd9e9c160e9b250d13357a7c523eb07de14a6417",
+    "duration_seconds": 3.22,
+    "order": [
+      {
+        "key": "celebration_three_squeaks",
+        "start_seconds": 0.2
+      },
+      {
+        "key": "proud_rise_beeps",
+        "start_seconds": 2.05
+      }
+    ]
+  },
+  "integration_requirements": [
+    "Remove every Japanese/Conte de Fees runtime asset, preload, playback route and menu entry; retain existing matching face animations.",
+    "Replace two voice cue mappings with these original cues, using app copies only.",
+    "Keep original primary chirp, yawn, wink and other approved beeps unchanged.",
+    "No overlapping reaction audio; stop on interruption or mute, obey first-gesture audio and remembered mute.",
+    "Keep reduced-motion behavior; do not add repeat frequency or louder gain.",
+    "Preserve source masters/provenance outside shipping runtime; do not copy deprecated voice WAVs into the new runtime bundle."
+  ],
+  "qa": {
+    "performed": [
+      "finite sample check",
+      "peak ceiling -8 dBFS",
+      "DC absolute mean <0.0001",
+      "silent endpoints",
+      "PCM format/duration/quantization roundtrip",
+      "SHA256 masters/app/source/audition"
+    ],
+    "not_performed": [
+      "human listening or perceived-loudness validation",
+      "phone audition",
+      "live animation synchronization",
+      "app integration",
+      "deployment"
+    ]
+  },
+  "loudness_note": "Active RMS target -17.5 dBFS and peak ceiling -8 dBFS for a restrained starting balance. Numeric matching is not proof of equal perceived loudness; check against existing beeps on phone."
+}

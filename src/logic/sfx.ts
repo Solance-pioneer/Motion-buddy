@@ -1,10 +1,10 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
-import { VOICE_MP3_BASE64 } from './voice-mp3.ts'
+import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
 
-export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
+export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'celebration_three_squeaks' | 'proud_rise_beeps' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
 
 export const APPROVED_MS: Record<ApprovedCue, number> = {
@@ -14,8 +14,8 @@ export const APPROVED_MS: Record<ApprovedCue, number> = {
   yawn: 900,
   wink: 340,
   dizzy: 1200,
-  clap: 1992,
-  'level-up': 2496,
+  celebration_three_squeaks: 1150,
+  proud_rise_beeps: 920,
   disapprove: 104,
   sneeze_zip: 620,
   peek_pop: 580,
@@ -37,8 +37,8 @@ export const PLAYBACK_GAIN: Record<ApprovedCue | 'chirp', number> = {
   wink: 0.6,
   dizzy: 0.56,
   chirp: 0.32,
-  clap: 0.3,
-  'level-up': 0.3,
+  celebration_three_squeaks: 0.78,
+  proud_rise_beeps: 0.75,
   disapprove: 0.2,
   sneeze_zip: 0.62,
   peek_pop: 0.7,
@@ -110,8 +110,8 @@ export function cueForCandidate(id: string): ApprovedCue | null {
   if (id === 'yawn' || id === 'yawn-stretch') return 'yawn'
   if (id === 'wink' || id === 'wink-play') return 'wink'
   if (id === 'dizzy' || id === 'spiral-dizzy') return 'dizzy'
-  if (id === 'clap') return 'clap'
-  if (id === 'level-up') return 'level-up'
+  if (id === 'clap') return 'celebration_three_squeaks'
+  if (id === 'level-up') return 'proud_rise_beeps'
   return null
 }
 
@@ -143,8 +143,8 @@ export function cueForHearState(state: HearState): ApprovedCue | null {
   if (state.expression === 'wink' || state.expression === 'wink-play') return 'wink'
   if (state.expression === 'scan') return 'scan'
   if (state.expression === 'giggle') return 'giggle'
-  if (state.expression === 'clap') return 'clap'
-  if (state.expression === 'level-up') return 'level-up'
+  if (state.expression === 'clap') return 'celebration_three_squeaks'
+  if (state.expression === 'level-up') return 'proud_rise_beeps'
   return null
 }
 
@@ -324,20 +324,28 @@ export function approvedSamples(kind: 'scan' | 'giggle' | 'surprise' | 'yawn' | 
   return samples
 }
 
-const originalCache = new Map<string, { samples: Float32Array; rate: number }>()
+const pcmCache = new Map<string, { samples: Float32Array; rate: number }>()
 
-export function originalSamples(kind: 'sneeze_zip' | 'peek_pop' | 'pout_boop'): { samples: Float32Array; rate: number } {
-  const cached = originalCache.get(kind)
+function pcm16(kind: string, b64: string): { samples: Float32Array; rate: number } {
+  const cached = pcmCache.get(kind)
   if (cached) return cached
-  const binary = Uint8Array.from(atob(ORIGINAL_WAV_BASE64[kind]), (char) => char.charCodeAt(0))
+  const binary = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0))
   const view = new DataView(binary.buffer, binary.byteOffset, binary.byteLength)
   const rate = view.getUint32(24, true)
   const dataLength = view.getUint32(40, true)
   const samples = new Float32Array(dataLength / 2)
   for (let i = 0; i < samples.length; i += 1) samples[i] = view.getInt16(44 + i * 2, true) / 32768
   const parsed = { samples, rate }
-  originalCache.set(kind, parsed)
+  pcmCache.set(kind, parsed)
   return parsed
+}
+
+export function originalSamples(kind: 'sneeze_zip' | 'peek_pop' | 'pout_boop'): { samples: Float32Array; rate: number } {
+  return pcm16(kind, ORIGINAL_WAV_BASE64[kind])
+}
+
+export function replacementSamples(kind: 'celebration_three_squeaks' | 'proud_rise_beeps'): { samples: Float32Array; rate: number } {
+  return pcm16(kind, VOICE_FREE_WAV_BASE64[kind])
 }
 
 let context: AudioContext | null = null
@@ -374,8 +382,8 @@ export function prepareVoices(): Promise<void> {
   if (voicePrepare) return voicePrepare
   const audio = context
   voicePrepare = (async () => {
-    const clips = { clap: VOICE_MP3_BASE64.clap, 'level-up': VOICE_MP3_BASE64['level-up'], disapprove: DISAPPROVE_OGG_BASE64 } as const
-    for (const kind of ['clap', 'level-up', 'disapprove'] as const) {
+    const clips = { disapprove: DISAPPROVE_OGG_BASE64 } as const
+    for (const kind of ['disapprove'] as const) {
       if (voicePcm.has(kind)) continue
       const bytes = Uint8Array.from(atob(clips[kind]), (char) => char.charCodeAt(0))
       const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
@@ -401,10 +409,11 @@ export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
   const now = performance.now()
   if (now < playingUntil) return false
-  const spoken = kind === 'clap' || kind === 'level-up' || kind === 'disapprove'
+  const spoken = kind === 'disapprove'
+  const replacement = kind === 'celebration_three_squeaks' || kind === 'proud_rise_beeps'
   const original = kind === 'sneeze_zip' || kind === 'peek_pop' || kind === 'pout_boop'
   const approved = kind === 'scan' || kind === 'giggle' || kind === 'surprise' || kind === 'yawn' || kind === 'wink' || kind === 'dizzy'
-  if (!approved && !spoken && !original && kind !== 'chirp') return false
+  if (!approved && !spoken && !original && !replacement && kind !== 'chirp') return false
   const voice = spoken ? voicePcm.get(kind) : undefined
   if (spoken && !voice) return false
   let samples: Float32Array
@@ -414,6 +423,10 @@ export function playCue(kind: Cue | null): boolean {
     rate = voice.rate
   } else if (original) {
     const clip = originalSamples(kind)
+    samples = clip.samples
+    rate = clip.rate
+  } else if (replacement) {
+    const clip = replacementSamples(kind)
     samples = clip.samples
     rate = clip.rate
   } else if (kind === 'chirp') {
@@ -427,7 +440,7 @@ export function playCue(kind: Cue | null): boolean {
   buffer.getChannelData(0).set(samples)
   const source = context.createBufferSource()
   const gain = context.createGain()
-  gain.gain.value = PLAYBACK_GAIN[kind === 'chirp' || approved || spoken ? kind : 'chirp']
+  gain.gain.value = kind in PLAYBACK_GAIN ? PLAYBACK_GAIN[kind] : 0.32
   source.buffer = buffer
   source.connect(gain)
   gain.connect(context.destination)

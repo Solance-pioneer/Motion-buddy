@@ -19,12 +19,12 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v3.1.',
+    'Motion Buddy customer app, Expressive v3.2.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
     'Opening the file directly is not a secure-page sensor test. Phone tilt and movement need HTTPS.',
-    'Sound is on until it is turned off in the menu. The browser still stays quiet until the first tap. Scan, giggle, surprise, yawn, wink, and dizzy play the approved WAV recordings. The chirp is the existing synthesized tone. Spoken clap and level-up lines are embedded for playback and are not separate files. Voice credit, optional: りこ。 https://conte-de-fees.com/voice',
+    'Sound is on until it is turned off in the menu. The browser still stays quiet until the first tap. Beeps and squeaks only. No spoken voice lines.',
     'On an iPhone, the first tap must be Allow motion on the face. iOS shows the permission prompt only after that tap. Not now leaves the face running. Other browsers start listening when the secure page opens.',
     'This build does not wake a locked phone and is not an Apple Watch app.',
     '',
@@ -47,6 +47,11 @@ const originalDir = join(dist, 'originals-v1')
 mkdirSync(originalDir, { recursive: true })
 for (const name of ['sneeze_zip_app_pcm16_48k.wav', 'peek_pop_app_pcm16_48k.wav', 'pout_boop_app_pcm16_48k.wav']) {
   copyFileSync(join('src/assets/originals-v1/audio/app', name), join(originalDir, name))
+}
+const voiceFreeDir = join(dist, 'voice-free-v1')
+mkdirSync(voiceFreeDir, { recursive: true })
+for (const name of ['celebration_three_squeaks_app_pcm16_48k.wav', 'proud_rise_beeps_app_pcm16_48k.wav']) {
+  copyFileSync(join('src/assets/voice-free-v1/app', name), join(voiceFreeDir, name))
 }
 writeFileSync(
   join(dist, 'THIRD-PARTY.txt'),
@@ -80,16 +85,12 @@ writeFileSync(
     'OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE',
     'SOFTWARE.',
     '',
+    'Clap and level-up use original procedural beeps, celebration_three_squeaks and proud_rise_beeps. They are not spoken recordings.',
+    '',
     'Kenney Interface Sounds',
     'Created by Kenney (www.kenney.nl). One cue, error_004.ogg, is embedded for the disapproving beep.',
     'License: Creative Commons Zero, CC0. http://creativecommons.org/publicdomain/zero/1.0/',
     'The rest of that pack is not included.',
-    '',
-    'Spoken lines',
-    'Performer: りこ。',
-    'Source: https://conte-de-fees.com/voice',
-    'The clap and level-up lines are embedded for playback inside the app.',
-    'The creator allows commercial app embedding. The raw files are not shipped as a separate download.',
     '',
   ].join('\n'),
 )
@@ -107,7 +108,7 @@ try {
 writeFileSync(
   join(dist, 'BUILD.txt'),
   [
-    'Motion Buddy customer build, Expressive v3.1.',
+    'Motion Buddy customer build, Expressive v3.2.',
     `source_commit: ${sourceCommit}`,
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
@@ -115,10 +116,10 @@ writeFileSync(
     '',
   ].join('\n'),
 )
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.1.zip'
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.2.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.1.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.2.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'
