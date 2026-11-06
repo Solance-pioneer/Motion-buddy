@@ -12,6 +12,7 @@ import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { avoidFinger, DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -67,8 +68,8 @@ function viewKey(state: BuddyState): string {
 
 function openerName(coarse: boolean): string {
   return coarse
-    ? 'Motion Buddy. Tap for controls.'
-    : 'Motion Buddy. Click or press Enter for controls.'
+    ? 'Motion Buddy. Double-tap for controls.'
+    : 'Motion Buddy. Double-tap or press Enter for controls.'
 }
 
 export function App() {
@@ -93,7 +94,9 @@ export function App() {
   const heard = useRef<SoundMemory>(initialSoundMemory())
   const moves = useRef<MoveClock>(initialMoveClock())
   const faceTaps = useRef<TapClock>(initialTapClock())
-  const chirped = useRef(false)
+  const touch = useRef<TouchClock>(initialTouch())
+  const tapTimer = useRef(0)
+  const [muteLit, setMuteLit] = useState(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
@@ -160,18 +163,43 @@ export function App() {
     },
     [engine],
   )
-  const armAudio = useCallback(() => {
+  const unlockQuiet = useCallback(() => {
     if (!unlockSound()) {
       setSoundAvailable(false)
       return
     }
     setSoundReady(true)
-    if (chirped.current || soundStatus().muted) return
-    chirped.current = true
+  }, [])
+  const playChirp = useCallback(() => {
+    if (soundStatus().muted || !soundOn) return
     const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
     heard.current = claimed.memory
     if (claimed.ok) playCue('chirp')
-  }, [])
+  }, [soundOn])
+  const confirmSingle = useCallback(() => {
+    const step = touchExpire(touch.current, performance.now())
+    touch.current = step.clock
+    if (!step.singleTap) return
+    const status = soundStatus()
+    const state = engine.snapshot()
+    const tap = noteFaceTap(faceTaps.current, {
+      now: performance.now(),
+      reduced: state.reduced,
+      muted: status.muted || !soundOn,
+      unlocked: status.unlocked,
+      allowGrumpy: state.autoSet.includes('grumpy'),
+      busyUntil: heard.current.voiceUntil,
+    })
+    faceTaps.current = tap.clock
+    if (tap.frown && engine.requestScold()) {
+      publish(engine.snapshot())
+      if (tap.cue && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
+      return
+    }
+    if (!state.reduced) engine.requestGreeting()
+    publish(engine.snapshot())
+    playChirp()
+  }, [engine, playChirp, publish, soundOn])
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
     engine.feedAcceleration(magnitude, lateral)
     const status = soundStatus()
@@ -272,6 +300,12 @@ export function App() {
     const id = window.setTimeout(() => setHintOn(false), hintDuration())
     return () => window.clearTimeout(id)
   }, [])
+
+  useEffect(() => {
+    if (!muteLit || !soundOn) return
+    const id = window.setTimeout(() => setMuteLit(false), 2_800)
+    return () => window.clearTimeout(id)
+  }, [muteLit, soundOn])
 
   useEffect(() => {
     loadSoundPrefs()
@@ -387,52 +421,91 @@ export function App() {
         aria-haspopup="dialog"
         tabIndex={open ? -1 : 0}
         inert={open}
-        onClick={() => {
-          armAudio()
-          const status = soundStatus()
-          const state = engine.snapshot()
-          const tap = noteFaceTap(faceTaps.current, {
-            now: performance.now(),
-            reduced: state.reduced,
-            muted: status.muted || !soundOn,
-            unlocked: status.unlocked,
-            allowGrumpy: state.autoSet.includes('grumpy'),
-            busyUntil: heard.current.voiceUntil,
-          })
-          faceTaps.current = tap.clock
-          if (tap.frown && engine.requestScold()) {
-            publish(engine.snapshot())
-            if (tap.cue && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
-          }
-          if (!open) {
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return
+          event.preventDefault()
+          unlockQuiet()
+          setSeenControls(true)
+          setHintOn(false)
+          setOpen(true)
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return
+          unlockQuiet()
+          setMuteLit(true)
+          const step = touchDown(touch.current, event.clientX, event.clientY, performance.now())
+          touch.current = step.clock
+          window.clearTimeout(tapTimer.current)
+          event.currentTarget.setPointerCapture(event.pointerId)
+        }}
+        onPointerMove={(event) => {
+          const step = touchMove(touch.current, event.clientX, event.clientY, performance.now())
+          touch.current = step.clock
+          if (!step.dragging) return
+          const rect = event.currentTarget.getBoundingClientRect()
+          const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1
+          const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1
+          const away = avoidFinger(nx, ny)
+          engine.feedLook(away.x, away.y)
+          if (step.chirp) playChirp()
+        }}
+        onPointerUp={() => {
+          const step = touchUp(touch.current, performance.now())
+          touch.current = step.clock
+          engine.feedLook(0, 0)
+          if (step.openMenu) {
             setSeenControls(true)
             setHintOn(false)
             setOpen(true)
+            return
           }
+          if (step.clock.pendingTapAt > 0) tapTimer.current = window.setTimeout(confirmSingle, DOUBLE_MS)
+        }}
+        onPointerCancel={() => {
+          touch.current = touchCancel(touch.current).clock
+          engine.feedLook(0, 0)
         }}
       >
         <Face onReady={onReady} />
         {showHint ? (
           <span className={askForMotion ? 'hint hint-raised' : 'hint'} data-testid="hint">
-            {coarse ? 'Tap for controls' : 'Click or press Enter for controls'}
+            {coarse ? 'Double-tap for controls' : 'Double-tap or press Enter for controls'}
           </span>
         ) : null}
       </button>
+      {(muteLit || !soundOn) && !open ? (
+        <button
+          type="button"
+          className="mute-chip"
+          aria-pressed={!soundOn}
+          aria-label={soundOn ? 'Mute' : 'Unmute'}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => {
+            unlockQuiet()
+            const enable = !soundOn
+            setSoundMuted(!enable)
+            setSoundOn(enable)
+            if (enable) playChirp()
+          }}
+        >
+          <span>{soundOn ? 'Mute' : 'Unmute'}</span>
+        </button>
+      ) : null}
       {askForMotion && !open ? (
         <div className="launch">
           <button
             type="button"
             className="allow-motion"
-            onClick={() => {
-              armAudio()
-              setPromptDone(true)
-              void tilt.enable()
-            }}
+onClick={() => {
+          unlockQuiet()
+          setPromptDone(true)
+          void tilt.enable()
+        }}
           >
             Allow motion
           </button>
           <button type="button" className="allow-skip" onClick={() => {
-            armAudio()
+            unlockQuiet()
             setPromptDone(true)
           }}>
             Not now

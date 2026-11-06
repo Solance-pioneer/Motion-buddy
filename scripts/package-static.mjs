@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v2.9.',
+    'Motion Buddy customer app, Expressive v3.0.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
@@ -93,10 +93,10 @@ const customerJs = readFileSync(join(dist, scriptSrc.replace(/^\//, '')), 'utf8'
 for (const term of ['Export review', 'Face audition', 'Owner audition', 'motion-buddy-review', 'Try my companion']) {
   if (customerJs.includes(term)) throw new Error(`Customer bundle contains owner audition text: ${term}`)
 }
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v2.9.zip'
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.0.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v2.9.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.0.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

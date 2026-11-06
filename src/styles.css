@@ -50,7 +50,7 @@ body {
   background: transparent;
   color: inherit;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
@@ -124,6 +124,28 @@ body {
   border: 0;
   background: transparent;
   color: #e8e8e8;
+}
+
+.mute-chip {
+  position: absolute;
+  z-index: 4;
+  top: max(8px, env(safe-area-inset-top));
+  right: max(8px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font: 600 11px/1 system-ui, sans-serif;
+  opacity: 0.55;
+  touch-action: manipulation;
+}
+
+.mute-chip[aria-pressed='true'] {
+  opacity: 0.95;
+  color: #ffffff;
 }
 
 .sr-only {

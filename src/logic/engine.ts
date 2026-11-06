@@ -90,6 +90,7 @@ export class BuddyEngine {
   private reactionDir = 0
   private settleUntil = 0
   private scoldUntil = 0
+  private greetUntil = 0
   private readonly random: () => number
 
   constructor(options?: { random?: () => number }) {
@@ -169,6 +170,15 @@ export class BuddyEngine {
   }
 
   /** Labelled stand-in. It does not mark the sensor as on. */
+  /** A short smile after one poke. Skipped when the face is already reacting or Happy is off. */
+  requestGreeting(): boolean {
+    if (this.reduced || !this.autoSet.includes('happy')) return false
+    if (this.reaction.name !== 'none') return false
+    if (this.uiElapsed < this.scoldUntil) return false
+    this.greetUntil = this.uiElapsed + 450
+    return true
+  }
+
   /** Brief frown after pestering. Does nothing while a harder reaction is up, or if grumpy is turned off. */
   requestScold(): boolean {
     if (this.reduced || !this.autoSet.includes('grumpy')) return false
@@ -298,9 +308,12 @@ export class BuddyEngine {
       frame.gazeY = Math.abs(steerY) > 0.35 ? steerY : clampUnit(frame.gazeY * (1 - Math.abs(steerY) / 0.35) + steerY)
     }
     const scolding = this.uiElapsed < this.scoldUntil && this.reaction.name === 'none' && this.selection === 'auto' && this.autoSet.includes('grumpy')
+    const greeting = !scolding && this.uiElapsed < this.greetUntil && this.reaction.name === 'none' && this.selection === 'auto' && this.autoSet.includes('happy')
     if (scolding) frame = { ...frame, pose: 'grumpy', gazeX: 0, gazeY: 0.08, blink: 0, speed: false }
+    else if (greeting) frame = { ...frame, pose: 'happy', gazeX: 0.15, gazeY: -0.05, blink: 0, speed: false }
     const showApproved = idleShowcase
       && !scolding
+      && !greeting
       && this.selection === 'auto'
       && this.reaction.name === 'none'
       && this.uiElapsed >= this.settleUntil
