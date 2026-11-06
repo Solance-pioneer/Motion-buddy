@@ -1,0 +1,105 @@
+{
+  "status": "APPROVED_FOR_INTEGRATION_NOT_YET_VERIFIED",
+  "provenance": "Original procedural synthesis; generator in this folder. Python standard library, no sampled audio inputs.",
+  "existing_approved_chirp": "Untouched; not included or replaced.",
+  "audition_file": "Motion-Buddy-six-original-sound-drafts.wav",
+  "audition_sha256": "3d58715dc064a65d07dd32d5df2ab56a5eaac1a61a69e5f2c985f93820b20765",
+  "duration_seconds": 12,
+  "slots_seconds": 2,
+  "sounds": [
+    {
+      "audition_number": 1,
+      "candidate_number": "38",
+      "name": "scan",
+      "description": "Three gentle ascending scan ticks",
+      "start_seconds": 0,
+      "duration_seconds": 0.5,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "01_38_scan_ORIGINAL_DRAFT.wav",
+      "sha256": "8c6c3b2b44924449b35f6b50a7c0c871fbc55aef17270d55a2f91a8135240ebd"
+    },
+    {
+      "audition_number": 2,
+      "candidate_number": "04",
+      "name": "giggle",
+      "description": "Three soft electronic giggle pulses",
+      "start_seconds": 2,
+      "duration_seconds": 0.68,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "02_04_giggle_ORIGINAL_DRAFT.wav",
+      "sha256": "8f1174c79743929a4841b75533274ddbb33183b8e237d2159703a4af5f852c05"
+    },
+    {
+      "audition_number": 3,
+      "candidate_number": "40",
+      "name": "surprise",
+      "description": "Springy surprised pitch drop",
+      "start_seconds": 4,
+      "duration_seconds": 0.5,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "03_40_surprise_ORIGINAL_DRAFT.wav",
+      "sha256": "fc2d560fa5418c09f9effe2e427e57be02b76e0e1a697bfacdabb9a5afc2b547"
+    },
+    {
+      "audition_number": 4,
+      "candidate_number": "42",
+      "name": "yawn",
+      "description": "Soft low synthetic yawn swell",
+      "start_seconds": 6,
+      "duration_seconds": 0.9,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "04_42_yawn_ORIGINAL_DRAFT.wav",
+      "sha256": "95cf38d1581d83c6a0a710729925e8fe8178b1fd0bf1307161ecb4e05387ac33"
+    },
+    {
+      "audition_number": 5,
+      "candidate_number": "48",
+      "name": "wink",
+      "description": "Short two-note wink sparkle",
+      "start_seconds": 8,
+      "duration_seconds": 0.34,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "05_48_wink_ORIGINAL_DRAFT.wav",
+      "sha256": "c68b3e10f99974e1e55909db6502f37aa53db173d315717c58d2c7b501d26dac"
+    },
+    {
+      "audition_number": 6,
+      "candidate_number": "15",
+      "name": "dizzy",
+      "description": "Slowing wobbly electronic tone",
+      "start_seconds": 10,
+      "duration_seconds": 1.2,
+      "sample_rate_hz": 22050,
+      "peak_dbfs": -7.535102552626506,
+      "status": "approved_for_integration",
+      "file": "06_15_dizzy_ORIGINAL_DRAFT.wav",
+      "sha256": "6490fd5309f8d2d03a68a669935346f489151ccf7c05acb895a2f8d4fa167843"
+    }
+  ],
+  "checks": "PCM structure, duration, endpoints, non-silence and peak level checked; no human listening test claimed.",
+  "approval": {
+    "reviewer": "Michael Dicker",
+    "venue": "Dicker Ltd",
+    "timestamp_utc": "2026-11-06T20:52Z",
+    "evidence": "Amazing lets get that included and matched to relevant expressions"
+  },
+  "mapping": {
+    "38_scan": "01_38_scan_ORIGINAL_DRAFT.wav",
+    "04_giggle": "02_04_giggle_ORIGINAL_DRAFT.wav",
+    "40_take-left": "03_40_surprise_ORIGINAL_DRAFT.wav",
+    "42_yawn-stretch": "04_42_yawn_ORIGINAL_DRAFT.wav",
+    "48_wink-play": "05_48_wink_ORIGINAL_DRAFT.wav",
+    "15_dizzy": "06_15_dizzy_ORIGINAL_DRAFT.wav",
+    "15B_spiral_dizzy": "Reuse approved dizzy sound if appropriate; no new sound generation requested."
+  }
+}

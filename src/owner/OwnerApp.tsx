@@ -11,7 +11,7 @@ import {
   type Decision,
   type ReviewFile,
 } from '../logic/review.ts'
-import { cueForCandidate, playCue, setSoundMuted, unlockSound } from '../logic/sfx.ts'
+import { advanceCandidate, initialSoundMemory, playCue, setSoundMuted, soundStatus, unlockSound, type SoundMemory } from '../logic/sfx.ts'
 import { applyPose, type FaceHandles } from '../view/applyPose.ts'
 import { Face } from '../view/Face.tsx'
 import { ReviewDeck } from '../view/ReviewDeck.tsx'
@@ -23,6 +23,8 @@ export function OwnerApp() {
   const [preview, setPreview] = useState(false)
   const [notice, setNotice] = useState('')
   const [soundOn, setSoundOn] = useState(false)
+  const heard = useRef<SoundMemory>(initialSoundMemory())
+  const soundWasOn = useRef(false)
   const handles = useRef<FaceHandles | null>(null)
   const blend = useRef(new FrameBlend())
   const clock = useRef(0)
@@ -64,7 +66,18 @@ export function OwnerApp() {
   )
 
   useEffect(() => {
-    if (soundOn && candidate) playCue(cueForCandidate(candidate.id))
+    if (!soundOn || !candidate) {
+      soundWasOn.current = false
+      return
+    }
+    const status = soundStatus()
+    if (!status.unlocked || status.muted) return
+    let memory = heard.current
+    if (!soundWasOn.current) memory = { ...memory, beatKey: '' }
+    soundWasOn.current = true
+    const next = advanceCandidate(memory, candidate.id, performance.now())
+    heard.current = next.memory
+    if (next.cue) playCue(next.cue)
   }, [candidate?.id, soundOn])
 
   useEffect(() => {
@@ -105,7 +118,6 @@ export function OwnerApp() {
           const enable = !soundOn
           setSoundMuted(!enable)
           setSoundOn(enable)
-          if (enable && candidate) playCue(cueForCandidate(candidate.id))
         }}
       >
         {soundOn ? 'Sound preview on' : 'Sound preview off'}

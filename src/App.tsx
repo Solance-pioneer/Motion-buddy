@@ -10,7 +10,7 @@ import { Face } from './view/Face.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
-import { loadSoundPrefs, playCue, setSoundMuted, soundStatus, unlockSound } from './logic/sfx.ts'
+import { advanceSound, claimChirp, initialSoundMemory, loadSoundPrefs, playCue, setSoundMuted, soundStatus, unlockSound, type SoundMemory } from './logic/sfx.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -87,6 +87,7 @@ export function App() {
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
   const [soundOn, setSoundOn] = useState(false)
+  const heard = useRef<SoundMemory>(initialSoundMemory())
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
@@ -227,9 +228,23 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    if (view.reaction === 'dizzy') playCue('dizzy')
-    else if (view.reaction === 'startled' || view.reaction === 'worried') playCue('surprise')
-  }, [view.reaction])
+    if (view.hidden || !soundOn) return
+    const status = soundStatus()
+    if (!status.unlocked || status.muted) return
+    const next = advanceSound(
+      heard.current,
+      {
+        expression: view.expression,
+        reaction: view.reaction,
+        reduced: view.reduced,
+        allowDizzy: view.allowDizzy,
+        allowStartled: view.allowStartled,
+      },
+      performance.now(),
+    )
+    heard.current = next.memory
+    if (next.cue) playCue(next.cue)
+  }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden])
 
   useEffect(() => {
     if (!testHookEnabled()) return
@@ -433,7 +448,11 @@ export function App() {
             const enable = !soundOn
             setSoundMuted(!enable)
             setSoundOn(enable)
-            if (enable) playCue('chirp')
+            if (enable) {
+              const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
+              heard.current = claimed.memory
+              if (claimed.ok) playCue('chirp')
+            }
           }}
         />
       ) : null}

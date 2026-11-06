@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 const dist = 'dist'
@@ -24,12 +24,25 @@ writeFileSync(
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
     'Opening the file directly is not a secure-page sensor test. Phone tilt and movement need HTTPS.',
+    'Sound stays off until a tap turns it on. Scan, giggle, surprise, yawn, wink, and dizzy use the approved recordings. The original chirp plays only when sound is turned on.',
     'On an iPhone, the first tap must be Allow motion on the face. iOS shows the permission prompt only after that tap. Not now leaves the face running. Other browsers start listening when the secure page opens.',
     'This build does not wake a locked phone and is not an Apple Watch app.',
     '',
   ].join('\n'),
 )
 
+const soundDir = join(dist, 'approved-sfx')
+mkdirSync(soundDir, { recursive: true })
+for (const name of [
+  '01_38_scan_ORIGINAL_DRAFT.wav',
+  '02_04_giggle_ORIGINAL_DRAFT.wav',
+  '03_40_surprise_ORIGINAL_DRAFT.wav',
+  '04_42_yawn_ORIGINAL_DRAFT.wav',
+  '05_48_wink_ORIGINAL_DRAFT.wav',
+  '06_15_dizzy_ORIGINAL_DRAFT.wav',
+]) {
+  copyFileSync(join('src/assets/approved-sfx', name), join(soundDir, name))
+}
 mkdirSync('/opt/cursor/artifacts', { recursive: true })
 const customerJs = readFileSync(join(dist, scriptSrc.replace(/^\//, '')), 'utf8')
 for (const term of ['Export review', 'Face audition', 'Owner audition', 'motion-buddy-review', 'Try my companion']) {
