@@ -16,36 +16,29 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
       glance: pick('glance') as SVGGElement,
       eyeL: pick('eye-l') as SVGGElement,
       eyeR: pick('eye-r') as SVGGElement,
-      softL: pick('soft-l') as SVGRectElement,
-      softR: pick('soft-r') as SVGRectElement,
-      tileL: pick('tile-l') as SVGRectElement,
-      tileR: pick('tile-r') as SVGRectElement,
-      mouthCurve: pick('mouth-curve') as SVGPathElement,
-      mouthOpen: pick('mouth-open') as SVGEllipseElement,
+      eyePathL: pick('eye-l-path') as SVGPathElement,
+      eyePathR: pick('eye-r-path') as SVGPathElement,
+      mouth: pick('mouth') as SVGPathElement,
+      blushL: pick('blush-l') as SVGEllipseElement,
+      blushR: pick('blush-r') as SVGEllipseElement,
+      sweat: pick('sweat') as SVGPathElement,
+      anger: pick('anger') as SVGPathElement,
+      speed: pick('speed') as SVGGElement,
     })
   }, [onReady])
 
   return (
     <svg ref={svgRef} className="face" viewBox="0 0 100 100" aria-hidden="true" data-testid="face">
       <g data-part="glance">
-        <g data-part="eye-l">
-          <rect data-part="soft-l" x="29" y="32" width="10" height="22" rx="5" fill="#ffffff" stroke="none" />
-          <rect data-part="tile-l" x="29" y="32" width="10" height="22" rx="2.2" fill="#ffffff" stroke="none" visibility="hidden" />
-        </g>
-        <g data-part="eye-r">
-          <rect data-part="soft-r" x="61" y="32" width="10" height="22" rx="5" fill="#ffffff" stroke="none" />
-          <rect data-part="tile-r" x="61" y="32" width="10" height="22" rx="2.2" fill="#ffffff" stroke="none" visibility="hidden" />
-        </g>
-        <g data-part="mouth" transform="translate(50 64)">
-          <path
-            data-part="mouth-curve"
-            d="M -3 0 Q 0 0 3 0"
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth="1.25"
-            strokeLinecap="round"
-          />
-          <ellipse data-part="mouth-open" cx="0" cy="0" rx="1.5" ry="1.7" fill="#ffffff" />
+        <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
+        <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
+        <path data-part="mouth" fill="#ffffff" stroke="none" />
+        <ellipse data-part="blush-l" cx="22" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
+        <ellipse data-part="blush-r" cx="78" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
+        <path data-part="sweat" d="M74 30 q2 4 0 6 q-2-2 0-6z" fill="#ffffff" opacity="0" />
+        <path data-part="anger" d="M24 24 l5 4 M76 24 l-5 4" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" opacity="0" />
+        <g data-part="speed" opacity="0">
+          <path d="M84 32 h8 M86 40 h6 M84 48 h8" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" />
         </g>
       </g>
     </svg>

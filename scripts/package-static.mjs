@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy phase 1 static site.',
+    'Motion Buddy Expressive v2 static site.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
     'Opening the file directly is not a secure-page sensor test. Phone tilt and movement need HTTPS.',
@@ -29,6 +29,6 @@ writeFileSync(
 )
 
 mkdirSync('/opt/cursor/artifacts', { recursive: true })
-execFileSync('zip', ['-r', '/opt/cursor/artifacts/motion-buddy-phase1.zip', '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-phase1.zip')
+execFileSync('zip', ['-r', '/opt/cursor/artifacts/motion-buddy-expressive-v2.zip', '.'], { cwd: dist })
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-expressive-v2.zip')
 void dirname

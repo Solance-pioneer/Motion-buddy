@@ -65,7 +65,7 @@ body {
 }
 
 .face {
-  width: min(72vmin, 72dvh, 560px);
+  width: min(82vmin, 82dvh, 640px);
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
@@ -139,6 +139,15 @@ body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.release {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
 }
 
 h2 {

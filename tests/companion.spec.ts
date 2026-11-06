@@ -138,10 +138,9 @@ test('touch wording is used for a coarse pointer', async ({ page }) => {
 test('Auto can be limited to a chosen subset', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await page.getByRole('button', { name: 'Use Grumpy' }).click()
+  const extras = ['Grumpy', 'Sleepy', 'Curious', 'Laugh', 'Shy', 'Smug', 'Determined', 'Worried', 'Startled', 'Pant', 'Dizzy']
+  for (const name of extras) await page.getByRole('button', { name: `Use ${name}` }).click()
   await expect(page.getByRole('button', { name: 'Grumpy', exact: true })).toBeDisabled()
-  await page.getByRole('button', { name: 'Use Sleepy' }).click()
-  await page.getByRole('button', { name: 'Use Curious' }).click()
   await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Use Happy' }).click()
   await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')
@@ -475,6 +474,79 @@ async function expectFaceInside(page: Page, minSide: number) {
   expect(overflow).toBeLessThanOrEqual(1)
   await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
 }
+
+test('a stationary ten seconds visits several gazes and a readable smile', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  const smile = await page.locator('[data-part="mouth"]').evaluate((node) => {
+    const box = (node as SVGGraphicsElement).getBBox()
+    return { width: box.width, height: box.height }
+  })
+  expect(smile.width).toBeGreaterThan(12)
+  expect(smile.height).toBeGreaterThan(3)
+  const result = await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: {
+          elapse: (ms: number) => void
+          getState: () => { expression: string; gazeX: number; gazeY: number; blink: number }
+        }
+      }
+    ).__motionBuddyTest
+    const gazes = new Set<string>()
+    const poses = new Set<string>()
+    let blinked = false
+    for (let step = 0; step < 250; step += 1) {
+      api.elapse(40)
+      const state = api.getState()
+      gazes.add(`${state.gazeX.toFixed(1)},${state.gazeY.toFixed(1)}`)
+      poses.add(state.expression)
+      if (state.blink > 0.5) blinked = true
+    }
+    return { gazes: gazes.size, poses: [...poses], blinked }
+  })
+  expect(result.gazes).toBeGreaterThanOrEqual(3)
+  expect(result.poses.length).toBeGreaterThanOrEqual(2)
+  expect(result.blinked).toBe(true)
+})
+
+test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByText('Expressive v2')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Car', exact: true }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'determined')
+  await expect(page.locator('main')).toHaveAttribute('data-speed', 'on')
+  await expect(page.getByText(/not engine RPM/)).toBeVisible()
+  await page.getByRole('button', { name: 'Wrist', exact: true }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'pant')
+  await expect(page.locator('main')).toHaveAttribute('data-speed', 'off')
+  await expect(page.getByText(/not a watch/)).toBeVisible()
+  await page.getByRole('button', { name: 'Desk', exact: true }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'curious')
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByTestId('hint')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveCount(0)
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
+})
+
+test('reduced motion keeps the new face still', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await openApp(page, 'e2e=1&hintMs=0')
+  const still = await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: { elapse: (ms: number) => void; getState: () => { gazeX: number; gazeY: number; blink: number } }
+      }
+    ).__motionBuddyTest
+    api.elapse(3_000)
+    return api.getState()
+  })
+  expect(still.gazeX).toBe(0)
+  expect(still.gazeY).toBe(0)
+  expect(still.blink).toBe(0)
+})
 
 test.describe('phone portrait', () => {
   test.use({ viewport: { width: 390, height: 844 } })

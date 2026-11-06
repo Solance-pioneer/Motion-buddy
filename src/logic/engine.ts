@@ -1,9 +1,7 @@
 import {
   DWELL_MS,
-  EXPRESSIONS,
   expressionPose,
   lerpPose,
-  orderedSet,
   POSES,
   REST_POSE,
   sampleAuto,
@@ -12,6 +10,7 @@ import {
   type ExpressionPhase,
   type FacePose,
 } from './expressions.ts'
+import { POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile } from './library.ts'
 import { MAX_FRAME_DT_MS, REST_HOLD_MS, smoothToward, WAKE_DEBOUNCE_MS, WAKE_LEVEL } from './motion.ts'
 import {
   forceReaction,
@@ -26,13 +25,17 @@ import {
 } from './reactions.ts'
 
 export type Presence = 'awake' | 'rest'
-export type Selection = 'auto' | Expression
+export type Selection = 'auto' | PoseId
 
 export interface BuddyState {
   presence: Presence
   selection: Selection
-  autoSet: Expression[]
-  expression: Expression
+  autoSet: PoseId[]
+  expression: PoseId
+  profile: Profile
+  gazeX: number
+  gazeY: number
+  speed: boolean
   phase: ExpressionPhase
   resting: boolean
   wakefulness: number
@@ -53,7 +56,9 @@ const BLINK_HALF_REDUCED_MS = 260
 export class BuddyEngine {
   private presence: Presence = 'awake'
   private selection: Selection = 'auto'
-  private autoSet: Expression[] = [...EXPRESSIONS]
+  private autoSet: PoseId[] = [...POSE_IDS]
+  private profile: Profile = 'desk'
+  private idleElapsed = 0
   private autoElapsed = 0
   private uiElapsed = 0
   private resting = false
@@ -113,17 +118,21 @@ export class BuddyEngine {
     }
   }
 
+  setProfile(profile: Profile): void {
+    this.profile = profile
+    this.idleElapsed = 0
+  }
+
   setSelection(selection: Selection): void {
     if (selection !== 'auto' && !this.autoSet.includes(selection)) return
     this.selection = selection
   }
 
-  toggleAutoExpression(expression: Expression): void {
+  toggleAutoExpression(expression: PoseId): void {
     const has = this.autoSet.includes(expression)
     if (has && this.autoSet.length === 1) return
-    this.autoSet = has
-      ? this.autoSet.filter((item) => item !== expression)
-      : orderedSet([...this.autoSet, expression])
+    const next = has ? this.autoSet.filter((item) => item !== expression) : [...this.autoSet, expression]
+    this.autoSet = POSE_IDS.filter((id) => next.includes(id))
     this.autoElapsed = 0
     if (this.selection !== 'auto' && !this.autoSet.includes(this.selection)) this.selection = 'auto'
   }
@@ -190,6 +199,7 @@ export class BuddyEngine {
     if (!this.hidden) {
       const dt = Math.max(0, Math.min(dtMs, MAX_FRAME_DT_MS))
       this.uiElapsed += dt
+      if (this.presence === 'awake' && this.reaction.name === 'none') this.idleElapsed += dt
       if (this.selection === 'auto' && this.presence === 'awake' && this.reaction.name === 'none') this.autoElapsed += dt
       this.advanceMotion(dt)
       this.advanceReaction(dt)
@@ -203,16 +213,23 @@ export class BuddyEngine {
 
   snapshot(): BuddyState {
     const sample = this.logical()
+    const shown = this.display()
+    const mouthCurve = shown.pose === 'grumpy' ? -0.75 : shown.pose === 'happy' || shown.pose === 'laugh' || shown.pose === 'curious' ? 0.9 : 0.2
+    const eyeOpen = shown.pose === 'sleepy' ? 0.2 : shown.pose === 'grumpy' ? 0.6 : 1
     return {
       presence: this.presence,
       selection: this.selection,
       autoSet: [...this.autoSet],
-      expression: sample.expression,
+      expression: shown.pose,
+      profile: this.profile,
+      gazeX: shown.gazeX,
+      gazeY: shown.gazeY,
+      speed: shown.speed,
       phase: sample.phase,
       resting: this.presence === 'rest' && this.resting,
       wakefulness: this.wakefulness,
-      blink: this.blink,
-      pose: { ...this.shown },
+      blink: Math.max(this.blink, shown.blink),
+      pose: { ...this.shown, mouthCurve, eyeOpen, lookX: shown.gazeX, lookY: shown.gazeY },
       reduced: this.reduced,
       hidden: this.hidden,
       motionLevel: this.motionLevel,
@@ -223,17 +240,36 @@ export class BuddyEngine {
     }
   }
 
-  private logical() {
-    if (this.selection !== 'auto' && this.autoSet.includes(this.selection)) {
-      return {
-        expression: this.selection,
-        phase: 'dwell' as const,
-        from: this.selection,
-        to: this.selection,
-        t: 0,
-      }
+  private display() {
+    const allowed = new Set(this.autoSet)
+    let frame = sampleIdle(this.idleElapsed, this.profile, allowed, this.reduced)
+    if (this.selection !== 'auto') {
+      frame = { ...frame, pose: resolvePose(this.selection, allowed, this.profile), speed: false }
     }
-    return sampleAuto(this.autoElapsed, this.autoSet)
+    const reaction = this.reaction.name
+    if (reaction === 'worried' || reaction === 'startled' || reaction === 'dizzy') {
+      frame = { ...frame, pose: resolvePose(reaction, allowed, this.profile), speed: false }
+    } else if (reaction === 'recovery') {
+      frame = { ...frame, pose: resolvePose(this.profile === 'wrist' ? 'happy' : 'curious', allowed, this.profile), speed: false }
+    } else if (this.presence === 'rest' && this.resting) {
+      frame = { pose: resolvePose('sleepy', allowed, this.profile), gazeX: 0, gazeY: 0, blink: 0, speed: false }
+    }
+    if (!this.reduced) {
+      frame.gazeX = clampUnit(frame.gazeX + this.lookX * 0.55)
+      frame.gazeY = clampUnit(frame.gazeY + this.lookY * 0.35)
+    }
+    return frame
+  }
+
+  private logical() {
+    const classic = this.autoSet.filter(
+      (id): id is Expression => id === 'curious' || id === 'happy' || id === 'grumpy' || id === 'sleepy',
+    )
+    if (this.selection !== 'auto' && classic.includes(this.selection as Expression)) {
+      const expression = this.selection as Expression
+      return { expression, phase: 'dwell' as const, from: expression, to: expression, t: 0 }
+    }
+    return sampleAuto(this.autoElapsed, classic)
   }
 
   private desiredPose(): FacePose {

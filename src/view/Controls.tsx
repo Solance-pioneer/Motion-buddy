@@ -1,22 +1,37 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { EXPRESSIONS, type Expression } from '../logic/expressions.ts'
 import type { Presence, Selection } from '../logic/engine.ts'
+import { POSE_IDS, type PoseId, type Profile } from '../logic/library.ts'
 import type { ReactionKind, Sensitivity } from '../logic/reactions.ts'
 import { ACCENTS, type AccentId } from './accents.ts'
 import type { FaceStyle } from './applyPose.ts'
 import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 
-const EXPRESSION_LABEL: Record<Expression, string> = {
+const EXPRESSION_LABEL: Record<PoseId, string> = {
   curious: 'Curious',
   happy: 'Happy',
+  laugh: 'Laugh',
+  shy: 'Shy',
+  smug: 'Smug',
   grumpy: 'Grumpy',
+  determined: 'Determined',
+  worried: 'Worried',
+  startled: 'Startled',
   sleepy: 'Sleepy',
+  pant: 'Pant',
+  dizzy: 'Dizzy',
+}
+
+const PROFILE_NOTE: Record<Profile, string> = {
+  desk: 'Chill and curious, with daydreams and an occasional yawn. The face stays the whole picture.',
+  car: 'Focused and cool, with a short simulated rev. The speed lines are a decoration, not engine RPM, vehicle speed, or location.',
+  wrist: 'Walking and running faces, including a pant and a happy recovery. A browser profile, not a watch, step count, or heart rate.',
 }
 
 export function Controls({
   presence,
   selection,
+  profile,
   autoSet,
   accent,
   style,
@@ -29,6 +44,7 @@ export function Controls({
   reduced,
   onClose,
   onPresence,
+  onProfile,
   onSelection,
   onToggleAuto,
   onAccent,
@@ -43,7 +59,8 @@ export function Controls({
 }: {
   presence: Presence
   selection: Selection
-  autoSet: readonly Expression[]
+  profile: Profile
+  autoSet: readonly PoseId[]
   accent: AccentId
   style: FaceStyle
   sensitivity: Sensitivity
@@ -55,8 +72,9 @@ export function Controls({
   reduced: boolean
   onClose: () => void
   onPresence: (presence: Presence) => void
+  onProfile: (profile: Profile) => void
   onSelection: (selection: Selection) => void
-  onToggleAuto: (expression: Expression) => void
+  onToggleAuto: (expression: PoseId) => void
   onAccent: (accent: AccentId) => void
   onStyle: (style: FaceStyle) => void
   onSensitivity: (sensitivity: Sensitivity) => void
@@ -108,6 +126,23 @@ export function Controls({
         </div>
 
         <fieldset>
+          <legend>Where it is</legend>
+          <p className="release">Expressive v2</p>
+          <div className="choice-row">
+            <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
+              Desk
+            </button>
+            <button type="button" aria-pressed={profile === 'car'} onClick={() => onProfile('car')}>
+              Car
+            </button>
+            <button type="button" aria-pressed={profile === 'wrist'} onClick={() => onProfile('wrist')}>
+              Wrist
+            </button>
+          </div>
+          <p className="note">{PROFILE_NOTE[profile]}</p>
+        </fieldset>
+
+        <fieldset>
           <legend>While this page is open</legend>
           <div className="choice-row">
             <button type="button" aria-pressed={presence === 'awake'} onClick={() => onPresence('awake')}>
@@ -130,7 +165,7 @@ export function Controls({
             <button type="button" aria-pressed={selection === 'auto'} onClick={() => onSelection('auto')}>
               Auto
             </button>
-            {EXPRESSIONS.map((expression) => (
+            {POSE_IDS.map((expression) => (
               <button
                 key={expression}
                 type="button"
@@ -147,7 +182,7 @@ export function Controls({
         <fieldset>
           <legend>Auto uses</legend>
           <div className="choice-grid">
-            {EXPRESSIONS.map((expression) => (
+            {POSE_IDS.map((expression) => (
               <button
                 key={expression}
                 type="button"

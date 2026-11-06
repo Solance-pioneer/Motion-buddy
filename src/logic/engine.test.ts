@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { advance, BuddyEngine, REST_HOLD_MS } from './engine.ts'
 import { DWELL_MS, POSES, sampleAuto, TRANSITION_MS } from './expressions.ts'
+import { POSE_IDS } from './library.ts'
 import { WAKE_DEBOUNCE_MS } from './motion.ts'
 
 describe('sampleAuto', () => {
@@ -24,9 +25,9 @@ describe('sampleAuto', () => {
 describe('BuddyEngine', () => {
   it('does not drop the last Auto expression', () => {
     const engine = new BuddyEngine({ random: () => 0 })
-    engine.toggleAutoExpression('happy')
-    engine.toggleAutoExpression('grumpy')
-    engine.toggleAutoExpression('sleepy')
+    for (const pose of POSE_IDS) {
+      if (pose !== 'curious') engine.toggleAutoExpression(pose)
+    }
     engine.toggleAutoExpression('curious')
     expect(engine.snapshot().autoSet).toEqual(['curious'])
   })
@@ -144,6 +145,24 @@ describe('BuddyEngine', () => {
     }
     expect(peak).toBeGreaterThan(0.8)
     expect(reopened).toBe(true)
+  })
+
+  it('switches Desk, Car, and Wrist without restoring an excluded pose', () => {
+    const engine = new BuddyEngine({ random: () => 0.5 })
+    expect(engine.snapshot()).toMatchObject({ profile: 'desk', expression: 'curious', speed: false })
+    engine.setProfile('car')
+    expect(engine.snapshot()).toMatchObject({ profile: 'car', expression: 'determined', speed: true })
+    engine.setProfile('wrist')
+    expect(engine.snapshot()).toMatchObject({ profile: 'wrist', expression: 'pant', speed: false })
+    engine.toggleAutoExpression('pant')
+    engine.setProfile('wrist')
+    expect(engine.snapshot().expression).not.toBe('pant')
+    engine.setProfile('desk')
+    engine.toggleAutoExpression('worried')
+    engine.previewReaction('startled')
+    const blocked = engine.snapshot()
+    expect(blocked.reaction).toBe('worried')
+    expect(blocked.expression).not.toBe('worried')
   })
 
   it('keeps a calmer blink gap when reduced motion is on', () => {

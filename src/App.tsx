@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
-import type { Expression } from './logic/expressions.ts'
+import type { PoseId } from './logic/library.ts'
 import { applyPose, type FaceHandles, type FaceStyle } from './view/applyPose.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
@@ -47,11 +47,13 @@ function viewKey(state: BuddyState): string {
     state.selection,
     state.autoSet.join(','),
     state.expression,
+    state.profile,
     state.phase,
     state.resting ? 'resting' : 'up',
     state.reduced ? 'reduced' : 'full',
     state.hidden ? 'hidden' : 'shown',
     state.reaction,
+    state.sensitivity,
     state.allowStartled ? 'startled-on' : 'startled-off',
     state.allowDizzy ? 'dizzy-on' : 'dizzy-off',
   ].join('|')
@@ -90,6 +92,9 @@ export function App() {
       root.dataset.presence = state.presence
       root.dataset.selection = state.selection
       root.dataset.expression = state.expression
+      root.dataset.profile = state.profile
+      root.dataset.speed = state.speed ? 'on' : 'off'
+      root.dataset.gaze = `${state.gazeX.toFixed(2)},${state.gazeY.toFixed(2)}`
       root.dataset.phase = state.phase
       root.dataset.display = state.presence === 'rest' && state.wakefulness < 0.5 ? 'resting' : state.expression
       root.dataset.auto = state.autoSet.join(',')
@@ -106,7 +111,18 @@ export function App() {
       root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
-    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.face, styleRef.current)
+    if (handlesRef.current) {
+      applyPose(
+        handlesRef.current,
+        state.expression,
+        state.blink,
+        colors.face,
+        styleRef.current,
+        state.gazeX,
+        state.gazeY,
+        state.speed,
+      )
+    }
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -298,6 +314,7 @@ export function App() {
         <Controls
           presence={view.presence}
           selection={view.selection}
+          profile={view.profile}
           autoSet={view.autoSet}
           accent={accent}
           style={style}
@@ -313,11 +330,15 @@ export function App() {
             engine.setPresence(presence)
             publish(engine.snapshot())
           }}
+          onProfile={(profile) => {
+            engine.setProfile(profile)
+            publish(engine.snapshot())
+          }}
           onSelection={(selection) => {
             engine.setSelection(selection)
             publish(engine.snapshot())
           }}
-          onToggleAuto={(expression: Expression) => {
+          onToggleAuto={(expression: PoseId) => {
             engine.toggleAutoExpression(expression)
             publish(engine.snapshot())
           }}
