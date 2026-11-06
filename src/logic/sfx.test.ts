@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { encodeWav, gateCue, initialGate, initialMoveClock, mutedFromStorage, noteMovement, renderCue, type MoveClock } from './sfx.ts'
+import { cueForHearState, encodeWav, gateCue, initialGate, initialMoveClock, initialTapClock, mutedFromStorage, noteFaceTap, noteMovement, renderCue, type MoveClock } from './sfx.ts'
 
 describe('sound cues', () => {
   it('stays silent until a gesture unlocks it, then respects mute and cooldown', () => {
@@ -44,6 +44,7 @@ function shove(clock: MoveClock, now: number, magnitude: number, extra?: Partial
     muted: false,
     unlocked: true,
     allowDizzy: true,
+    allowGrumpy: true,
     busyUntil: 0,
     ...extra,
   })
@@ -100,5 +101,32 @@ describe('movement chirps', () => {
     const released = shove(first.clock, 500, 0.1)
     const dropped = shove(released.clock, 2_000, 1.2, { busyUntil: 2_500 })
     expect(dropped.cue).toBeNull()
+  })
+
+  it('frowns after busy motion or repeated face taps, and ignores idle grumpy', () => {
+    let clock = initialMoveClock()
+    const cues: Array<string | null> = []
+    for (let step = 0; step < 4; step += 1) {
+      const time = step * 1_200
+      clock = shove(clock, time, 0.1).clock
+      const up = shove(clock, time + 40, 1.1)
+      clock = up.clock
+      cues.push(up.cue)
+    }
+    expect(cues).toEqual([null, 'chirp', null, 'grumpy'])
+    expect(shove(clock, 4_000, 1.1).cue).toBeNull()
+    expect(cueForHearState({ expression: 'grumpy', reaction: 'none', reduced: false, allowDizzy: true, allowStartled: true })).toBeNull()
+
+    let taps = initialTapClock()
+    const faces: Array<string | null> = []
+    for (let step = 0; step < 5; step += 1) {
+      const next = noteFaceTap(taps, { now: step * 400, reduced: false, muted: false, unlocked: true, allowGrumpy: true, busyUntil: 0 })
+      taps = next.clock
+      faces.push(next.cue)
+    }
+    expect(faces).toEqual([null, null, null, 'disapprove', null])
+    const ui = noteFaceTap(initialTapClock(), { now: 0, reduced: false, muted: false, unlocked: true, allowGrumpy: false, busyUntil: 0 })
+    expect(ui.frown).toBe(false)
+    expect(noteFaceTap(initialTapClock(), { now: 0, reduced: true, muted: false, unlocked: true, allowGrumpy: true, busyUntil: 0 }).frown).toBe(false)
   })
 })

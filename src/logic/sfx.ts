@@ -1,7 +1,8 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
+import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { VOICE_MP3_BASE64 } from './voice-mp3.ts'
 
-export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up'
+export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up' | 'disapprove'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
 
 export const APPROVED_MS: Record<ApprovedCue, number> = {
@@ -13,6 +14,7 @@ export const APPROVED_MS: Record<ApprovedCue, number> = {
   dizzy: 1200,
   clap: 1992,
   'level-up': 2496,
+  disapprove: 104,
 }
 
 /**
@@ -32,6 +34,7 @@ export const PLAYBACK_GAIN: Record<ApprovedCue | 'chirp', number> = {
   chirp: 0.32,
   clap: 0.3,
   'level-up': 0.3,
+  disapprove: 0.2,
 }
 
 export const SOUND_KEY = 'motion-buddy-sound-v1'
@@ -202,10 +205,11 @@ export function noteMovement(
     muted: boolean
     unlocked: boolean
     allowDizzy: boolean
+    allowGrumpy: boolean
     busyUntil: number
   },
-): { clock: MoveClock; cue: 'chirp' | 'dizzy' | null } {
-  const recent = clock.recent.filter((time) => input.now - time <= RAPID_WINDOW_MS)
+): { clock: MoveClock; cue: 'chirp' | 'dizzy' | 'grumpy' | null } {
+  const recent = clock.recent.filter((time) => input.now - time <= 6_000)
   let armed = clock.armed
   if (input.magnitude < MOVE_RELEASE) armed = false
   const rising = !clock.armed && input.magnitude >= MOVE_NOTICE
@@ -215,17 +219,50 @@ export function noteMovement(
     moves += 1
     recent.push(input.now)
   }
-  const rapid = recent.length >= RAPID_MOVES
+  const rapid = recent.filter((time) => input.now - time <= RAPID_WINDOW_MS).length >= RAPID_MOVES
   const silent = input.reduced || input.muted || !input.unlocked || input.now < clock.quietUntil
-  let cue: 'chirp' | 'dizzy' | null = null
+  const busy = recent.length >= 4
+  let cue: 'chirp' | 'dizzy' | 'grumpy' | null = null
   let quietUntil = clock.quietUntil
   if (rising && !silent && rapid && input.allowDizzy) {
     cue = 'dizzy'
     quietUntil = input.now + 1_600
+  } else if (rising && !silent && busy && input.allowGrumpy && input.now >= input.busyUntil) {
+    cue = 'grumpy'
+    quietUntil = input.now + 4_000
   } else if (rising && !silent && input.now >= input.busyUntil && !rapid && moves % 2 === 0 && input.magnitude < MOVE_FAST) {
     cue = 'chirp'
   }
   return { clock: { armed, moves, recent, quietUntil }, cue }
+}
+
+export interface TapClock {
+  taps: number[]
+  quietUntil: number
+}
+
+export function initialTapClock(): TapClock {
+  return { taps: [], quietUntil: 0 }
+}
+
+/** Four face taps in a short window frown once. Later taps in the quiet spell are dropped. */
+export function noteFaceTap(
+  clock: TapClock,
+  input: {
+    now: number
+    reduced: boolean
+    muted: boolean
+    unlocked: boolean
+    allowGrumpy: boolean
+    busyUntil: number
+  },
+): { clock: TapClock; frown: boolean; cue: 'disapprove' | null } {
+  if (input.reduced || !input.allowGrumpy) return { clock, frown: false, cue: null }
+  const taps = clock.taps.filter((time) => input.now - time <= 2_500)
+  taps.push(input.now)
+  if (taps.length < 4 || input.now < clock.quietUntil) return { clock: { taps, quietUntil: clock.quietUntil }, frown: false, cue: null }
+  const audible = !input.muted && input.unlocked && input.now >= input.busyUntil
+  return { clock: { taps: [], quietUntil: input.now + 4_000 }, frown: true, cue: audible ? 'disapprove' : null }
 }
 
 /** The chirp is the explicit confirmation and the movement answer. It waits until the voice is free. */
@@ -270,7 +307,7 @@ export function decodeApprovedWav(bytes: Uint8Array): Float32Array {
 
 const approvedCache = new Map<ApprovedCue, Float32Array>()
 
-export function approvedSamples(kind: Exclude<ApprovedCue, 'clap' | 'level-up'>): Float32Array {
+export function approvedSamples(kind: Exclude<ApprovedCue, 'clap' | 'level-up' | 'disapprove'>): Float32Array {
   const cached = approvedCache.get(kind)
   if (cached) return cached
   const binary = Uint8Array.from(atob(APPROVED_WAV_BASE64[kind]), (char) => char.charCodeAt(0))
@@ -313,9 +350,10 @@ export function prepareVoices(): Promise<void> {
   if (voicePrepare) return voicePrepare
   const audio = context
   voicePrepare = (async () => {
-    for (const kind of ['clap', 'level-up'] as const) {
+    const clips = { clap: VOICE_MP3_BASE64.clap, 'level-up': VOICE_MP3_BASE64['level-up'], disapprove: DISAPPROVE_OGG_BASE64 } as const
+    for (const kind of ['clap', 'level-up', 'disapprove'] as const) {
       if (voicePcm.has(kind)) continue
-      const bytes = Uint8Array.from(atob(VOICE_MP3_BASE64[kind]), (char) => char.charCodeAt(0))
+      const bytes = Uint8Array.from(atob(clips[kind]), (char) => char.charCodeAt(0))
       const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
       const decoded = await audio.decodeAudioData(copy)
       voicePcm.set(kind, { samples: decoded.getChannelData(0).slice(), rate: decoded.sampleRate })
@@ -339,7 +377,7 @@ export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
   const now = performance.now()
   if (now < playingUntil) return false
-  const spoken = kind === 'clap' || kind === 'level-up'
+  const spoken = kind === 'clap' || kind === 'level-up' || kind === 'disapprove'
   const approved = kind === 'scan' || kind === 'giggle' || kind === 'surprise' || kind === 'yawn' || kind === 'wink' || kind === 'dizzy'
   if (!approved && !spoken && kind !== 'chirp') return false
   const voice = spoken ? voicePcm.get(kind) : undefined

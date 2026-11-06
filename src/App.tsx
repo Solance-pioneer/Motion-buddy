@@ -11,7 +11,7 @@ import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
-import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, loadSoundPrefs, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory } from './logic/sfx.ts'
+import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -92,6 +92,7 @@ export function App() {
   const [soundReady, setSoundReady] = useState(false)
   const heard = useRef<SoundMemory>(initialSoundMemory())
   const moves = useRef<MoveClock>(initialMoveClock())
+  const faceTaps = useRef<TapClock>(initialTapClock())
   const chirped = useRef(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
@@ -182,10 +183,14 @@ export function App() {
       muted: status.muted || !soundOn,
       unlocked: status.unlocked,
       allowDizzy: state.allowDizzy,
+      allowGrumpy: state.autoSet.includes('grumpy'),
       busyUntil: heard.current.voiceUntil,
     })
     moves.current = next.clock
-    if (next.cue === 'dizzy') {
+    if (next.cue === 'grumpy') {
+      if (engine.requestScold() && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
+      publish(engine.snapshot())
+    } else if (next.cue === 'dizzy') {
       const already = state.reaction === 'dizzy'
       engine.previewReaction('dizzy')
       publish(engine.snapshot())
@@ -384,6 +389,21 @@ export function App() {
         inert={open}
         onClick={() => {
           armAudio()
+          const status = soundStatus()
+          const state = engine.snapshot()
+          const tap = noteFaceTap(faceTaps.current, {
+            now: performance.now(),
+            reduced: state.reduced,
+            muted: status.muted || !soundOn,
+            unlocked: status.unlocked,
+            allowGrumpy: state.autoSet.includes('grumpy'),
+            busyUntil: heard.current.voiceUntil,
+          })
+          faceTaps.current = tap.clock
+          if (tap.frown && engine.requestScold()) {
+            publish(engine.snapshot())
+            if (tap.cue && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
+          }
           if (!open) {
             setSeenControls(true)
             setHintOn(false)

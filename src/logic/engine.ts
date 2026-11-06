@@ -89,6 +89,7 @@ export class BuddyEngine {
   private simLookUntil = 0
   private reactionDir = 0
   private settleUntil = 0
+  private scoldUntil = 0
   private readonly random: () => number
 
   constructor(options?: { random?: () => number }) {
@@ -168,6 +169,15 @@ export class BuddyEngine {
   }
 
   /** Labelled stand-in. It does not mark the sensor as on. */
+  /** Brief frown after pestering. Does nothing while a harder reaction is up, or if grumpy is turned off. */
+  requestScold(): boolean {
+    if (this.reduced || !this.autoSet.includes('grumpy')) return false
+    if (this.reaction.name !== 'none') return false
+    if (this.uiElapsed < this.scoldUntil) return false
+    this.scoldUntil = this.uiElapsed + 1_400
+    return true
+  }
+
   previewReaction(kind: ReactionKind): void {
     if (this.hidden) return
     if (kind === 'startled' && !this.allowStartled) return
@@ -287,7 +297,10 @@ export class BuddyEngine {
       frame.gazeX = Math.abs(steerX) > 0.35 ? steerX : clampUnit(frame.gazeX * (1 - Math.abs(steerX) / 0.35) + steerX)
       frame.gazeY = Math.abs(steerY) > 0.35 ? steerY : clampUnit(frame.gazeY * (1 - Math.abs(steerY) / 0.35) + steerY)
     }
+    const scolding = this.uiElapsed < this.scoldUntil && this.reaction.name === 'none' && this.selection === 'auto' && this.autoSet.includes('grumpy')
+    if (scolding) frame = { ...frame, pose: 'grumpy', gazeX: 0, gazeY: 0.08, blink: 0, speed: false }
     const showApproved = idleShowcase
+      && !scolding
       && this.selection === 'auto'
       && this.reaction.name === 'none'
       && this.uiElapsed >= this.settleUntil

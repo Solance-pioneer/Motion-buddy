@@ -207,6 +207,19 @@ describe('BuddyEngine', () => {
     expect(still.gazeX).toBe(0)
   })
 
+  it('frowns briefly when scolded and stays off that face when grumpy is excluded', () => {
+    const engine = new BuddyEngine({ random: () => 0 })
+    expect(engine.requestScold()).toBe(true)
+    expect(engine.snapshot().expression).toBe('grumpy')
+    expect(engine.requestScold()).toBe(false)
+    const later = advance(engine, 1_600)
+    expect(later.expression).not.toBe('grumpy')
+    const blocked = new BuddyEngine({ random: () => 0 })
+    blocked.toggleAutoExpression('grumpy')
+    expect(blocked.requestScold()).toBe(false)
+    expect(blocked.snapshot().expression).not.toBe('grumpy')
+  })
+
   it('keeps a calmer blink gap when reduced motion is on', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     engine.setReduced(true)
