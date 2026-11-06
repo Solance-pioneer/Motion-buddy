@@ -1,5 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type { Presence, Selection } from '../logic/engine.ts'
+import type { SceneKey } from '../logic/scenes.ts'
 import { POSE_IDS, type PoseId, type Profile } from '../logic/library.ts'
 import type { ReactionKind, Sensitivity } from '../logic/reactions.ts'
 import { ACCENTS, type AccentId } from './accents.ts'
@@ -46,6 +47,7 @@ export function Controls({
   wakeLock,
   reduced,
   onClose,
+  onPlayScene,
   onPresence,
   onProfile,
   onSelection,
@@ -78,6 +80,7 @@ export function Controls({
   wakeLock: WakeLockUi
   reduced: boolean
   onClose: () => void
+  onPlayScene: (key: SceneKey) => void
   onPresence: (presence: Presence) => void
   onProfile: (profile: Profile) => void
   onSelection: (selection: Selection) => void
@@ -138,7 +141,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v3.4</p>
+          <p className="release">Expressive v3.5</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk
@@ -151,6 +154,17 @@ export function Controls({
             </button>
           </div>
           <p className="note">{PROFILE_NOTE[profile]}</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Dress-up scenes</legend>
+          <div className="choice-row">
+            <button type="button" onClick={() => onPlayScene('ninja')}>Ninja peek</button>
+            <button type="button" onClick={() => onPlayScene('cord_hero')}>Rope hero</button>
+            <button type="button" onClick={() => onPlayScene('racer')}>Little racer</button>
+            <button type="button" onClick={() => onPlayScene('sheet_ghost')}>Sheet ghost</button>
+          </div>
+          <p className="note">Each scene plays through, then Buddy is plain again. Mute still silences it.</p>
         </fieldset>
 
         <fieldset>

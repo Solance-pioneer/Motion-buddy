@@ -1,0 +1,543 @@
+{
+  "status": "ORIGINAL_ASSET_HANDOFF_NOT_INTEGRATED",
+  "source": "src/create_playful_assets.py",
+  "source_sha256": "98a4709747f3bfc79a612af7ede92823061027dc0048ac4cda0f84d2b24699bc",
+  "provenance": "Original procedural sound synthesis and original vector shapes for Michael Dicker. No downloaded art/audio, existing character costume or reference melody. No public-release/licence grant implied.",
+  "sounds": [
+    {
+      "key": "curious_contact_loop",
+      "description": "Sustained curious contact tone; native sample loop at 0..2.8s, external gain ramps only",
+      "loop": true,
+      "master": {
+        "path": "audio/masters/curious_contact_loop_master_f32_48k.wav",
+        "sha256": "75613d5336e0319569d629e13b2e8ba30582f37fe1de3518ef991ac8c1d69817"
+      },
+      "app": {
+        "path": "audio/app/curious_contact_loop_app_pcm16_48k.wav",
+        "sha256": "87b629cead273de97ac0d496d381d99180227489bd6cdda930945670a01897d0",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 2.8,
+          "peak_dbfs": -17.939403778852373,
+          "active_rms_dbfs": -21.49741885593488,
+          "dc_offset": -3.634658711570453e-20,
+          "first_sample": 0.0,
+          "last_sample": -0.006134220404675436
+        }
+      },
+      "loop_qa": {
+        "start_seconds": 0,
+        "end_seconds": 2.8,
+        "whole_fundamental_cycles": 924,
+        "analytic_periodic_max_error": 6.322071467409259e-13,
+        "wrap_step_amplitude": 0.006123809651989778,
+        "loop_endpoint_note": "Last sample is NOT forced to zero: it is the correct pre-wrap waveform sample. Use uncompressed PCM buffer looping, not repeated ended/restart calls. No baked fade/silent tail."
+      }
+    },
+    {
+      "key": "pet_soft_squeak",
+      "description": "Gentle single squeeze squeak",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_soft_squeak_master_f32_48k.wav",
+        "sha256": "8c995f1c886df3a84f4575429d14c4725a1105a9440bda4a63997a4c7ba0c283"
+      },
+      "app": {
+        "path": "audio/app/pet_soft_squeak_app_pcm16_48k.wav",
+        "sha256": "3a555a6eeef942f4e634e63336aebac7b57cdabc6fb8efd2bf4b8ebc2969ebad",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.34,
+          "peak_dbfs": -13.685420944645127,
+          "active_rms_dbfs": -20.947668360076094,
+          "dc_offset": -9.350033540276782e-09,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "pet_round_chirp",
+      "description": "Rounded two-part contented chirp",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_round_chirp_master_f32_48k.wav",
+        "sha256": "4471942081f33bcefa69593adeb5177a1d7cc4c1aa5508ea1d2e2cbb9623c9d0"
+      },
+      "app": {
+        "path": "audio/app/pet_round_chirp_app_pcm16_48k.wav",
+        "sha256": "bb386e2895847c7ed9ca49cf5711e99b0e9046b67bcce9972ce166724b127edd",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.48,
+          "peak_dbfs": -12.999547169594685,
+          "active_rms_dbfs": -20.94776412624045,
+          "dc_offset": 4.238681871657001e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "pet_content_wobble",
+      "description": "Low soft satisfied warble, no speech",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_content_wobble_master_f32_48k.wav",
+        "sha256": "73060926f7a92797fdaf907660bb02a19fe7506e2b09fbce5417a23b318c4566"
+      },
+      "app": {
+        "path": "audio/app/pet_content_wobble_app_pcm16_48k.wav",
+        "sha256": "507a0837d106d62a77ce7af2cd5784937b9d4cd14d4e4cfb9a1a9f2ed8c51dea",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.78,
+          "peak_dbfs": -12.999547169594685,
+          "active_rms_dbfs": -21.505630076657347,
+          "dc_offset": -3.097498290806272e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "ninja_soft_swish",
+      "description": "Original quiet cloth-like digital swish",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/ninja_soft_swish_master_f32_48k.wav",
+        "sha256": "f07ca141d504ec31ec09919b87910a6813be5321f24bae05df26676f43d1dc02"
+      },
+      "app": {
+        "path": "audio/app/ninja_soft_swish_app_pcm16_48k.wav",
+        "sha256": "b3336913388017bb6d3ecc33c9680d9a9c8c7e5f662611254396074b59f114d5",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.48,
+          "peak_dbfs": -14.999833261030977,
+          "active_rms_dbfs": -27.68242176062771,
+          "dc_offset": -1.5749352329409416e-06,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "hero_original_flourish",
+      "description": "Original four-note electronic flourish; no reference tune or theme imitation",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/hero_original_flourish_master_f32_48k.wav",
+        "sha256": "f5565b4c3c65d102d2508b0143b8cfc1a407c487cf283c84c948a56da1a6dbcf"
+      },
+      "app": {
+        "path": "audio/app/hero_original_flourish_app_pcm16_48k.wav",
+        "sha256": "2efecd43e981f14c1b5725dce881ea5e08e87cbb1515325b80448ca8b2d1b9b5",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 1.3,
+          "peak_dbfs": -12.999547169594685,
+          "active_rms_dbfs": -20.985303211796285,
+          "dc_offset": 1.8584989745040463e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "racer_soft_wind",
+      "description": "Low soft wind rush; no real vehicle recording",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/racer_soft_wind_master_f32_48k.wav",
+        "sha256": "78dadd24e9539ca819f26bbaa0fc1bf0fceb6c409eaa9201caf5366e4772cf99"
+      },
+      "app": {
+        "path": "audio/app/racer_soft_wind_app_pcm16_48k.wav",
+        "sha256": "dc909f08ab12611441ad645e2f0f54bdc3c3df8a36f34c7a1dc5628655d4b4d8",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 1.25,
+          "peak_dbfs": -13.999835297946976,
+          "active_rms_dbfs": -30.359015431528494,
+          "dc_offset": -1.72938220363239e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    },
+    {
+      "key": "ghost_cute_boo",
+      "description": "Two soft bell-like drifting notes; no jump scare or vocal boo",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/ghost_cute_boo_master_f32_48k.wav",
+        "sha256": "43ebc68d48b19eba6e0fee64c902ad6a3a1d4ba8b1f830c7f5b751d77af4d61c"
+      },
+      "app": {
+        "path": "audio/app/ghost_cute_boo_app_pcm16_48k.wav",
+        "sha256": "4a050c11536c1b59057400f8c163da04769f9fa6171ca7e66e4916df21481e46",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 1.05,
+          "peak_dbfs": -15.142609988327841,
+          "active_rms_dbfs": -22.92931431639564,
+          "dc_offset": -4.0570240771608914e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      }
+    }
+  ],
+  "audition": {
+    "path": "audio/audition/Motion-Buddy-playful-audio-audition.wav",
+    "sha256": "d42f6278380d7e182ea0df07bed6cb02155c1fdae3d4cc5b27f08bb65ab930b7",
+    "cues": [
+      {
+        "key": "curious_contact_loop_two_cycles",
+        "start_seconds": 0,
+        "duration_seconds": 5.6
+      },
+      {
+        "key": "pet_soft_squeak",
+        "start_seconds": 6.1,
+        "duration_seconds": 0.34
+      },
+      {
+        "key": "pet_round_chirp",
+        "start_seconds": 6.94,
+        "duration_seconds": 0.48
+      },
+      {
+        "key": "pet_content_wobble",
+        "start_seconds": 7.92,
+        "duration_seconds": 0.78
+      },
+      {
+        "key": "ninja_soft_swish",
+        "start_seconds": 9.2,
+        "duration_seconds": 0.48
+      },
+      {
+        "key": "hero_original_flourish",
+        "start_seconds": 10.18,
+        "duration_seconds": 1.3
+      },
+      {
+        "key": "racer_soft_wind",
+        "start_seconds": 11.98,
+        "duration_seconds": 1.25
+      },
+      {
+        "key": "ghost_cute_boo",
+        "start_seconds": 13.73,
+        "duration_seconds": 1.05
+      }
+    ],
+    "duration_seconds": 14.780000000000001
+  },
+  "costumes": [
+    {
+      "key": "ninja",
+      "svg": "costumes/svg/ninja_overlay.svg",
+      "sha256": "308631abf7af10fdb7037d55cb7db443178dcc93046a19df957f0279b18140e9",
+      "preview": "costumes/preview/ninja_registered.png",
+      "layer": "behind existing eye/mouth features; contains no replacement eyes",
+      "source_viewbox": [
+        0,
+        0,
+        360,
+        360
+      ]
+    },
+    {
+      "key": "cord_hero",
+      "svg": "costumes/svg/cord_hero_overlay.svg",
+      "sha256": "eb7aeefb4223692ee38cf5dcc517493ee67a7ffc82717134e3e625261322d7fe",
+      "preview": "costumes/preview/cord_hero_registered.png",
+      "layer": "behind existing eye/mouth features; contains no replacement eyes",
+      "source_viewbox": [
+        0,
+        0,
+        360,
+        360
+      ]
+    },
+    {
+      "key": "racer",
+      "svg": "costumes/svg/racer_overlay.svg",
+      "sha256": "3818594757d14a25348ddd5595bc608a2f881e6a94e4315965df210d29be9f23",
+      "preview": "costumes/preview/racer_registered.png",
+      "layer": "behind existing eye/mouth features; contains no replacement eyes",
+      "source_viewbox": [
+        0,
+        0,
+        360,
+        360
+      ]
+    },
+    {
+      "key": "sheet_ghost",
+      "svg": "costumes/svg/sheet_ghost_overlay.svg",
+      "sha256": "10be179b5924b0b4b83ea4974b9afebdb49a6b688be630a78226a85ddbec72d7",
+      "preview": "costumes/preview/sheet_ghost_registered.png",
+      "layer": "behind existing eye/mouth features; contains no replacement eyes",
+      "source_viewbox": [
+        0,
+        0,
+        360,
+        360
+      ]
+    }
+  ],
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "reference_eye_rects": [
+      [
+        94,
+        140,
+        62,
+        44
+      ],
+      [
+        204,
+        140,
+        62,
+        44
+      ]
+    ],
+    "reference_mouth": "M171 216 Q180 222 189 216",
+    "instruction": "Register overlays to existing eyes/mouth; do not replace existing app face with these demo features. Hero thread should be world-space and separate from the local costume overlay."
+  },
+  "qa": {
+    "performed": [
+      "finite sample, DC, peak and PCM roundtrip assertions",
+      "analytic loop period and seam derivative assertions",
+      "SVG rasterization to registered concept images"
+    ],
+    "not_performed": [
+      "human listening",
+      "phone/device test",
+      "app integration",
+      "runtime costume/gesture animation verification",
+      "deployment",
+      "full legal/trademark clearance"
+    ]
+  },
+  "scene_spec": {
+    "policy": {
+      "supersedes": "Earlier 4\u20134.8s timings and touch-to-dismiss behavior in initial handoff",
+      "user_revision": "Michael: scenes must be unstoppable and last5\u201310 seconds,2026-11-06 23:23 GMT",
+      "scope": "All four prepared costume scenes; interaction locking applies only while a scene is active",
+      "uninterruptible_by": [
+        "face tap",
+        "face drag",
+        "petting touch",
+        "double-tap face menu gesture",
+        "idle scheduler",
+        "motion reaction"
+      ],
+      "input_handling": "Do not queue ignored face input. If a pointer remains held at scene completion, wait for release/new pointerdown before resuming normal gestures.",
+      "always_available": [
+        "mute immediately silences audio without forcing visual scene to end",
+        "browser/OS exit and navigation",
+        "visibility-loss audio stop and cleanup"
+      ],
+      "scene_finish": "Return to exact plain Buddy neutral state, clear costume/cord/temporary transforms and scene audio sources, then unlock normal input",
+      "not_allowed": "No kiosk/fullscreen capture or preventing browser/OS navigation; no audio continuing after mute or hidden page"
+    },
+    "scenes": [
+      {
+        "key": "ninja",
+        "duration_seconds": 6.0,
+        "beats": [
+          {
+            "from": 0,
+            "to": 0.55,
+            "action": "plain Buddy anticipation blink"
+          },
+          {
+            "from": 0.55,
+            "to": 1.05,
+            "action": "soft vanish, no flash"
+          },
+          {
+            "from": 1.05,
+            "to": 1.6,
+            "action": "masked reveal"
+          },
+          {
+            "from": 1.6,
+            "to": 3.7,
+            "action": "peek left then right with trailing bandana"
+          },
+          {
+            "from": 3.7,
+            "to": 4.7,
+            "action": "small proud squeeze and blink"
+          },
+          {
+            "from": 4.7,
+            "to": 5.5,
+            "action": "costume dissolves"
+          },
+          {
+            "from": 5.5,
+            "to": 6,
+            "action": "settle to exact plain neutral"
+          }
+        ],
+        "audio": [
+          {
+            "key": "ninja_soft_swish",
+            "at_seconds": 0.65
+          }
+        ]
+      },
+      {
+        "key": "cord_hero",
+        "duration_seconds": 7.0,
+        "beats": [
+          {
+            "from": 0,
+            "to": 0.6,
+            "action": "plain face blink/fade"
+          },
+          {
+            "from": 0.6,
+            "to": 1.8,
+            "action": "original masked upside-down reveal, world-space cord"
+          },
+          {
+            "from": 1.8,
+            "to": 2.7,
+            "action": "descend with one soft overshoot"
+          },
+          {
+            "from": 2.7,
+            "to": 4.4,
+            "action": "inverted proud hold and electronic flourish"
+          },
+          {
+            "from": 4.4,
+            "to": 5.5,
+            "action": "gently right himself"
+          },
+          {
+            "from": 5.5,
+            "to": 6.4,
+            "action": "retract cord and dissolve mask"
+          },
+          {
+            "from": 6.4,
+            "to": 7,
+            "action": "settle to exact plain neutral"
+          }
+        ],
+        "audio": [
+          {
+            "key": "hero_original_flourish",
+            "at_seconds": 2.8
+          }
+        ]
+      },
+      {
+        "key": "racer",
+        "duration_seconds": 7.0,
+        "beats": [
+          {
+            "from": 0,
+            "to": 0.9,
+            "action": "helmet lowers into place"
+          },
+          {
+            "from": 0.9,
+            "to": 1.7,
+            "action": "anticipation squash"
+          },
+          {
+            "from": 1.7,
+            "to": 4.2,
+            "action": "restrained lateral racing motion, soft speed streaks"
+          },
+          {
+            "from": 4.2,
+            "to": 5.2,
+            "action": "gentle braking squeeze"
+          },
+          {
+            "from": 5.2,
+            "to": 6.2,
+            "action": "helmet lifts/fades"
+          },
+          {
+            "from": 6.2,
+            "to": 7,
+            "action": "settle to exact plain neutral"
+          }
+        ],
+        "audio": [
+          {
+            "key": "racer_soft_wind",
+            "at_seconds": 2
+          }
+        ]
+      },
+      {
+        "key": "sheet_ghost",
+        "duration_seconds": 7.5,
+        "beats": [
+          {
+            "from": 0,
+            "to": 0.7,
+            "action": "curious blink"
+          },
+          {
+            "from": 0.7,
+            "to": 1.2,
+            "action": "soft disappear"
+          },
+          {
+            "from": 1.2,
+            "to": 1.9,
+            "action": "sheet reveal around existing eyes"
+          },
+          {
+            "from": 1.9,
+            "to": 4.7,
+            "action": "two friendly float arcs with cute notes"
+          },
+          {
+            "from": 4.7,
+            "to": 5.7,
+            "action": "little ghost peek/wobble"
+          },
+          {
+            "from": 5.7,
+            "to": 6.7,
+            "action": "sheet settles and dissolves"
+          },
+          {
+            "from": 6.7,
+            "to": 7.5,
+            "action": "settle to exact plain neutral"
+          }
+        ],
+        "audio": [
+          {
+            "key": "ghost_cute_boo",
+            "at_seconds": 2.2
+          }
+        ]
+      }
+    ],
+    "audio_note": "Use existing cues at beats; do not stretch a short WAV to scene length or spam-loop its transient. Quiet visual holds are deliberate.",
+    "reduced_motion": "Keep full5\u201310s scene timing and input lock, but use static costume/short crossfade instead of falling/flip/racing/float motion."
+  },
+  "scene_spec_source": "scene-policy-and-timings.json"
+}

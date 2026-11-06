@@ -1,6 +1,7 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
+import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
@@ -397,7 +398,10 @@ export function prepareVoices(): Promise<void> {
 
 export function setSoundMuted(muted: boolean): void {
   gate.muted = muted
-  if (muted) endContact(130)
+  if (muted) {
+    endContact(130)
+    stopSceneAudio(130)
+  }
   try {
     window.localStorage.setItem(SOUND_KEY, JSON.stringify({ muted, volume: 0.4 }))
   } catch {
@@ -544,6 +548,64 @@ export function playContactVariant(now = performance.now()): ContactVariant | nu
   return key
 }
 
+let sceneGuard = false
+let sceneSource: AudioBufferSourceNode | null = null
+let sceneGain: GainNode | null = null
+let sceneToken = 0
+
+export function setSceneGuard(active: boolean): void {
+  sceneGuard = active
+}
+
+export function sceneAudioActive(): boolean {
+  return sceneSource !== null
+}
+
+export function sceneAudioStatus(): { active: boolean } {
+  return { active: sceneSource !== null }
+}
+
+/** One short scene cue at its beat. It does not loop and does not replace the contact bed. */
+export function playSceneCue(key: keyof typeof SCENE_WAV_BASE64): boolean {
+  if (!context || gate.muted || !gate.unlocked) return false
+  stopSceneAudio(80)
+  const clip = pcm16(key, SCENE_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(gain, 0, 0.84, 0.08)
+  source.start()
+  sceneSource = source
+  sceneGain = gain
+  const token = sceneToken
+  source.onended = () => {
+    if (token !== sceneToken) return
+    if (sceneSource === source) {
+      sceneSource = null
+      sceneGain = null
+    }
+  }
+  return true
+}
+
+export function stopSceneAudio(ms = 130): void {
+  const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
+  sceneToken += 1
+  const source = sceneSource
+  const gain = sceneGain
+  sceneSource = null
+  sceneGain = null
+  if (source && gain) {
+    fadeNode(gain, 0.84, 0, seconds)
+    stopLater(source, seconds)
+  }
+}
+
 /** Fade the bed and any variant. Pending ended callbacks from this contact cannot start audio again. */
 export function endContact(ms = 130): void {
   const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
@@ -570,7 +632,7 @@ export function endContact(ms = 130): void {
 
 export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
-  if (contactActive()) {
+  if (contactActive() || sceneGuard) {
     contactYields += 1
     return false
   }

@@ -12,7 +12,8 @@ import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
@@ -60,6 +61,8 @@ type TestApi = {
   setHidden: (hidden: boolean) => void
   contact: () => ReturnType<typeof contactStatus>
   tryCue: (kind: 'chirp' | 'dizzy' | 'scan') => boolean
+  playScene: (key: SceneKey) => boolean
+  sceneAudio: () => { active: boolean }
 }
 
 function prefersReducedMotion(): boolean {
@@ -117,6 +120,7 @@ export function App() {
   const lastKey = useRef('')
   const [view, setView] = useState<BuddyState>(() => engine.snapshot())
   const [open, setOpen] = useState(false)
+  const [sceneOn, setSceneOn] = useState(false)
   const [accent, setAccent] = useState<AccentId>('white')
   const [style, setStyle] = useState<FaceStyle>('soft')
   const styleRef = useRef(style)
@@ -131,6 +135,13 @@ export function App() {
   const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
   const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, onFace: false, mode: 'chase' as PetMode, dragging: false })
+  const sceneTickRef = useRef<(dt: number) => void>(() => {})
+  const sceneRef = useRef<{ key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean } | null>(null)
+  const heldRef = useRef(false)
+  const waitRelease = useRef(false)
+  const calmRef = useRef(0)
+  const lastScene = useRef<SceneKey | null>(null)
+  const openRef = useRef(false)
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
     return current + (target - current) * (1 - Math.exp(-dt / ms))
@@ -264,6 +275,120 @@ export function App() {
       root.dataset.contact = contactStatus().active ? 'on' : 'off'
     }
   }
+  const clearSceneMotion = () => {
+    const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
+    const costume = faceButtonRef.current?.querySelector('[data-part="costume"]') as HTMLElement | null
+    const glance = faceButtonRef.current?.querySelector('[data-part="glance"]') as HTMLElement | null
+    const cord = rootRef.current?.querySelector('[data-part="costume-cord"]') as HTMLElement | null
+    if (costume) {
+      costume.style.opacity = '0'
+      for (const node of costume.querySelectorAll<HTMLElement>('[data-costume]')) {
+        node.style.opacity = '0'
+        node.setAttribute('opacity', '0')
+      }
+    }
+    if (glance) {
+      glance.style.opacity = '1'
+      glance.removeAttribute('transform')
+    }
+    if (svg) {
+      svg.style.overflow = ''
+      svg.style.transform = ''
+      svg.style.transformOrigin = ''
+    }
+    if (cord) cord.style.opacity = '0'
+    const root = rootRef.current
+    if (root) {
+      root.dataset.scene = ''
+      root.dataset.sceneMs = '0'
+      root.dataset.sceneHold = '0'
+    }
+  }
+  const finishScene = () => {
+    sceneRef.current = null
+    setSceneGuard(false)
+    stopSceneAudio(130)
+    clearSceneMotion()
+    releasePet()
+    setSceneOn(false)
+  }
+  const beginScene = (key: SceneKey) => {
+    if (sceneRef.current || contactStatus().active || waitRelease.current) return false
+    sceneRef.current = { key, started: performance.now(), banked: 0, paused: false, cueFired: false }
+    setSceneGuard(true)
+    endContact(100)
+    releasePet()
+    lastScene.current = key
+    calmRef.current = 0
+    setSceneOn(true)
+    return true
+  }
+  sceneTickRef.current = (dt: number) => {
+    const root = rootRef.current
+    const current = sceneRef.current
+    if (!current) {
+      if (!heldRef.current && !openRef.current && !contactStatus().active) {
+        calmRef.current += dt
+        if (calmRef.current >= SCENE_GAP_MS) beginScene(nextAmbientScene(lastScene.current))
+      }
+      return
+    }
+    const elapsed = current.banked + (current.paused ? 0 : performance.now() - current.started)
+    const pose = sampleScene(current.key, elapsed, engine.snapshot().reduced)
+    if (pose.done) {
+      finishScene()
+      if (heldRef.current) waitRelease.current = true
+      return
+    }
+    if (!current.cueFired && elapsed >= SCENE_CUE[current.key].at) {
+      current.cueFired = true
+      const status = soundStatus()
+      if (!status.muted && status.unlocked) playSceneCue(SCENE_CUE[current.key].key)
+    }
+    const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
+    const costume = svg?.querySelector('[data-part="costume"]') as HTMLElement | null
+    const glance = svg?.querySelector('[data-part="glance"]') as HTMLElement | null
+    if (costume) {
+      costume.style.opacity = '1'
+      for (const node of costume.querySelectorAll<HTMLElement>('[data-costume]')) {
+        const shown = node.dataset.costume === current.key ? String(pose.opacity) : '0'
+        node.style.opacity = shown
+        node.setAttribute('opacity', shown)
+      }
+      const wind = costume.querySelector('[data-part="costume-wind"]') as HTMLElement | null
+      if (wind) wind.style.opacity = String(pose.wind)
+    }
+    if (glance) {
+      glance.style.opacity = String(pose.face)
+      glance.setAttribute('transform', 'translate(0 0)')
+    }
+    if (svg) {
+      svg.style.overflow = current.key === 'cord_hero' ? 'visible' : ''
+      svg.style.transform = `translate(${pose.x.toFixed(1)}px, ${pose.y.toFixed(1)}px) rotate(${pose.rotate.toFixed(1)}deg) scale(${pose.sx.toFixed(3)}, ${pose.sy.toFixed(3)})`
+      svg.style.transformOrigin = '50% 46%'
+    }
+    const cord = root?.querySelector('[data-part="costume-cord"]') as SVGLineElement | null
+    if (cord) {
+      cord.style.opacity = String(pose.cord)
+      const mask = svg?.querySelector('[data-costume="cord_hero"]')?.getBoundingClientRect()
+      if (mask) {
+        const host = faceButtonRef.current?.getBoundingClientRect()
+        cord.setAttribute('x1', String((mask.left + mask.right) / 2 - (host?.left ?? 0)))
+        cord.setAttribute('y1', '0')
+        cord.setAttribute('x2', String((mask.left + mask.right) / 2 - (host?.left ?? 0)))
+        cord.setAttribute('y2', String(mask.top - (host?.top ?? 0)))
+      }
+    }
+    if (root) {
+      root.dataset.scene = current.key
+      root.dataset.sceneMs = String(Math.round(elapsed))
+      root.dataset.sceneHold = pose.hold ? '1' : '0'
+      root.dataset.sceneX = pose.x.toFixed(1)
+      root.dataset.sceneY = pose.y.toFixed(1)
+      root.dataset.pet = '0.0,0.0,1.00,1.00'
+      root.dataset.petMode = 'rest'
+    }
+  }
   const [muteLit, setMuteLit] = useState(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
@@ -322,6 +447,7 @@ export function App() {
     originalArm.current = cue.arm
     if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
     stepPet(dt)
+    sceneTickRef.current(dt)
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -433,6 +559,10 @@ export function App() {
     }
     const start = () => {
       if (loop.running || document.hidden) return
+      if (sceneRef.current) {
+        sceneRef.current.started = performance.now()
+        sceneRef.current.paused = false
+      }
       loop.running = true
       engine.setHidden(false)
       loop.last = performance.now()
@@ -445,12 +575,23 @@ export function App() {
       engine.feedLook(0, 0)
     }
     const stop = () => {
+      const current = sceneRef.current
+      if (current && !current.paused) {
+        current.banked += performance.now() - current.started
+        current.paused = true
+        current.cueFired = true
+      }
+      stopSceneAudio(130)
       loop.running = false
       engine.setHidden(true)
       abandonGesture()
       cancelAnimationFrame(loop.raf)
     }
-    const onBlur = () => abandonGesture()
+    const onBlur = () => {
+      if (sceneRef.current) sceneRef.current.cueFired = true
+      stopSceneAudio(130)
+      abandonGesture()
+    }
     const onLeave = () => abandonGesture()
     window.addEventListener('blur', onBlur)
     window.addEventListener('pagehide', onLeave)
@@ -575,6 +716,8 @@ export function App() {
       },
       contact: () => contactStatus(),
       tryCue: (kind) => playCue(kind),
+      playScene: (key: SceneKey) => beginScene(key),
+      sceneAudio: () => sceneAudioStatus(),
     }
     return () => {
       delete testWindow.__motionBuddyTest
@@ -593,6 +736,7 @@ export function App() {
       ? 'Motion Buddy is resting.'
       : `Motion Buddy looks ${view.expression}.`
 
+  openRef.current = open
   return (
     <main
         ref={rootRef}
@@ -625,6 +769,8 @@ export function App() {
         }}
         onPointerDown={(event) => {
           if (event.button !== 0) return
+          heldRef.current = true
+          if (sceneRef.current || waitRelease.current) return
           unlockQuiet()
           setMuteLit(true)
           const step = touchDown(touch.current, event.clientX, event.clientY, performance.now())
@@ -633,6 +779,7 @@ export function App() {
           event.currentTarget.setPointerCapture(event.pointerId)
         }}
         onPointerMove={(event) => {
+          if (sceneRef.current || waitRelease.current) return
           const step = touchMove(touch.current, event.clientX, event.clientY, performance.now())
           touch.current = step.clock
           if (!step.dragging) return
@@ -648,6 +795,12 @@ export function App() {
           aimPet(nx, ny, true)
         }}
         onPointerUp={() => {
+          heldRef.current = false
+          if (sceneRef.current || waitRelease.current) {
+            waitRelease.current = false
+            touch.current = touchCancel(touch.current).clock
+            return
+          }
           const step = touchUp(touch.current, performance.now())
           touch.current = step.clock
           releasePet()
@@ -662,12 +815,21 @@ export function App() {
           if (step.clock.pendingTapAt > 0) tapTimer.current = window.setTimeout(confirmSingle, DOUBLE_MS)
         }}
         onPointerCancel={() => {
+          heldRef.current = false
+          waitRelease.current = false
+          if (sceneRef.current) {
+            touch.current = touchCancel(touch.current).clock
+            return
+          }
           touch.current = touchCancel(touch.current).clock
           releasePet()
           endContact(130)
           engine.feedLook(0, 0)
         }}
       >
+        <svg className="scene-cord" data-part="costume-cord" aria-hidden="true">
+        <line x1="0" y1="0" x2="0" y2="0" stroke="#9b78c5" strokeWidth="3" />
+      </svg>
         <Face onReady={onReady} />
         {showHint ? (
           <span className={askForMotion ? 'hint hint-raised' : 'hint'} data-testid="hint">
@@ -675,7 +837,7 @@ export function App() {
           </span>
         ) : null}
       </button>
-      {(muteLit || !soundOn) && !open ? (
+      {(muteLit || !soundOn || sceneOn) && !open ? (
         <button
           type="button"
           className="mute-chip"
@@ -685,6 +847,7 @@ export function App() {
           onClick={() => {
             unlockQuiet()
             const enable = !soundOn
+            if (!enable && sceneRef.current) sceneRef.current.cueFired = true
             setSoundMuted(!enable)
             setSoundOn(enable)
             if (enable) playChirp()
@@ -730,6 +893,9 @@ onClick={() => {
           wakeLock={wakeLock.status}
           reduced={view.reduced}
           onClose={closeControls}
+          onPlayScene={(key) => {
+            beginScene(key)
+          }}
           onPresence={(presence) => {
             engine.setPresence(presence)
             publish(engine.snapshot())
@@ -793,6 +959,7 @@ onClick={() => {
               return
             }
             const enable = !soundOn
+            if (!enable && sceneRef.current) sceneRef.current.cueFired = true
             setSoundMuted(!enable)
             setSoundOn(enable)
             if (enable) {

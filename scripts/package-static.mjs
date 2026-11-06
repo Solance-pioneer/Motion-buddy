@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v3.4.',
+    'Motion Buddy customer app, Expressive v3.5.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
@@ -124,7 +124,7 @@ try {
 writeFileSync(
   join(dist, 'BUILD.txt'),
   [
-    'Motion Buddy customer build, Expressive v3.4.',
+    'Motion Buddy customer build, Expressive v3.5.',
     `source_commit: ${sourceCommit}`,
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
@@ -133,10 +133,21 @@ writeFileSync(
     '',
   ].join('\n'),
 )
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.4.zip'
+const sceneDir = join(dist, 'scenes-v1')
+mkdirSync(sceneDir, { recursive: true })
+for (const name of [
+  'ninja_soft_swish_app_pcm16_48k.wav',
+  'hero_original_flourish_app_pcm16_48k.wav',
+  'racer_soft_wind_app_pcm16_48k.wav',
+  'ghost_cute_boo_app_pcm16_48k.wav',
+]) {
+  copyFileSync(join('src/assets/scenes-v1/audio/app', name), join(sceneDir, name))
+}
+copyFileSync(join('src/assets/scenes-v1/scene-policy-and-timings.json'), join(sceneDir, 'scene-policy-and-timings.json'))
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.5.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.4.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.5.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

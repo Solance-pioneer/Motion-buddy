@@ -1,0 +1,88 @@
+{
+  "wav_full_decode_count": 17,
+  "wav_checks": [
+    {
+      "path": "audio/app/curious_contact_loop_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/ghost_cute_boo_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/hero_original_flourish_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/ninja_soft_swish_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/pet_content_wobble_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/pet_round_chirp_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/pet_soft_squeak_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/app/racer_soft_wind_app_pcm16_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/audition/Motion-Buddy-playful-audio-audition.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/curious_contact_loop_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/ghost_cute_boo_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/hero_original_flourish_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/ninja_soft_swish_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/pet_content_wobble_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/pet_round_chirp_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/pet_soft_squeak_master_f32_48k.wav",
+      "decode": "passed"
+    },
+    {
+      "path": "audio/masters/racer_soft_wind_master_f32_48k.wav",
+      "decode": "passed"
+    }
+  ],
+  "loop_pcm_wrap_second_difference_maxima": [
+    3.051850947599893e-05,
+    3.051850947599893e-05,
+    3.051850947599893e-05
+  ],
+  "source_assertions": "passed",
+  "static_board": "visually inspected; hero cord attachment corrected once",
+  "not_performed": [
+    "Human listening",
+    "Phone testing",
+    "App integration",
+    "Runtime animation review",
+    "Legal clearance"
+  ],
+  "scene_spec_checks": "Four durations in5\u201310s; contiguous beat coverage from0 to exact duration; passed (spec only, not runtime test)"
+}

@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { FaceHandles } from './applyPose.ts'
+import { Costumes } from './costumes.tsx'
 
 export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -31,6 +32,7 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
 
   return (
     <svg ref={svgRef} className="face" viewBox="0 0 100 100" aria-hidden="true" data-testid="face">
+      <Costumes />
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>

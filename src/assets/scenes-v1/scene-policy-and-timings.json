@@ -1,0 +1,210 @@
+{
+  "policy": {
+    "supersedes": "Earlier 4\u20134.8s timings and touch-to-dismiss behavior in initial handoff",
+    "user_revision": "Michael: scenes must be unstoppable and last5\u201310 seconds,2026-11-06 23:23 GMT",
+    "scope": "All four prepared costume scenes; interaction locking applies only while a scene is active",
+    "uninterruptible_by": [
+      "face tap",
+      "face drag",
+      "petting touch",
+      "double-tap face menu gesture",
+      "idle scheduler",
+      "motion reaction"
+    ],
+    "input_handling": "Do not queue ignored face input. If a pointer remains held at scene completion, wait for release/new pointerdown before resuming normal gestures.",
+    "always_available": [
+      "mute immediately silences audio without forcing visual scene to end",
+      "browser/OS exit and navigation",
+      "visibility-loss audio stop and cleanup"
+    ],
+    "scene_finish": "Return to exact plain Buddy neutral state, clear costume/cord/temporary transforms and scene audio sources, then unlock normal input",
+    "not_allowed": "No kiosk/fullscreen capture or preventing browser/OS navigation; no audio continuing after mute or hidden page"
+  },
+  "scenes": [
+    {
+      "key": "ninja",
+      "duration_seconds": 6.0,
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.55,
+          "action": "plain Buddy anticipation blink"
+        },
+        {
+          "from": 0.55,
+          "to": 1.05,
+          "action": "soft vanish, no flash"
+        },
+        {
+          "from": 1.05,
+          "to": 1.6,
+          "action": "masked reveal"
+        },
+        {
+          "from": 1.6,
+          "to": 3.7,
+          "action": "peek left then right with trailing bandana"
+        },
+        {
+          "from": 3.7,
+          "to": 4.7,
+          "action": "small proud squeeze and blink"
+        },
+        {
+          "from": 4.7,
+          "to": 5.5,
+          "action": "costume dissolves"
+        },
+        {
+          "from": 5.5,
+          "to": 6,
+          "action": "settle to exact plain neutral"
+        }
+      ],
+      "audio": [
+        {
+          "key": "ninja_soft_swish",
+          "at_seconds": 0.65
+        }
+      ]
+    },
+    {
+      "key": "cord_hero",
+      "duration_seconds": 7.0,
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.6,
+          "action": "plain face blink/fade"
+        },
+        {
+          "from": 0.6,
+          "to": 1.8,
+          "action": "original masked upside-down reveal, world-space cord"
+        },
+        {
+          "from": 1.8,
+          "to": 2.7,
+          "action": "descend with one soft overshoot"
+        },
+        {
+          "from": 2.7,
+          "to": 4.4,
+          "action": "inverted proud hold and electronic flourish"
+        },
+        {
+          "from": 4.4,
+          "to": 5.5,
+          "action": "gently right himself"
+        },
+        {
+          "from": 5.5,
+          "to": 6.4,
+          "action": "retract cord and dissolve mask"
+        },
+        {
+          "from": 6.4,
+          "to": 7,
+          "action": "settle to exact plain neutral"
+        }
+      ],
+      "audio": [
+        {
+          "key": "hero_original_flourish",
+          "at_seconds": 2.8
+        }
+      ]
+    },
+    {
+      "key": "racer",
+      "duration_seconds": 7.0,
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.9,
+          "action": "helmet lowers into place"
+        },
+        {
+          "from": 0.9,
+          "to": 1.7,
+          "action": "anticipation squash"
+        },
+        {
+          "from": 1.7,
+          "to": 4.2,
+          "action": "restrained lateral racing motion, soft speed streaks"
+        },
+        {
+          "from": 4.2,
+          "to": 5.2,
+          "action": "gentle braking squeeze"
+        },
+        {
+          "from": 5.2,
+          "to": 6.2,
+          "action": "helmet lifts/fades"
+        },
+        {
+          "from": 6.2,
+          "to": 7,
+          "action": "settle to exact plain neutral"
+        }
+      ],
+      "audio": [
+        {
+          "key": "racer_soft_wind",
+          "at_seconds": 2
+        }
+      ]
+    },
+    {
+      "key": "sheet_ghost",
+      "duration_seconds": 7.5,
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.7,
+          "action": "curious blink"
+        },
+        {
+          "from": 0.7,
+          "to": 1.2,
+          "action": "soft disappear"
+        },
+        {
+          "from": 1.2,
+          "to": 1.9,
+          "action": "sheet reveal around existing eyes"
+        },
+        {
+          "from": 1.9,
+          "to": 4.7,
+          "action": "two friendly float arcs with cute notes"
+        },
+        {
+          "from": 4.7,
+          "to": 5.7,
+          "action": "little ghost peek/wobble"
+        },
+        {
+          "from": 5.7,
+          "to": 6.7,
+          "action": "sheet settles and dissolves"
+        },
+        {
+          "from": 6.7,
+          "to": 7.5,
+          "action": "settle to exact plain neutral"
+        }
+      ],
+      "audio": [
+        {
+          "key": "ghost_cute_boo",
+          "at_seconds": 2.2
+        }
+      ]
+    }
+  ],
+  "audio_note": "Use existing cues at beats; do not stretch a short WAV to scene length or spam-loop its transient. Quiet visual holds are deliberate.",
+  "reduced_motion": "Keep full5\u201310s scene timing and input lock, but use static costume/short crossfade instead of falling/flip/racing/float motion."
+}

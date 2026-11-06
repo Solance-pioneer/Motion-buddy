@@ -767,7 +767,7 @@ test('a stationary ten seconds visits several gazes and a readable smile', async
 test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.getByRole('button', { name: /Motion Buddy/ }).dblclick()
-  await expect(page.getByText('Expressive v3.4')).toBeVisible()
+  await expect(page.getByText('Expressive v3.5')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Car', exact: true }).click()
   await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
