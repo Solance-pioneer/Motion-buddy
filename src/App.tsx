@@ -1,15 +1,22 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { CompanionEngine, type CompanionState, type Mode } from './logic/engine.ts'
-import { pointerLean } from './logic/motion.ts'
-import { applyPose, type PoseHandles } from './view/applyPose.ts'
-import { BramFace } from './view/BramFace.tsx'
-import { motionButtonLabel, motionCopy, readoutLabel } from './view/copy.ts'
+import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
+import type { Expression } from './logic/expressions.ts'
+import { applyPose, type FaceHandles } from './view/applyPose.ts'
+import { accentById, type AccentId } from './view/accents.ts'
+import { Controls } from './view/Controls.tsx'
+import { Face } from './view/Face.tsx'
+import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { useTilt } from './view/useTilt.ts'
 
-type BramTestApi = {
+type TestApi = {
   seek: (ms: number) => void
-  getState: () => CompanionState
-  setMode: (mode: Mode) => void
+  getState: () => BuddyState
+  setSelection: (selection: Selection) => void
+  setPresence: (presence: Presence) => void
+  previewWake: () => void
+  feedMotion: (level: number) => void
+  elapse: (ms: number) => void
+  setHidden: (hidden: boolean) => void
 }
 
 function prefersReducedMotion(): boolean {
@@ -21,36 +28,74 @@ function testHookEnabled(): boolean {
   return new URLSearchParams(window.location.search).has('e2e')
 }
 
-function viewKey(state: CompanionState): string {
-  return [state.mode, state.settled, state.phase, state.sway, state.reduced, state.sensor].join('|')
+function hintDuration(): number {
+  const params = new URLSearchParams(window.location.search)
+  if (!params.has('e2e')) return 6_500
+  const raw = params.get('hintMs')
+  if (raw == null || raw === '') return 6_500
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0 ? value : 6_500
+}
+
+function viewKey(state: BuddyState): string {
+  return [
+    state.presence,
+    state.selection,
+    state.autoSet.join(','),
+    state.expression,
+    state.phase,
+    state.resting ? 'resting' : 'up',
+    state.reduced ? 'reduced' : 'full',
+    state.hidden ? 'hidden' : 'shown',
+  ].join('|')
+}
+
+function openerName(coarse: boolean): string {
+  return coarse
+    ? 'Motion Buddy. Tap for controls.'
+    : 'Motion Buddy. Click or press Enter for controls.'
 }
 
 export function App() {
   const [engine] = useState(() => {
-    const created = new CompanionEngine()
+    const created = new BuddyEngine()
     created.setReduced(prefersReducedMotion())
     return created
   })
-
   const rootRef = useRef<HTMLElement>(null)
-  const handlesRef = useRef<PoseHandles | null>(null)
+  const faceButtonRef = useRef<HTMLButtonElement>(null)
+  const handlesRef = useRef<FaceHandles | null>(null)
   const lastKey = useRef('')
-  const [view, setView] = useState<CompanionState>(() => engine.snapshot())
+  const [view, setView] = useState<BuddyState>(() => engine.snapshot())
+  const [open, setOpen] = useState(false)
+  const [accent, setAccent] = useState<AccentId>('mist')
+  const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
+  const [hintOn, setHintOn] = useState(true)
+  const [faceFocus, setFaceFocus] = useState(false)
+  const accentRef = useRef(accent)
 
-  const publish = useCallback((state: CompanionState) => {
+  const publish = useCallback((state: BuddyState) => {
     const root = rootRef.current
+    const colors = accentById(accentRef.current)
     if (root) {
-      root.dataset.blend = state.blend.toFixed(3)
-      root.dataset.settled = state.settled
+      root.dataset.presence = state.presence
+      root.dataset.selection = state.selection
+      root.dataset.expression = state.expression
       root.dataset.phase = state.phase
-      root.dataset.lean = state.lean.toFixed(3)
-      root.dataset.bounce = state.bounce.toFixed(2)
+      root.dataset.display = state.presence === 'rest' && state.wakefulness < 0.5 ? 'resting' : state.expression
+      root.dataset.auto = state.autoSet.join(',')
+      root.dataset.eyes = state.pose.eyeOpen.toFixed(2)
+      root.dataset.mouth = state.pose.mouthOpen.toFixed(2)
+      root.dataset.curve = state.pose.mouthCurve.toFixed(2)
+      root.dataset.wake = state.wakefulness.toFixed(2)
       root.dataset.blink = state.blink.toFixed(2)
       root.dataset.reduced = state.reduced ? 'true' : 'false'
-      root.dataset.mode = state.mode
-      root.dataset.sway = state.sway ? 'true' : 'false'
+      root.dataset.paused = state.hidden ? 'true' : 'false'
+      root.dataset.accent = accentRef.current
+      root.style.setProperty('--bg', colors.bg)
+      root.style.setProperty('--iris', colors.iris)
     }
-    if (handlesRef.current) applyPose(handlesRef.current, state)
+    if (handlesRef.current) applyPose(handlesRef.current, state.pose, state.blink, colors.iris)
     const key = viewKey(state)
     if (key !== lastKey.current) {
       lastKey.current = key
@@ -58,30 +103,34 @@ export function App() {
     }
   }, [])
 
-  const onReady = useCallback((handles: PoseHandles) => {
+  const onReady = useCallback((handles: FaceHandles) => {
     handlesRef.current = handles
   }, [])
 
-  const onPose = useCallback(() => {
-    publish(engine.snapshot())
-  }, [engine, publish])
+  const onSample = useCallback(
+    (sample: { x: number; y: number; level: number }) => {
+      engine.feedLook(sample.x, sample.y)
+      engine.feedMotion(sample.level)
+    },
+    [engine],
+  )
 
-  const { status, enable, setLevel } = useTilt(engine, onPose)
+  const tilt = useTilt(onSample)
+  const wakeLock = useScreenWakeLock()
 
   useLayoutEffect(() => {
+    accentRef.current = accent
     publish(engine.snapshot())
   })
 
   useEffect(() => {
     const loop = { raf: 0, running: false, last: performance.now() }
-
     const frame = (now: number) => {
       const dt = now - loop.last
       loop.last = now
       publish(engine.tick(dt))
       loop.raf = requestAnimationFrame(frame)
     }
-
     const start = () => {
       if (loop.running || document.hidden) return
       loop.running = true
@@ -89,18 +138,15 @@ export function App() {
       loop.last = performance.now()
       loop.raf = requestAnimationFrame(frame)
     }
-
     const stop = () => {
       loop.running = false
       engine.setHidden(true)
       cancelAnimationFrame(loop.raf)
     }
-
     const onVisibility = () => {
       if (document.hidden) stop()
       else start()
     }
-
     document.addEventListener('visibilitychange', onVisibility)
     start()
     return () => {
@@ -121,114 +167,135 @@ export function App() {
   }, [engine, publish])
 
   useEffect(() => {
-    const root = rootRef.current
-    if (!root) return
+    const media = window.matchMedia('(pointer: coarse)')
+    const apply = () => setCoarse(media.matches)
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [])
 
-    const move = (event: PointerEvent) => {
-      const state = engine.snapshot()
-      if (state.sensor || state.reduced) return
-      const rect = root.getBoundingClientRect()
-      const nx = (event.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
-      const ny = (event.clientY - (rect.top + rect.height / 2)) / (rect.height / 2)
-      const lean = pointerLean(nx, ny)
-      engine.setLeanTarget(lean.x, lean.y)
-    }
-
-    const leave = () => {
-      if (!engine.snapshot().sensor) engine.setLeanTarget(0, 0)
-    }
-
-    root.addEventListener('pointermove', move)
-    root.addEventListener('pointerleave', leave)
-    return () => {
-      root.removeEventListener('pointermove', move)
-      root.removeEventListener('pointerleave', leave)
-    }
-  }, [engine])
+  useEffect(() => {
+    const id = window.setTimeout(() => setHintOn(false), hintDuration())
+    return () => window.clearTimeout(id)
+  }, [])
 
   useEffect(() => {
     if (!testHookEnabled()) return
-    const testWindow = window as Window & { __bramTest?: BramTestApi }
-    testWindow.__bramTest = {
+    const testWindow = window as Window & { __motionBuddyTest?: TestApi }
+    const elapse = (ms: number) => {
+      let left = ms
+      while (left > 0) {
+        const dt = Math.min(16, left)
+        publish(engine.tick(dt))
+        left -= dt
+      }
+    }
+    testWindow.__motionBuddyTest = {
       seek: (ms: number) => {
         engine.seek(ms)
         publish(engine.snapshot())
       },
       getState: () => engine.snapshot(),
-      setMode: (mode: Mode) => {
-        engine.setMode(mode)
+      setSelection: (selection: Selection) => {
+        engine.setSelection(selection)
+        publish(engine.snapshot())
+      },
+      setPresence: (presence: Presence) => {
+        engine.setPresence(presence)
+        publish(engine.snapshot())
+      },
+      previewWake: () => {
+        engine.previewWake()
+        publish(engine.snapshot())
+      },
+      feedMotion: (level: number) => {
+        engine.feedMotion(level)
+      },
+      elapse,
+      setHidden: (hidden: boolean) => {
+        engine.setHidden(hidden)
         publish(engine.snapshot())
       },
     }
     return () => {
-      delete testWindow.__bramTest
+      delete testWindow.__motionBuddyTest
     }
   }, [engine, publish])
 
-  const selectMode = (mode: Mode) => {
-    engine.setMode(mode)
-    publish(engine.snapshot())
-  }
+  const closeControls = useCallback(() => {
+    setOpen(false)
+    requestAnimationFrame(() => faceButtonRef.current?.focus())
+  }, [])
 
-  const toggleSway = () => {
-    engine.setSway(!engine.snapshot().sway)
-    publish(engine.snapshot())
-  }
-
-  const swayDisabled = view.reduced || view.sensor || status === 'active'
-  const motionDisabled = view.reduced || status === 'waiting' || status === 'active'
+  const showHint = !open && (hintOn || faceFocus)
+  const live = view.presence === 'rest' && view.wakefulness < 0.5
+    ? 'Motion Buddy is resting.'
+    : `Motion Buddy looks ${view.expression}.`
 
   return (
-    <main ref={rootRef} className="app" data-motion={status} aria-label="Bram">
-      <header className="top">
-        <div>
-          <p className="eyebrow">Pocket lantern</p>
-          <h1>Bram</h1>
-        </div>
-        <p className="readout" aria-live="polite">
-          {readoutLabel(view)}
-        </p>
-      </header>
-
-      <div className="stage">
-        <BramFace onReady={onReady} />
-      </div>
-
-      <section className="dock" data-testid="dock" aria-label="Stationary controls">
-        <p className="dock-intro">Same lantern, two moods. Auto swaps them slowly.</p>
-        <div className="modes" role="group" aria-label="Mood">
-          <button type="button" aria-pressed={view.mode === 'auto'} onClick={() => selectMode('auto')}>
-            Auto
-          </button>
-          <button type="button" aria-pressed={view.mode === 'curious'} onClick={() => selectMode('curious')}>
-            Curious
-          </button>
-          <button type="button" aria-pressed={view.mode === 'grumpy'} onClick={() => selectMode('grumpy')}>
-            Grumpy
-          </button>
-        </div>
-        <div className="secondary">
-          <button type="button" onClick={() => void enable()} disabled={motionDisabled}>
-            {motionButtonLabel(status)}
-          </button>
-          <button type="button" onClick={toggleSway} disabled={swayDisabled} aria-pressed={view.sway}>
-            {view.sway ? 'Stop sway' : 'Preview sway'}
-          </button>
-        </div>
-        <p className="motion-note" role="status">
-          {motionCopy(status, view.reduced)}
-        </p>
-        {status === 'active' ? (
-          <button type="button" className="level" onClick={setLevel}>
-            Set level
-          </button>
+    <main ref={rootRef} className="app" data-controls={open ? 'open' : 'closed'} data-motion={tilt.status} data-wake-lock={wakeLock.status}>
+      <button
+        ref={faceButtonRef}
+        type="button"
+        className="face-button"
+        aria-label={openerName(coarse)}
+        aria-expanded={open}
+        aria-controls="buddy-controls"
+        aria-haspopup="dialog"
+        tabIndex={open ? -1 : 0}
+        inert={open}
+        onClick={() => {
+          if (!open) setOpen(true)
+        }}
+        onFocus={() => setFaceFocus(true)}
+        onBlur={() => setFaceFocus(false)}
+      >
+        <Face onReady={onReady} />
+        {showHint ? (
+          <span className="hint" data-testid="hint">
+            {coarse ? 'Tap for controls' : 'Click or press Enter for controls'}
+          </span>
         ) : null}
-      </section>
-
-      <footer className="notes">
-        <p>Stationary prototype — set up while parked.</p>
-        <p>Screen-on warmth and battery use have not been measured, and are not certified safe.</p>
-      </footer>
+      </button>
+      {open ? (
+        <Controls
+          presence={view.presence}
+          selection={view.selection}
+          autoSet={view.autoSet}
+          accent={accent}
+          motionStatus={tilt.status}
+          wakeLock={wakeLock.status}
+          reduced={view.reduced}
+          onClose={closeControls}
+          onPresence={(presence) => {
+            engine.setPresence(presence)
+            publish(engine.snapshot())
+          }}
+          onSelection={(selection) => {
+            engine.setSelection(selection)
+            publish(engine.snapshot())
+          }}
+          onToggleAuto={(expression: Expression) => {
+            engine.toggleAutoExpression(expression)
+            publish(engine.snapshot())
+          }}
+          onAccent={(next) => {
+            accentRef.current = next
+            setAccent(next)
+            publish(engine.snapshot())
+          }}
+          onEnableMotion={() => {
+            void tilt.enable()
+          }}
+          onPreviewWake={() => {
+            engine.previewWake()
+            publish(engine.snapshot())
+          }}
+          onToggleWakeLock={wakeLock.toggle}
+        />
+      ) : null}
+      <p className="sr-only" aria-live="polite">
+        {live}
+      </p>
     </main>
   )
 }

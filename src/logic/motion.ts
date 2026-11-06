@@ -1,28 +1,20 @@
 import { clamp } from './math.ts'
 
 /**
- * Tilt policy: orientation only, never acceleration.
- * Hard braking and bumps should not get a reward or a big reaction.
- * Angles are relative to a calibrated rest pose.
+ * Orientation only. Acceleration is unused, so a hard jerk is not a wake.
+ * Wake uses a wider deadband than a tiny pupil drift.
  */
-export const TILT_DEADBAND_DEG = 4
-export const TILT_CAP_DEG = 26
-export const MAX_VISUAL_LEAN_DEG = 7
-export const LEAN_SMOOTH_TAU_MS = 240
+export const LOOK_DEADBAND_DEG = 4
+export const LOOK_CAP_DEG = 26
+export const WAKE_DEADBAND_DEG = 8
+export const WAKE_CAP_DEG = 28
+export const WAKE_LEVEL = 0.55
+export const WAKE_DEBOUNCE_MS = 200
+export const REST_HOLD_MS = 12_000
 export const MOTION_EVENT_TIMEOUT_MS = 2_500
-/** Frames hitching longer than this do not fast-forward the pose. */
 export const MAX_FRAME_DT_MS = 80
 
 export type MotionPermission = 'listen' | 'denied' | 'unavailable'
-
-export function mapTilt(degrees: number | null | undefined): number {
-  if (degrees == null || Number.isNaN(degrees)) return 0
-  const magnitude = Math.abs(degrees)
-  if (magnitude <= TILT_DEADBAND_DEG) return 0
-  const span = TILT_CAP_DEG - TILT_DEADBAND_DEG
-  const scaled = Math.min(1, (magnitude - TILT_DEADBAND_DEG) / span)
-  return Math.sign(degrees) * scaled
-}
 
 export function smoothToward(current: number, target: number, dtMs: number, tauMs: number): number {
   if (dtMs <= 0) return current
@@ -30,20 +22,15 @@ export function smoothToward(current: number, target: number, dtMs: number, tauM
   return current + (target - current) * k
 }
 
-/** Normalized pointer offset around the stage center, roughly -1..1, already gentle. */
-export function pointerLean(nx: number, ny: number): { x: number; y: number } {
-  const x = soften(nx)
-  const y = soften(ny)
-  return { x: clamp(x * 0.75, -1, 1), y: clamp(y * 0.45, -1, 1) }
+export function lookFromDegrees(degrees: number | null | undefined): number {
+  return unitFromDegrees(degrees, LOOK_DEADBAND_DEG, LOOK_CAP_DEG)
 }
 
-function soften(value: number): number {
-  const limited = clamp(value, -1.4, 1.4) / 1.4
-  const magnitude = Math.abs(limited)
-  const deadband = 0.12
-  if (magnitude <= deadband) return 0
-  const sign = Math.sign(limited)
-  return clamp((sign * (magnitude - deadband)) / (1 - deadband), -1, 1)
+/** 0 inside the wake deadband, 1 at the cap. Combined with hypot for both axes. */
+export function wakeLevelFromDegrees(deltaGamma: number | null | undefined, deltaBeta: number | null | undefined): number {
+  const gamma = unitFromDegrees(deltaGamma, WAKE_DEADBAND_DEG, WAKE_CAP_DEG)
+  const beta = unitFromDegrees(deltaBeta, WAKE_DEADBAND_DEG, WAKE_CAP_DEG)
+  return Math.min(1, Math.hypot(Math.abs(gamma), Math.abs(beta)))
 }
 
 export async function resolveMotionPermission(env: {
@@ -59,4 +46,17 @@ export async function resolveMotionPermission(env: {
   } catch {
     return 'denied'
   }
+}
+
+export function wakeLockSupported(): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.wakeLock?.request === 'function'
+}
+
+function unitFromDegrees(degrees: number | null | undefined, deadband: number, cap: number): number {
+  if (degrees == null || Number.isNaN(degrees)) return 0
+  const magnitude = Math.abs(degrees)
+  if (magnitude <= deadband) return 0
+  const span = cap - deadband
+  const scaled = Math.min(1, (magnitude - deadband) / span)
+  return clamp(Math.sign(degrees) * scaled, -1, 1)
 }

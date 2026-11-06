@@ -1,184 +1,214 @@
 import { expect, test, type Page } from '@playwright/test'
 
-type BramState = {
-  mode: string
-  blend: number
-  settled: string
+type BuddyState = {
+  presence: string
+  selection: string
+  autoSet: string[]
+  expression: string
   phase: string
-  lean: number
-  bounce: number
+  resting: boolean
+  wakefulness: number
+  pose: { eyeOpen: number; mouthOpen: number; mouthCurve: number }
   reduced: boolean
-  sway: boolean
-  sensor: boolean
+  hidden: boolean
 }
 
 async function openApp(page: Page, query = 'e2e=1') {
   await page.goto(`/?${query}`)
-  await page.waitForFunction(() => Boolean((window as unknown as { __bramTest?: unknown }).__bramTest))
+  await page.waitForFunction(() => Boolean((window as unknown as { __motionBuddyTest?: unknown }).__motionBuddyTest))
 }
 
-async function stateOf(page: Page): Promise<BramState> {
+async function stateOf(page: Page): Promise<BuddyState> {
   return page.evaluate(() => {
-    const api = (window as unknown as { __bramTest: { getState: () => BramState } }).__bramTest
+    const api = (window as unknown as { __motionBuddyTest: { getState: () => BuddyState } }).__motionBuddyTest
     return api.getState()
   })
 }
 
-async function seek(page: Page, ms: number): Promise<BramState> {
-  return page.evaluate((elapsed) => {
-    const api = (
-      window as unknown as { __bramTest: { seek: (value: number) => void; getState: () => BramState } }
-    ).__bramTest
-    api.seek(elapsed)
-    return api.getState()
+async function elapse(page: Page, ms: number) {
+  await page.evaluate((amount) => {
+    ;(window as unknown as { __motionBuddyTest: { elapse: (value: number) => void } }).__motionBuddyTest.elapse(amount)
   }, ms)
 }
 
-test('production build does not expose the test clock unless asked', async ({ page }) => {
+test('production build does not expose the test hook unless asked', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('heading', { name: 'Bram' }).waitFor()
+  await page.getByRole('button', { name: /Motion Buddy/ }).waitFor()
   const exposed = await page.evaluate(
-    () => typeof (window as unknown as { __bramTest?: unknown }).__bramTest !== 'undefined',
+    () => typeof (window as unknown as { __motionBuddyTest?: unknown }).__motionBuddyTest !== 'undefined',
   )
   expect(exposed).toBe(false)
 })
 
-test('manual moods settle on one character', async ({ page }) => {
+test('face mode has no control panel until a deliberate open', async ({ page }) => {
   await openApp(page)
-  await page.getByRole('button', { name: 'Grumpy' }).click()
-  await expect
-    .poll(async () => (await stateOf(page)).blend, { timeout: 4_000 })
-    .toBeGreaterThan(0.98)
-  await expect(page.getByRole('button', { name: 'Grumpy' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('main')).toHaveAttribute('data-settled', 'grumpy')
-  await expect(page.locator('.readout')).toHaveText('A little grumpy')
-  const frown = await page.locator('[data-part="mouth-frown"]').evaluate((node) => Number(getComputedStyle(node).opacity))
-  expect(frown).toBeGreaterThan(0.9)
-
-  await page.getByRole('button', { name: 'Curious' }).click()
-  await expect
-    .poll(async () => (await stateOf(page)).blend, { timeout: 4_000 })
-    .toBeLessThan(0.02)
-  await expect(page.getByRole('button', { name: 'Curious' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('.readout')).toHaveText('Curious')
-  const open = await page.locator('[data-part="mouth-open"]').evaluate((node) => Number(getComputedStyle(node).opacity))
-  expect(open).toBeGreaterThan(0.9)
+  await expect(page.getByRole('button', { name: 'Happy' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Enable motion' })).toHaveCount(0)
+  await expect(page.getByText('Click or press Enter for controls')).toBeVisible()
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
+  await expect(page.getByTestId('face')).toBeVisible()
 })
 
-test('auto mood follows the test clock', async ({ page }) => {
-  await openApp(page)
-  const curious = await seek(page, 4_000)
-  expect(curious.mode).toBe('auto')
-  expect(curious.phase).toBe('dwell')
-  expect(curious.settled).toBe('curious')
-  expect(curious.blend).toBe(0)
-  await expect(page.locator('main')).toHaveAttribute('data-blend', '0.000')
-
-  const shifting = await seek(page, 14_000 + 900)
-  expect(shifting.phase).toBe('transition')
-  expect(shifting.blend).toBeGreaterThan(0.4)
-  expect(shifting.blend).toBeLessThan(0.6)
-  await expect(page.locator('.readout')).toHaveText('Shifting')
-
-  const grumpy = await seek(page, 14_000 + 1_800 + 2_000)
-  expect(grumpy.phase).toBe('dwell')
-  expect(grumpy.settled).toBe('grumpy')
-  expect(grumpy.blend).toBe(1)
-  await expect(page.getByRole('button', { name: 'Auto' })).toHaveAttribute('aria-pressed', 'true')
+test('the discoverable hint does not stay on the face', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=250')
+  await expect(page.getByTestId('hint')).toBeVisible()
+  await expect(page.getByTestId('hint')).toBeHidden({ timeout: 2_000 })
+  await expect(page.getByRole('button', { name: /Motion Buddy/ })).toBeVisible()
 })
 
-test('pointer lean is gentle and preview sway can be stopped', async ({ page }) => {
+test('click opens controls and a scrim click closes without changing expression', async ({ page }) => {
   await openApp(page)
-  const box = await page.locator('main').boundingBox()
-  if (!box) throw new Error('missing stage')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2)
-  await expect.poll(async () => (await stateOf(page)).lean, { timeout: 2_000 }).toBeGreaterThan(0.12)
-  const leaned = await stateOf(page)
-  expect(leaned.lean).toBeLessThanOrEqual(1)
-  expect(leaned.sensor).toBe(false)
-
-  await page.getByRole('button', { name: 'Preview sway' }).click()
-  await expect(page.getByRole('button', { name: 'Stop sway' })).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('button', { name: 'Stop sway' }).click()
-  await expect(page.getByRole('button', { name: 'Preview sway' })).toHaveAttribute('aria-pressed', 'false')
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Controls' })).toBeVisible()
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'open')
+  await page.getByRole('button', { name: 'Happy', exact: true }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await elapse(page, 1_600)
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'happy')
+  const curve = Number(await page.locator('main').getAttribute('data-curve'))
+  expect(curve).toBeGreaterThan(0.6)
+  await page.mouse.click(8, 8)
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'happy')
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
+  await expect(page.getByRole('button', { name: 'Grumpy', exact: true })).toHaveCount(0)
 })
 
-test('reduced motion keeps a quiet pose and disables sway', async ({ page }) => {
+test('keyboard opens and Escape closes', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: /Motion Buddy/ })).toBeFocused()
+  await expect(page.getByTestId('hint')).toBeVisible()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Close' })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toBeHidden()
+  await expect(page.getByRole('button', { name: /Motion Buddy/ })).toBeFocused()
+})
+
+test('touch wording is used for a coarse pointer', async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = window.matchMedia.bind(window)
+    window.matchMedia = (query: string) => {
+      if (query.includes('pointer') && query.includes('coarse')) {
+        return {
+          matches: true,
+          media: query,
+          onchange: null,
+          addListener() {},
+          removeListener() {},
+          addEventListener() {},
+          removeEventListener() {},
+          dispatchEvent() {
+            return false
+          },
+        }
+      }
+      return original(query)
+    }
+  })
+  await openApp(page)
+  await expect(page.getByRole('button', { name: 'Motion Buddy. Tap for controls.' })).toBeVisible()
+  await expect(page.getByText('Tap for controls')).toBeVisible()
+})
+
+test('Auto can be limited to a chosen subset', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Use Grumpy' }).click()
+  await page.getByRole('button', { name: 'Use Sleepy' }).click()
+  await page.getByRole('button', { name: 'Use Curious' }).click()
+  await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: 'Use Happy' }).click()
+  await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')
+  const after = await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: { seek: (ms: number) => void; getState: () => BuddyState }
+      }
+    ).__motionBuddyTest
+    api.seek(20_000)
+    return api.getState()
+  })
+  expect(after.autoSet).toEqual(['happy'])
+  expect(after.expression).toBe('happy')
+  expect(after.selection).toBe('auto')
+})
+
+test('rest stays down until preview wake, then can settle again', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Happy', exact: true }).click()
+  await page.getByRole('button', { name: 'Rest until motion' }).click()
+  await elapse(page, 1_600)
+  await expect(page.locator('main')).toHaveAttribute('data-display', 'resting')
+  await expect(page.getByRole('button', { name: 'Preview wake' })).toBeEnabled()
+  await page.getByRole('button', { name: 'Preview wake' }).click()
+  await elapse(page, 1_400)
+  await expect(page.locator('main')).toHaveAttribute('data-display', 'happy')
+  const awake = await stateOf(page)
+  expect(awake.resting).toBe(false)
+  expect(awake.wakefulness).toBeGreaterThan(0.7)
+  await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: { feedMotion: (level: number) => void; elapse: (ms: number) => void }
+      }
+    ).__motionBuddyTest
+    api.feedMotion(0)
+    api.elapse(14_000)
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-display', 'resting')
+  const rested = await stateOf(page)
+  expect(rested.resting).toBe(true)
+  expect(rested.motionLevel).toBe(0)
+})
+
+test('a small fed movement does not wake, a sustained one does', async ({ page }) => {
+  await openApp(page)
+  await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: {
+          setPresence: (presence: string) => void
+          feedMotion: (level: number) => void
+          elapse: (ms: number) => void
+          getState: () => BuddyState
+        }
+      }
+    ).__motionBuddyTest
+    api.setPresence('rest')
+    api.elapse(1_600)
+    api.feedMotion(0.15)
+    api.elapse(800)
+  })
+  expect((await stateOf(page)).resting).toBe(true)
+  await page.evaluate(() => {
+    const api = (
+      window as unknown as {
+        __motionBuddyTest: { feedMotion: (level: number) => void; elapse: (ms: number) => void }
+      }
+    ).__motionBuddyTest
+    api.feedMotion(1)
+    api.elapse(900)
+  })
+  const woken = await stateOf(page)
+  expect(woken.resting).toBe(false)
+  expect(woken.wakefulness).toBeGreaterThan(0.5)
+})
+
+test('reduced motion still changes expression and rests', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await openApp(page)
   await expect(page.locator('main')).toHaveAttribute('data-reduced', 'true')
-  await expect(page.getByText(/quieter pose/)).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Preview sway' })).toBeDisabled()
-  await expect(page.getByRole('button', { name: 'Enable motion' })).toBeDisabled()
-
-  const box = await page.locator('main').boundingBox()
-  if (!box) throw new Error('missing stage')
-  await page.mouse.move(box.x + 4, box.y + box.height / 2)
-  await page.waitForTimeout(350)
-  const state = await stateOf(page)
-  expect(state.reduced).toBe(true)
-  expect(state.bounce).toBe(0)
-  expect(Math.abs(state.lean)).toBeLessThan(0.05)
-
-  await page.getByRole('button', { name: 'Grumpy' }).click()
-  await expect.poll(async () => (await stateOf(page)).blend, { timeout: 2_000 }).toBeGreaterThan(0.98)
-})
-
-test.describe('phone portrait', () => {
-  test.use({ viewport: { width: 390, height: 844 } })
-
-  test('puts the character above large controls', async ({ page }) => {
-    await openApp(page)
-    const face = await page.getByTestId('bram').boundingBox()
-    const dock = await page.getByTestId('dock').boundingBox()
-    if (!face || !dock) throw new Error('missing layout')
-    expect(dock.y).toBeGreaterThan(face.y + face.height - 8)
-    expect(face.height).toBeGreaterThan(240)
-    for (const name of ['Auto', 'Curious', 'Grumpy']) {
-      const button = await page.getByRole('button', { name }).boundingBox()
-      expect(button?.height).toBeGreaterThanOrEqual(48)
-      expect(button?.width).toBeGreaterThanOrEqual(72)
-    }
-    await expect(page.getByText('Stationary prototype — set up while parked.')).toBeVisible()
-    await expect(page.getByText(/not been measured/)).toBeVisible()
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    expect(overflow).toBeLessThanOrEqual(1)
-  })
-})
-
-test.describe('phone landscape', () => {
-  test.use({ viewport: { width: 844, height: 390 } })
-
-  test('puts controls beside the character', async ({ page }) => {
-    await openApp(page)
-    const face = await page.getByTestId('bram').boundingBox()
-    const dock = await page.getByTestId('dock').boundingBox()
-    if (!face || !dock) throw new Error('missing layout')
-    expect(dock.x).toBeGreaterThan(face.x + face.width * 0.55)
-    expect(face.height).toBeGreaterThan(180)
-    for (const name of ['Auto', 'Curious', 'Grumpy', 'Enable motion']) {
-      const button = await page.getByRole('button', { name }).boundingBox()
-      expect(button?.height).toBeGreaterThanOrEqual(44)
-    }
-    await expect(page.getByText('Stationary prototype — set up while parked.')).toBeInViewport()
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    expect(overflow).toBeLessThanOrEqual(1)
-  })
-})
-
-test.describe('desktop', () => {
-  test.use({ viewport: { width: 1280, height: 800 } })
-
-  test('keeps Bram centered in a calm page', async ({ page }) => {
-    await openApp(page)
-    const face = await page.getByTestId('bram').boundingBox()
-    if (!face) throw new Error('missing character')
-    expect(face.x).toBeGreaterThan(180)
-    expect(face.x + face.width).toBeLessThan(1100)
-    expect(face.height).toBeGreaterThan(280)
-    await expect(page.getByText('Same lantern, two moods. Auto swaps them slowly.')).toBeVisible()
-  })
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByText(/Calmer motion is on/)).toBeVisible()
+  await page.getByRole('button', { name: 'Sleepy', exact: true }).click()
+  await elapse(page, 700)
+  await expect(page.locator('main')).toHaveAttribute('data-expression', 'sleepy')
+  const eyes = Number(await page.locator('main').getAttribute('data-eyes'))
+  expect(eyes).toBeLessThan(0.5)
 })
 
 test('does not subscribe to tilt until Enable motion', async ({ page }) => {
@@ -186,26 +216,24 @@ test('does not subscribe to tilt until Enable motion', async ({ page }) => {
     const target = window as unknown as { __motionSubs: { orientation: number; motion: number } }
     target.__motionSubs = { orientation: 0, motion: 0 }
     const original = EventTarget.prototype.addEventListener
-    EventTarget.prototype.addEventListener = function (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+    EventTarget.prototype.addEventListener = function (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) {
       if (this === window && type === 'deviceorientation') target.__motionSubs.orientation += 1
       if (this === window && type === 'devicemotion') target.__motionSubs.motion += 1
       return original.call(this, type, listener, options)
     }
-    // This check is the desktop path: orientation exists, but there is no permission prompt.
-    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', {
-      configurable: true,
-      value: undefined,
-    })
-    Object.defineProperty(DeviceMotionEvent, 'requestPermission', {
-      configurable: true,
-      value: undefined,
-    })
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', { configurable: true, value: undefined })
+    Object.defineProperty(DeviceMotionEvent, 'requestPermission', { configurable: true, value: undefined })
   })
   await openApp(page)
   const before = await page.evaluate(
     () => (window as unknown as { __motionSubs: { orientation: number; motion: number } }).__motionSubs,
   )
   expect(before).toEqual({ orientation: 0, motion: 0 })
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
   await page.getByRole('button', { name: 'Enable motion' }).click()
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'waiting')
   const after = await page.evaluate(
@@ -223,6 +251,7 @@ test('denied permission is not described as motion on', async ({ page }) => {
     })
   })
   await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
   await page.getByRole('button', { name: 'Enable motion' }).click()
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'denied')
   await expect(page.getByText(/permission was denied/)).toBeVisible()
@@ -236,10 +265,10 @@ test('a granted permission without events is not claimed', async ({ page }) => {
       value: () => Promise.resolve('granted'),
     })
   })
-  await openApp(page, 'e2e=1&motionTimeout=800')
+  await openApp(page, 'e2e=1&motionTimeout=700')
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
   await page.getByRole('button', { name: 'Enable motion' }).click()
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'waiting')
-  await expect(page.getByRole('button', { name: 'Motion on' })).toHaveCount(0)
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'no-events', { timeout: 2_000 })
   await expect(page.getByText(/was not turned on/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Motion on' })).toHaveCount(0)
@@ -251,43 +280,151 @@ test('motion turns on only after a numeric orientation event', async ({ page }) 
       configurable: true,
       value: () => Promise.resolve('granted'),
     })
-    const target = window as unknown as { __motionSubs: { motion: number } }
-    target.__motionSubs = { motion: 0 }
-    const original = EventTarget.prototype.addEventListener
-    EventTarget.prototype.addEventListener = function (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
-      if (this === window && type === 'devicemotion') target.__motionSubs.motion += 1
-      return original.call(this, type, listener, options)
-    }
   })
   await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
   await page.getByRole('button', { name: 'Enable motion' }).click()
-  await page.evaluate(() => {
-    window.dispatchEvent(new Event('deviceorientation'))
-  })
+  await page.evaluate(() => window.dispatchEvent(new Event('deviceorientation')))
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'waiting')
-
   await page.evaluate(() => {
     const event = new Event('deviceorientation')
-    Object.defineProperty(event, 'gamma', { value: 2 })
+    Object.defineProperty(event, 'gamma', { value: 4 })
     Object.defineProperty(event, 'beta', { value: 40 })
     window.dispatchEvent(event)
   })
   await expect(page.locator('main')).toHaveAttribute('data-motion', 'active')
   await expect(page.getByRole('button', { name: 'Motion on' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Set level' })).toBeVisible()
+  await expect(page.getByText(/events are arriving/)).toBeVisible()
+})
 
+test('hiding the page pauses the engine and tilt listening', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(DeviceOrientationEvent, 'requestPermission', {
+      configurable: true,
+      value: () => Promise.resolve('granted'),
+    })
+  })
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Enable motion' }).click()
   await page.evaluate(() => {
     const event = new Event('deviceorientation')
-    Object.defineProperty(event, 'gamma', { value: 24 })
-    Object.defineProperty(event, 'beta', { value: 40 })
+    Object.defineProperty(event, 'gamma', { value: 1 })
+    Object.defineProperty(event, 'beta', { value: 20 })
     window.dispatchEvent(event)
   })
-  await expect.poll(async () => (await stateOf(page)).lean, { timeout: 2_000 }).toBeGreaterThan(0.45)
-  const subs = await page.evaluate(
-    () => (window as unknown as { __motionSubs: { motion: number } }).__motionSubs.motion,
-  )
-  expect(subs).toBe(0)
-  const leaned = await stateOf(page)
-  expect(leaned.sensor).toBe(true)
-  expect(leaned.lean).toBeLessThanOrEqual(1)
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'active')
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await expect(page.locator('main')).toHaveAttribute('data-paused', 'true')
+  await expect(page.locator('main')).toHaveAttribute('data-motion', 'paused')
+})
+
+test('screen wake lock reports granted, denied, and unsupported without claiming always-on', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: {
+        request: () => Promise.reject(new DOMException('denied', 'NotAllowedError')),
+      },
+    })
+  })
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Keep screen on' }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-wake-lock', 'denied')
+  await expect(page.getByText(/refused the screen wake lock/)).toBeVisible()
+  await page.getByText('Setup and limits').click()
+  await expect(page.getByText(/not a system always-on switch/)).toBeVisible()
+})
+
+test('screen wake lock can be granted and says it is only for the visible page', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: {
+        request: () =>
+          Promise.resolve({
+            addEventListener() {},
+            release: async () => {},
+          }),
+      },
+    })
+  })
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Keep screen on' }).click()
+  await expect(page.locator('main')).toHaveAttribute('data-wake-lock', 'granted')
+  await expect(page.getByText(/only keeps the screen on while this page is visible|On for this visible page/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Stop keeping screen on' })).toBeVisible()
+})
+
+test('unsupported wake lock is stated in the controls', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: undefined })
+  })
+  await openApp(page)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByRole('button', { name: 'Screen wake lock unavailable' })).toBeDisabled()
+  await expect(page.getByText('This browser has no screen wake lock.')).toBeVisible()
+})
+
+async function expectFaceInside(page: Page, minSide: number) {
+  const face = await page.getByTestId('face').boundingBox()
+  const viewport = page.viewportSize()
+  if (!face || !viewport) throw new Error('missing face')
+  expect(face.x).toBeGreaterThanOrEqual(8)
+  expect(face.y).toBeGreaterThanOrEqual(8)
+  expect(face.x + face.width).toBeLessThanOrEqual(viewport.width - 8)
+  expect(face.y + face.height).toBeLessThanOrEqual(viewport.height - 8)
+  expect(Math.min(face.width, face.height)).toBeGreaterThan(minSide)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
+}
+
+test.describe('phone portrait', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+  test('keeps a large unclipped face and large controls', async ({ page }) => {
+    await openApp(page, 'e2e=1&hintMs=0')
+    await expectFaceInside(page, 180)
+    await page.getByRole('button', { name: /Motion Buddy/ }).click()
+    const button = await page.getByRole('button', { name: 'Curious', exact: true }).boundingBox()
+    expect(button?.height).toBeGreaterThanOrEqual(48)
+    await expect(page.getByText('Setup and limits')).toBeVisible()
+  })
+})
+
+test.describe('phone landscape', () => {
+  test.use({ viewport: { width: 844, height: 390 } })
+  test('keeps the face inside the short screen', async ({ page }) => {
+    await openApp(page, 'e2e=1&hintMs=0')
+    await expectFaceInside(page, 140)
+  })
+})
+
+test.describe('square watch-like', () => {
+  test.use({ viewport: { width: 320, height: 320 } })
+  test('keeps the face inside a square with usable controls', async ({ page }) => {
+    await openApp(page, 'e2e=1&hintMs=0')
+    await expectFaceInside(page, 120)
+    await page.getByRole('button', { name: /Motion Buddy/ }).click()
+    const close = await page.getByRole('button', { name: 'Close' }).boundingBox()
+    expect(close?.height).toBeGreaterThanOrEqual(44)
+    await expect(page.getByRole('button', { name: 'Close' })).toBeInViewport()
+  })
+})
+
+test.describe('desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } })
+  test('centers a large face in the calm page', async ({ page }) => {
+    await openApp(page, 'e2e=1&hintMs=0')
+    await expectFaceInside(page, 280)
+    const face = await page.getByTestId('face').boundingBox()
+    if (!face) throw new Error('missing face')
+    expect(face.x).toBeGreaterThan(120)
+    expect(face.x + face.width).toBeLessThan(1160)
+  })
 })

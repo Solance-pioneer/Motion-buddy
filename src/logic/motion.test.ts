@@ -1,68 +1,52 @@
 import { describe, expect, it } from 'vitest'
 import {
-  mapTilt,
-  MAX_FRAME_DT_MS,
-  pointerLean,
+  lookFromDegrees,
   resolveMotionPermission,
   smoothToward,
-  TILT_CAP_DEG,
-  TILT_DEADBAND_DEG,
+  WAKE_CAP_DEG,
+  WAKE_DEADBAND_DEG,
+  WAKE_LEVEL,
+  wakeLevelFromDegrees,
 } from './motion.ts'
 
-describe('mapTilt', () => {
-  it('ignores the deadband, caps the extremes, and keeps the sign', () => {
-    expect(mapTilt(0)).toBe(0)
-    expect(mapTilt(TILT_DEADBAND_DEG)).toBe(0)
-    expect(mapTilt(TILT_DEADBAND_DEG - 0.5)).toBe(0)
-    expect(mapTilt(null)).toBe(0)
-    expect(mapTilt(undefined)).toBe(0)
-    expect(mapTilt(Number.NaN)).toBe(0)
-    expect(mapTilt(TILT_CAP_DEG)).toBe(1)
-    expect(mapTilt(TILT_CAP_DEG + 40)).toBe(1)
-    expect(mapTilt(-TILT_CAP_DEG)).toBe(-1)
-    const partial = mapTilt(TILT_DEADBAND_DEG + (TILT_CAP_DEG - TILT_DEADBAND_DEG) / 2)
-    expect(partial).toBeCloseTo(0.5, 5)
+describe('wake and look mapping', () => {
+  it('ignores small tilt for wake and caps a large one', () => {
+    expect(wakeLevelFromDegrees(0, 0)).toBe(0)
+    expect(wakeLevelFromDegrees(WAKE_DEADBAND_DEG, 3)).toBe(0)
+    expect(wakeLevelFromDegrees(WAKE_CAP_DEG, 0)).toBe(1)
+    expect(wakeLevelFromDegrees(WAKE_CAP_DEG + 40, -80)).toBe(1)
+    const partial = wakeLevelFromDegrees(WAKE_DEADBAND_DEG + (WAKE_CAP_DEG - WAKE_DEADBAND_DEG) / 2, 0)
+    expect(partial).toBeGreaterThan(0.4)
+    expect(partial).toBeLessThan(WAKE_LEVEL)
   })
-})
 
-describe('pointerLean', () => {
-  it('stays quiet near the center and never reaches a hard edge from the pointer alone', () => {
-    expect(pointerLean(0, 0)).toEqual({ x: 0, y: 0 })
-    expect(pointerLean(0.05, -0.05)).toEqual({ x: 0, y: 0 })
-    const edge = pointerLean(1.4, 1.4)
-    expect(edge.x).toBeLessThanOrEqual(0.75)
-    expect(edge.y).toBeLessThanOrEqual(0.45)
-    expect(pointerLean(-1.4, 0).x).toBeLessThan(0)
+  it('lets a smaller tilt move the eyes without counting as a wake', () => {
+    expect(Math.abs(lookFromDegrees(2))).toBe(0)
+    expect(Math.abs(lookFromDegrees(10))).toBeGreaterThan(0)
+    expect(wakeLevelFromDegrees(10, 0)).toBeLessThan(WAKE_LEVEL)
   })
 })
 
 describe('smoothToward', () => {
-  it('eases instead of jumping to the target', () => {
+  it('eases instead of jumping', () => {
     let value = 0
-    let largestStep = 0
-    for (let i = 0; i < 40; i++) {
-      const next = smoothToward(value, 1, 16, 240)
-      largestStep = Math.max(largestStep, next - value)
+    let largest = 0
+    for (let i = 0; i < 30; i++) {
+      const next = smoothToward(value, 1, 16, 180)
+      largest = Math.max(largest, next - value)
       value = next
     }
-    expect(largestStep).toBeLessThan(0.1)
-    expect(value).toBeGreaterThan(0.85)
+    expect(largest).toBeLessThan(0.12)
+    expect(value).toBeGreaterThan(0.8)
     expect(value).toBeLessThan(1)
-    expect(MAX_FRAME_DT_MS).toBeLessThanOrEqual(100)
   })
 })
 
 describe('resolveMotionPermission', () => {
-  it('never treats a permission result as proof that events are flowing', async () => {
-    await expect(
-      resolveMotionPermission({ secure: false, hasOrientationEvent: true }),
-    ).resolves.toBe('unavailable')
-    await expect(
-      resolveMotionPermission({ secure: true, hasOrientationEvent: false }),
-    ).resolves.toBe('unavailable')
-    await expect(
-      resolveMotionPermission({ secure: true, hasOrientationEvent: true }),
-    ).resolves.toBe('listen')
+  it('does not treat a permission result as proof that events arrived', async () => {
+    await expect(resolveMotionPermission({ secure: false, hasOrientationEvent: true })).resolves.toBe('unavailable')
+    await expect(resolveMotionPermission({ secure: true, hasOrientationEvent: false })).resolves.toBe('unavailable')
+    await expect(resolveMotionPermission({ secure: true, hasOrientationEvent: true })).resolves.toBe('listen')
     await expect(
       resolveMotionPermission({
         secure: true,

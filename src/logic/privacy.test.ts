@@ -16,6 +16,10 @@ const forbidden = [
   'WebSocket',
   'XMLHttpRequest',
   'fetch(',
+  'Bram',
+  'lantern',
+  'Mochi',
+  'Waze',
 ]
 
 function sourceFiles(dir: string): string[] {
@@ -26,8 +30,8 @@ function sourceFiles(dir: string): string[] {
   })
 }
 
-describe('privacy boundary', () => {
-  it('does not reference capture, location, storage, or network APIs', () => {
+describe('privacy and scope', () => {
+  it('does not reference capture, location, storage, network, or the retired lantern', () => {
     const haystack = sourceFiles(join(process.cwd(), 'src'))
       .map((path) => readFileSync(path, 'utf8'))
       .join('\n')

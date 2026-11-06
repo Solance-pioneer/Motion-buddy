@@ -1,32 +1,33 @@
-# Bram
+# Motion Buddy
 
-Bram is a small stationary dashboard companion: one clay pocket lantern that idles, leans a little, and shifts between curious and slightly grumpy. Set it up while parked. It does not listen to the microphone, use location, sign you in, or send anything to a server.
+Motion Buddy is a browser face for the screen you already have open. The page is mostly two eyes and a mouth. Controls stay hidden until you ask for them.
 
-This is a browser prototype. It is not an Apple Watch app, and it does not keep animating in the background.
+This is a browser prototype only. It is not an iPhone app and not an Apple Watch app. A square window is a layout check for a possible later watch face, not a watch build. It does not wake a locked or sleeping phone, and it does not keep running if the browser suspends the tab.
 
-## Run
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:43123
+Vite serves the dev build on port 43123. There is no hosted preview in this project.
 
-On a phone, use the same Wi-Fi and the Network address Vite prints, over HTTPS if you want tilt. iPhone Safari only shares device tilt after you tap **Enable motion**, and only on a secure page (HTTPS, or localhost on the phone itself).
+## Using it
 
-## Controls
+The face fills the page, with a margin so the eyes and mouth stay on screen in portrait, landscape, and square windows. A short hint tells you to tap, or to click or press Enter. The hint fades. The same instruction stays on the control for a keyboard or screen reader. Escape, Close, or a tap on the dim area puts the controls away. Using a control does not close the panel or switch expression by accident.
 
-- **Auto** keeps one mood for a while, then eases into the other. Curious rests about 14 seconds, the shift takes about 1.8 seconds, grumpy rests about 11 seconds, then it eases back.
-- **Curious** and **Grumpy** hold that mood. Bram eases between them instead of popping.
-- **Preview sway** is a slow desktop stand-in for tilt.
-- Moving the pointer also leans Bram a little, with a dead zone in the middle.
-- **Enable motion** asks for device orientation. Motion is marked on only after a real tilt event arrives. If you deny it, or no event arrives, the label says so and the pointer / preview sway stay available.
-- **Set level** appears once tilt is actually on. It treats the current angle as upright.
+- **Awake** stays expressive while this page is open and visible.
+- **Rest until motion** rests until a clear tilt arrives, then stays up for about 12 seconds of calm. **Preview wake** runs that path with no sensor. Small jitters are ignored, and the wake level has to hold briefly before it counts.
+- **Auto** eases through the expressions you leave checked. Each one holds about 12 seconds, then eases for about 1.6 seconds. Auto pauses while the face is resting. At least one expression stays selected.
+- **Curious, Happy, Grumpy, and Sleepy** hold that expression.
+- Four accents recolor the background and irises.
+- **Enable motion** asks for device orientation only after you tap. The status says motion is on only after numeric orientation events arrive. Denied permission and a grant with no events stay worded that way.
+- **Keep screen on** uses the Screen Wake Lock when the browser has it. The browser drops it if you leave the page. If the API is missing, the control says so.
 
-Tilt uses orientation only. It is smoothed, ignores about 4 degrees of jitter, and caps at a small lean. Hard braking is not a reaction the prototype looks for.
+Calmer system motion shortens expression changes and spaces blinks further apart. The face still changes expression.
 
-If the system setting “reduce motion” is on, Bram holds a quieter pose: no bounce, no sway, and no tilt lean. Mood buttons still work.
+Limits live in Setup and limits, not on the face.
 
 ## Test
 
@@ -34,33 +35,48 @@ If the system setting “reduce motion” is on, Bram holds a quieter pose: no b
 npm test
 ```
 
-That runs the unit tests, then a production build, then browser tests against that build.
+That runs the unit tests, a production build, and browser tests against that build. `npm run test:unit` and `npm run test:browser` run the parts separately.
 
-`npm run test:unit` and `npm run test:browser` run the pieces separately.
+Auto timing and rest timing in the browser tests use `/?e2e=1` and `window.__motionBuddyTest`. That hook is absent on a normal production page.
 
-Auto timing in the browser tests uses a test clock at `/?e2e=1` (`window.__bramTest.seek`). That hook is not added on the normal production page.
+## What was tested
 
-## What was tested here
+Desktop Chromium via Playwright. Not a physical iPhone, and not a watch.
 
-Desktop Chromium (Playwright), not a physical iPhone:
+Unit tests, 15 passed:
 
-- Unit tests, 16 passed: mood dwells and transitions, tilt deadband and cap, smoothing, permission results, blink, reduced motion, preview sway, manual mood, hidden-tab pause, and a source scan that the app does not reference microphone, location, audio, storage, or network APIs.
-- Browser tests, 12 passed, against `npm run build`:
-  - Curious and Grumpy buttons settle the same character, including mouth shape.
-  - Auto follows the test clock through a curious dwell, the midpoint of a shift, and a grumpy dwell.
-  - Pointer lean stays capped, and Preview sway can be turned off.
-  - Reduced motion keeps bounce at 0, ignores pointer lean, and disables sway and Enable motion.
-  - Portrait 390×844: character above the controls, mood buttons at least 48px tall, parked note visible, no horizontal scroll.
-  - Landscape 844×390: controls beside the character, buttons at least 44px tall, parked note on screen.
-  - Desktop 1280×800: Bram centered, with the mood note visible.
-  - No orientation listener until Enable motion, and no motion-acceleration listener at all.
-  - Denied permission stays denied and never says motion is on.
-  - A granted permission with no orientation event ends as “not turned on”.
-  - Motion turns on only after an event with numeric angles, then a later tilt leans Bram within the cap.
+- Auto walks only the selected expressions, and a single choice does not cycle.
+- The last Auto expression cannot be removed.
+- Manual grumpy eases the mouth and eyes. There is no bobbing value.
+- A small movement does not wake rest. A sustained level does, after smoothing and a short debounce.
+- Preview wake lifts a resting face, then a calm hold lets it rest again.
+- Preview wake does nothing to the sensor level while Awake is selected.
+- Hidden time does not advance Auto or motion.
+- Blinks open again. Reduced motion does not blink during the normal gap.
+
+Browser tests, 22 passed, against `npm run build`:
+
+- The production page does not expose the test hook.
+- Face mode shows no expression buttons or Enable motion until the face control is used. The hint is visible at first and then gone.
+- Opening controls, choosing Happy, and dismissing the dim area leaves Happy on the face.
+- Tab, Enter, and Escape open and close controls, and focus returns to the face.
+- A coarse pointer gets “Tap for controls.”
+- Auto can be limited to one expression, and the last checkbox stays on.
+- Rest stays resting, Preview wake brings the chosen expression up, and the calm hold returns to rest. A small fed level does not wake; a sustained level does.
+- Reduced motion still changes to Sleepy.
+- No orientation listener until Enable motion, and no acceleration listener.
+- Denied permission never says motion is on.
+- A granted permission with no event ends as not turned on.
+- Motion turns on only after an event with numeric angles. An empty event does not count.
+- Hiding the page pauses the engine and tilt listening.
+- Screen wake lock reports denied, granted, and unsupported. Granted copy says it is only for this visible page. Setup text says it is not a system always-on switch.
+- Portrait 390×844, landscape 844×390, square 320×320, and desktop 1280×800 keep the face inside the screen with at least an 8px margin. Portrait controls are at least 48px tall. The square Close control is on screen and at least 44px tall.
 
 ## Limits
 
-- Desktop emulation cannot verify iPhone Safari tilt. A real phone may show a system permission dialog, deny it, or never send events; the prototype is written for those cases but they were not exercised on hardware.
-- Screen-on warmth and battery use have not been measured and are not certified safe.
-- There is no Apple Watch version and no claim that the animation continues while the phone is locked or in another app. The animation pauses when the page is hidden.
-- Do not use the controls while driving. This is a stationary prototype — set it up while parked.
+- iPhone Safari tilt, permission sheets, and background suspension were not tested on hardware. Desktop emulation cannot stand in for that.
+- Nothing here wakes a locked phone, a sleeping screen, or a suspended tab. Rest until motion is only while this page is open and visible.
+- Screen Wake Lock is optional and browser-dependent. It is not a promise that the system stays on.
+- There is no Apple Watch binary. The square layout is a design check only.
+- Maps, Waze, music, microphone, sound, chat, accounts, location, tracking, and payments are out of scope.
+- Warmth and battery use are untested.

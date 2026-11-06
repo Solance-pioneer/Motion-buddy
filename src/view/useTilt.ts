@@ -1,21 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { CompanionEngine } from '../logic/engine.ts'
-import { mapTilt, MOTION_EVENT_TIMEOUT_MS, resolveMotionPermission } from '../logic/motion.ts'
+import { lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, resolveMotionPermission, wakeLevelFromDegrees } from '../logic/motion.ts'
 
-export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events'
+export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events' | 'paused'
+
+export interface TiltSample {
+  x: number
+  y: number
+  level: number
+}
 
 /**
- * Orientation only. Device acceleration is intentionally unused so braking
- * and bumps do not yank the companion. "Active" is set only after a real
- * orientation event arrives with numeric angles.
+ * Listens for device orientation only after a user action.
+ * "Active" means numeric orientation events arrived. Permission alone is not enough.
+ * The listener is removed while the page is hidden.
  */
-export function useTilt(engine: CompanionEngine, onPose: () => void) {
+export function useTilt(onSample: (sample: TiltSample) => void) {
   const [status, setStatus] = useState<MotionUiStatus>('idle')
   const statusRef = useRef<MotionUiStatus>('idle')
+  const enabledRef = useRef(false)
   const listenerRef = useRef<((event: Event) => void) | null>(null)
   const timeoutRef = useRef<number | null>(null)
   const originRef = useRef<{ gamma: number; beta: number } | null>(null)
-  const lastRef = useRef<{ gamma: number; beta: number } | null>(null)
+  const onSampleRef = useRef(onSample)
+  useEffect(() => {
+    onSampleRef.current = onSample
+  }, [onSample])
 
   const setMotionStatus = useCallback((next: MotionUiStatus) => {
     statusRef.current = next
@@ -33,9 +42,52 @@ export function useTilt(engine: CompanionEngine, onPose: () => void) {
     }
   }, [])
 
+  const beginListening = useCallback(() => {
+    detach()
+    originRef.current = null
+    setMotionStatus('waiting')
+    const handler = (event: Event) => {
+      const reading = readOrientation(event)
+      if (!reading) return
+      if (!originRef.current) originRef.current = reading
+      const dx = reading.gamma - originRef.current.gamma
+      const dy = reading.beta - originRef.current.beta
+      onSampleRef.current({
+        x: lookFromDegrees(dx),
+        y: lookFromDegrees(dy),
+        level: wakeLevelFromDegrees(dx, dy),
+      })
+      if (timeoutRef.current != null) {
+        window.clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      if (statusRef.current !== 'active') setMotionStatus('active')
+    }
+    listenerRef.current = handler
+    window.addEventListener('deviceorientation', handler)
+    timeoutRef.current = window.setTimeout(() => {
+      timeoutRef.current = null
+      if (statusRef.current === 'waiting') setMotionStatus('no-events')
+    }, readTimeout())
+  }, [detach, setMotionStatus])
+
   useEffect(() => {
-    return () => detach()
-  }, [detach])
+    const onVisibility = () => {
+      if (document.hidden) {
+        detach()
+        if (enabledRef.current && statusRef.current !== 'idle' && statusRef.current !== 'denied' && statusRef.current !== 'unavailable') {
+          setMotionStatus('paused')
+        }
+        return
+      }
+      if (enabledRef.current && statusRef.current === 'paused') beginListening()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      detach()
+    }
+  }, [beginListening, detach, setMotionStatus])
 
   const enable = useCallback(async () => {
     const decision = await resolveMotionPermission({
@@ -44,68 +96,25 @@ export function useTilt(engine: CompanionEngine, onPose: () => void) {
       requestPermission: readPermissionRequest(),
     })
     if (decision !== 'listen') {
+      enabledRef.current = false
       detach()
-      engine.setSensorActive(false)
       setMotionStatus(decision)
-      onPose()
       return
     }
+    enabledRef.current = true
+    beginListening()
+  }, [beginListening, detach, setMotionStatus])
 
-    detach()
-    originRef.current = null
-    lastRef.current = null
-    setMotionStatus('waiting')
-
-    const handler = (event: Event) => {
-      const reading = readOrientation(event)
-      if (!reading) return
-      if (!originRef.current) originRef.current = reading
-      lastRef.current = reading
-      engine.setSensorActive(true)
-      engine.setLeanTarget(
-        mapTilt(reading.gamma - originRef.current.gamma),
-        mapTilt(reading.beta - originRef.current.beta),
-      )
-      if (timeoutRef.current != null) {
-        window.clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-      if (statusRef.current !== 'active') setMotionStatus('active')
-      onPose()
-    }
-
-    listenerRef.current = handler
-    window.addEventListener('deviceorientation', handler)
-    timeoutRef.current = window.setTimeout(() => {
-      timeoutRef.current = null
-      if (statusRef.current === 'waiting') setMotionStatus('no-events')
-    }, readTimeout())
-  }, [detach, engine, onPose, setMotionStatus])
-
-  const setLevel = useCallback(() => {
-    if (lastRef.current) originRef.current = { ...lastRef.current }
-    engine.setLeanTarget(0, 0)
-    onPose()
-  }, [engine, onPose])
-
-  return { status, enable, setLevel }
+  return { status, enable }
 }
 
 function readPermissionRequest(): (() => Promise<string>) | undefined {
-  const orientation = DeviceOrientationEvent as unknown as {
-    requestPermission?: () => Promise<string>
-  }
-  const motion = DeviceMotionEvent as unknown as {
-    requestPermission?: () => Promise<string>
-  }
+  const orientation = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> }
+  const motion = DeviceMotionEvent as unknown as { requestPermission?: () => Promise<string> }
   const requestOrientation = orientation.requestPermission
-  if (typeof requestOrientation === 'function') {
-    return () => requestOrientation.call(DeviceOrientationEvent)
-  }
+  if (typeof requestOrientation === 'function') return () => requestOrientation.call(DeviceOrientationEvent)
   const requestMotion = motion.requestPermission
-  if (typeof requestMotion === 'function') {
-    return () => requestMotion.call(DeviceMotionEvent)
-  }
+  if (typeof requestMotion === 'function') return () => requestMotion.call(DeviceMotionEvent)
   return undefined
 }
 
