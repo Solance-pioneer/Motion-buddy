@@ -138,9 +138,9 @@ export class FaceBlend {
   private elapsed = 0
   private duration = 0
 
-  sample(pose: PoseId, style: FaceStyle, reduced: boolean, speed: boolean, dtMs: number): FaceFeatures {
-    const key = `${pose}:${style}`
-    const target = featuresFor(pose, style)
+  sample(pose: PoseId, style: FaceStyle, reduced: boolean, speed: boolean, dtMs: number, motion?: { key: string; features: FaceFeatures }): FaceFeatures {
+    const key = motion ? `show:${motion.key}:${style}` : `${pose}:${style}`
+    const target = motion ? structuredClone(motion.features) : featuresFor(pose, style)
     target.speed = speed && !reduced ? 1 : 0
     if (key !== this.key) {
       this.from = this.shown

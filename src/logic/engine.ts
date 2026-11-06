@@ -10,7 +10,8 @@ import {
   type ExpressionPhase,
   type FacePose,
 } from './expressions.ts'
-import { DEFAULT_AUTO, POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile } from './library.ts'
+import { DEFAULT_AUTO, placeApproved, POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile, type ShowcaseFrame } from './library.ts'
+import { sampleCandidate } from './catalog.ts'
 import { MAX_FRAME_DT_MS, REST_HOLD_MS, smoothToward, WAKE_DEBOUNCE_MS, WAKE_LEVEL } from './motion.ts'
 import {
   forceReaction,
@@ -48,6 +49,7 @@ export interface BuddyState {
   sensitivity: Sensitivity
   allowStartled: boolean
   allowDizzy: boolean
+  showcase: ShowcaseFrame | null
 }
 
 const BLINK_HALF_MS = 140
@@ -251,12 +253,18 @@ export class BuddyEngine {
       sensitivity: this.sensitivity,
       allowStartled: this.allowStartled,
       allowDizzy: this.allowDizzy,
+      showcase: shown.showcase,
     }
   }
 
   private display() {
     const allowed = new Set(this.autoSet)
-    let frame = sampleIdle(this.idleElapsed, this.profile, allowed, this.reduced)
+    const placed = this.profile === 'desk'
+      ? placeApproved(this.idleElapsed, { dizzy: this.allowDizzy, startled: this.allowStartled })
+      : { idleMs: this.idleElapsed, showcase: null }
+    let frame = sampleIdle(placed.idleMs, this.profile, allowed, this.reduced)
+    const idleShowcase = placed.showcase
+    let showcase: ShowcaseFrame | null = null
     if (this.selection !== 'auto') {
       frame = { ...frame, pose: resolvePose(this.selection, allowed, this.profile), speed: false }
     }
@@ -279,7 +287,23 @@ export class BuddyEngine {
       frame.gazeX = Math.abs(steerX) > 0.35 ? steerX : clampUnit(frame.gazeX * (1 - Math.abs(steerX) / 0.35) + steerX)
       frame.gazeY = Math.abs(steerY) > 0.35 ? steerY : clampUnit(frame.gazeY * (1 - Math.abs(steerY) / 0.35) + steerY)
     }
-    return frame
+    const showApproved = idleShowcase
+      && this.selection === 'auto'
+      && this.reaction.name === 'none'
+      && this.uiElapsed >= this.settleUntil
+      && !(this.presence === 'rest' && this.resting)
+    if (showApproved && idleShowcase) {
+      showcase = idleShowcase
+      const played = sampleCandidate(idleShowcase.id, idleShowcase.elapsed, this.reduced, 'soft')
+      if (!this.reduced) {
+        frame.gazeX = played.gazeX
+        frame.gazeY = played.gazeY
+        frame.blink = Math.max(frame.blink, played.blink)
+        if (Math.abs(this.lookX) > 0.35) frame.gazeX = clampUnit(this.lookX)
+        if (Math.abs(this.lookY) > 0.35) frame.gazeY = clampUnit(this.lookY)
+      }
+    }
+    return { ...frame, showcase }
   }
 
   private logical() {

@@ -126,3 +126,49 @@ export function gazeCount(frames: IdleFrame[]): number {
   const seen = new Set(frames.map((frame) => `${Math.round(frame.gazeX * 10)}:${Math.round(frame.gazeY * 10)}`))
   return seen.size
 }
+
+/** Approved actions begin after the opening desk minute-fraction so the first ten seconds stay the familiar loop. */
+export const SHOWCASE_INTRO_MS = 10_800
+
+const SHOWCASE_BEATS: { id: string; ms: number; gate?: 'dizzy' | 'startled' }[] = [
+  { id: 'scan', ms: 2100 },
+  { id: 'giggle', ms: 1600 },
+  { id: 'take-left', ms: 1800, gate: 'startled' },
+  { id: 'dizzy', ms: 2300, gate: 'dizzy' },
+  { id: 'spiral-dizzy', ms: 2400, gate: 'dizzy' },
+]
+
+export interface ShowcaseFrame {
+  id: string
+  elapsed: number
+}
+
+export function deskLoopMs(): number {
+  return DESK[DESK.length - 1]?.until ?? 1
+}
+
+export function placeApproved(
+  idleMs: number,
+  allow: { dizzy: boolean; startled: boolean },
+): { idleMs: number; showcase: ShowcaseFrame | null } {
+  const beats = SHOWCASE_BEATS.filter((beat) => {
+    if (beat.gate === 'dizzy') return allow.dizzy
+    if (beat.gate === 'startled') return allow.startled
+    return true
+  })
+  const intro = SHOWCASE_INTRO_MS
+  const loop = deskLoopMs()
+  const showMs = beats.reduce((sum, beat) => sum + beat.ms, 0)
+  const tail = Math.max(0, loop - intro)
+  const cycle = intro + showMs + tail
+  const time = ((idleMs % cycle) + cycle) % cycle
+  if (time < intro) return { idleMs: time, showcase: null }
+  if (time < intro + showMs) {
+    let cursor = intro
+    for (const beat of beats) {
+      if (time < cursor + beat.ms) return { idleMs: intro, showcase: { id: beat.id, elapsed: time - cursor } }
+      cursor += beat.ms
+    }
+  }
+  return { idleMs: intro + (time - intro - showMs), showcase: null }
+}

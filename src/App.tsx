@@ -10,6 +10,7 @@ import { Face } from './view/Face.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
+import { sampleCandidate } from './logic/catalog.ts'
 import { advanceSound, claimChirp, initialSoundMemory, loadSoundPrefs, playCue, setSoundMuted, soundStatus, unlockSound, type SoundMemory } from './logic/sfx.ts'
 
 type TestApi = {
@@ -60,6 +61,7 @@ function viewKey(state: BuddyState): string {
     state.sensitivity,
     state.allowStartled ? 'startled-on' : 'startled-off',
     state.allowDizzy ? 'dizzy-on' : 'dizzy-off',
+    state.showcase?.id ?? '',
   ].join('|')
 }
 
@@ -120,7 +122,15 @@ export function App() {
       root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
-    const features = blendRef.current.sample(state.expression, styleRef.current, state.reduced, state.speed, dt)
+    const played = state.showcase ? sampleCandidate(state.showcase.id, state.showcase.elapsed, state.reduced, 'soft') : null
+    const features = blendRef.current.sample(
+      state.expression,
+      styleRef.current,
+      state.reduced,
+      state.speed,
+      dt,
+      played ? { key: state.showcase?.id ?? '', features: played.features } : undefined,
+    )
     if (root) {
       root.dataset.eyeH = features.left.h.toFixed(2)
       root.dataset.glanceX = glanceOffset(state.gazeX, state.gazeY).x.toFixed(2)
@@ -234,7 +244,7 @@ export function App() {
     const next = advanceSound(
       heard.current,
       {
-        expression: view.expression,
+        expression: view.showcase?.id ?? view.expression,
         reaction: view.reaction,
         reduced: view.reduced,
         allowDizzy: view.allowDizzy,
@@ -244,7 +254,7 @@ export function App() {
     )
     heard.current = next.memory
     if (next.cue) playCue(next.cue)
-  }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden])
+  }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden, view.showcase?.id])
 
   useEffect(() => {
     if (!testHookEnabled()) return

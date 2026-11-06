@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_AUTO, POSE_IDS, fallbackPose, gazeCount, resolvePose, sampleIdle, type PoseId } from './library.ts'
+import { DEFAULT_AUTO, POSE_IDS, SHOWCASE_INTRO_MS, deskLoopMs, fallbackPose, gazeCount, placeApproved, resolvePose, sampleIdle, type PoseId } from './library.ts'
 
 const all = new Set<PoseId>(POSE_IDS)
 
@@ -50,6 +50,32 @@ describe('sampleIdle', () => {
     const laughs = frames.filter((pose) => pose === 'laugh').length / frames.length
     expect(laughs).toBeGreaterThan(0)
     expect(laughs).toBeLessThan(0.12)
+  })
+
+  it('visits each approved action once per cycle, then the existing yawn and wink', () => {
+    const allow = { dizzy: true, startled: true }
+    const seen = new Set<string>()
+    const cycle = deskLoopMs() + 2100 + 1600 + 1800 + 2300 + 2400
+    for (let t = 0; t < cycle; t += 100) {
+      const placed = placeApproved(t, allow)
+      if (placed.showcase) seen.add(placed.showcase.id)
+      else if (sampleIdle(placed.idleMs, 'desk', all, false).pose === 'yawn') seen.add('yawn')
+      else if (sampleIdle(placed.idleMs, 'desk', all, false).pose === 'wink') seen.add('wink')
+    }
+    expect([...seen]).toEqual(expect.arrayContaining(['scan', 'giggle', 'take-left', 'dizzy', 'spiral-dizzy', 'yawn', 'wink']))
+    expect(placeApproved(1_000, allow).showcase).toBeNull()
+    expect(placeApproved(SHOWCASE_INTRO_MS + 100, allow).showcase?.id).toBe('scan')
+    const quiet = { dizzy: false, startled: false }
+    const blocked = new Set<string>()
+    for (let t = 0; t < cycle; t += 100) {
+      const id = placeApproved(t, quiet).showcase?.id
+      if (id) blocked.add(id)
+    }
+    expect(blocked.has('dizzy')).toBe(false)
+    expect(blocked.has('spiral-dizzy')).toBe(false)
+    expect(blocked.has('take-left')).toBe(false)
+    expect(blocked.has('scan')).toBe(true)
+    expect(blocked.has('giggle')).toBe(true)
   })
 
   it('drops travel and blinks when reduced motion is on', () => {

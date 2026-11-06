@@ -184,6 +184,29 @@ describe('BuddyEngine', () => {
     expect(blocked.expression).not.toBe('worried')
   })
 
+  it('plays the approved scan in the desk cycle and keeps a turned-off dizzy out of it', () => {
+    const engine = new BuddyEngine({ random: () => 0 })
+    const shown = advance(engine, 10_800 + 80)
+    expect(shown.showcase?.id).toBe('scan')
+    expect(shown.gazeX).toBeLessThan(-0.8)
+    engine.setReactionEnabled('dizzy', false)
+    engine.setReactionEnabled('startled', false)
+    const blocked = new Set<string>()
+    for (let t = 0; t < 40_000; t += 200) {
+      const id = advance(engine, 200).showcase?.id
+      if (id) blocked.add(id)
+    }
+    expect(blocked.has('scan')).toBe(true)
+    expect(blocked.has('dizzy')).toBe(false)
+    expect(blocked.has('spiral-dizzy')).toBe(false)
+    expect(blocked.has('take-left')).toBe(false)
+    const reduced = new BuddyEngine({ random: () => 0 })
+    reduced.setReduced(true)
+    const still = advance(reduced, 10_800 + 80)
+    expect(still.showcase?.id).toBe('scan')
+    expect(still.gazeX).toBe(0)
+  })
+
   it('keeps a calmer blink gap when reduced motion is on', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     engine.setReduced(true)

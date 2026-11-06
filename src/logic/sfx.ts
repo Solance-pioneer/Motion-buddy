@@ -102,10 +102,12 @@ export function cueForHearState(state: HearState): ApprovedCue | null {
   if (state.reaction === 'dizzy') return state.allowDizzy ? 'dizzy' : null
   if (state.reaction === 'startled') return state.allowStartled ? 'surprise' : null
   if (state.reaction !== 'none' && state.reaction !== 'recovery') return null
-  if (state.expression === 'dizzy') return state.allowDizzy ? 'dizzy' : null
-  if (state.expression === 'startled') return state.allowStartled ? 'surprise' : null
-  if (state.expression === 'yawn') return 'yawn'
-  if (state.expression === 'wink') return 'wink'
+  if (state.expression === 'dizzy' || state.expression === 'spiral-dizzy') return state.allowDizzy ? 'dizzy' : null
+  if (state.expression === 'startled' || state.expression === 'take-left') return state.allowStartled ? 'surprise' : null
+  if (state.expression === 'yawn' || state.expression === 'yawn-stretch') return 'yawn'
+  if (state.expression === 'wink' || state.expression === 'wink-play') return 'wink'
+  if (state.expression === 'scan') return 'scan'
+  if (state.expression === 'giggle') return 'giggle'
   return null
 }
 
