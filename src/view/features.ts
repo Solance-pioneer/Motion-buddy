@@ -12,6 +12,8 @@ export interface EyeSpec {
   peak: number
   rot: number
   radius: number
+  /** Clockwise turns. Absent or 0 draws the normal eye. */
+  spiral?: number
 }
 
 export interface MouthSpec {
@@ -31,6 +33,8 @@ export interface FaceFeatures {
   sweat: number
   anger: number
   speed: number
+  /** 0–1 soft brow lift. Absent means no brows. */
+  brow?: number
 }
 
 const POSE_MS = 360
@@ -73,6 +77,7 @@ const KAPPA = 0.5522847498
  * are used in between, so a morph never grows a flat base or a center spike.
  */
 export function eyePath(eye: EyeSpec): string {
+  if (eye.spiral && eye.spiral > 0) return spiralPath(eye.cx, eye.cy, eye.spiral)
   const rx = Math.max(2.2, eye.w) / 2
   const ry = Math.max(1.6, eye.h) / 2
   const smile = Math.max(0, eye.peak)
@@ -96,6 +101,22 @@ export function eyePath(eye: EyeSpec): string {
     `C ${n(cx - rx)} ${n(ySide - kTop)} ${n(cx - kx)} ${n(yTop)} ${n(cx)} ${n(yTop)}`,
     'Z',
   ].join(' ')
+}
+
+/** Local clockwise spiral with a rounded tip. It does not move the page. */
+export function spiralPath(cx: number, cy: number, turns: number): string {
+  const steps = 36
+  const maxA = Math.max(0.15, turns) * Math.PI * 2
+  let d = ''
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps
+    const a = t * maxA
+    const radius = 0.8 + t * 7.4
+    const x = cx + Math.cos(a) * radius
+    const y = cy + Math.sin(a) * radius
+    d += i === 0 ? `M ${n(x)} ${n(y)}` : ` L ${n(x)} ${n(y)}`
+  }
+  return d
 }
 
 /** One filled loop for every mouth, so a smile can open, frown, or yawn without swapping shapes. */

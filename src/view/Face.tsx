@@ -18,6 +18,8 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
       eyeR: pick('eye-r') as SVGGElement,
       eyePathL: pick('eye-l-path') as SVGPathElement,
       eyePathR: pick('eye-r-path') as SVGPathElement,
+      browL: pick('brow-l') as SVGPathElement,
+      browR: pick('brow-r') as SVGPathElement,
       mouth: pick('mouth') as SVGPathElement,
       blushL: pick('blush-l') as SVGEllipseElement,
       blushR: pick('blush-r') as SVGEllipseElement,
@@ -32,6 +34,8 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
+        <path data-part="brow-l" d="M22 31 Q32 25 42 31" fill="none" stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round" opacity="0" />
+        <path data-part="brow-r" d="M58 31 Q68 25 78 31" fill="none" stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round" opacity="0" />
         <path data-part="mouth" fill="#ffffff" stroke="none" />
         <ellipse data-part="blush-l" cx="22" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
         <ellipse data-part="blush-r" cx="78" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />

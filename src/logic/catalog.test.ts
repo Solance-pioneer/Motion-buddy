@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { eyePath, type EyeSpec } from '../view/features.ts'
-import { ACTION_IDS, CANDIDATES, EXPRESSION_IDS, sampleAudition, sampleCandidate } from './catalog.ts'
+import { ACTION_IDS, CANDIDATES, EXPRESSION_IDS, sampleCandidate } from './catalog.ts'
 
 function mixEye(a: EyeSpec, b: EyeSpec, t: number): EyeSpec {
   const m = (x: number, y: number) => x + (y - x) * t
@@ -47,6 +47,7 @@ describe('catalog', () => {
       samples.push(mixEye(curious.left, beam.left, t), mixEye(curious.left, sleepy.left, t))
     }
     for (const eye of samples) {
+      if (eye.spiral) continue
       const path = eyePath(eye)
       expect(path.includes('Q')).toBe(false)
       expect(path.split('C').length).toBe(5)
@@ -61,9 +62,12 @@ describe('catalog', () => {
     const blink = [0, 400, 800].map((t) => sampleCandidate('blink', t).blink)
     expect(Math.max(...blink)).toBeGreaterThan(0.5)
     expect(blink[0]).toBeLessThan(0.2)
-    const left = sampleAudition('shock-left', 600)
-    const right = sampleAudition('shock-left', 1800)
-    expect(left.gazeX).toBeLessThan(-0.8)
-    expect(right.gazeX).toBeGreaterThan(0.8)
+    const scanA = sampleCandidate('scan', 0).gazeX
+    const scanB = sampleCandidate('scan', 525).gazeX
+    const scanC = sampleCandidate('scan', 1050).gazeX
+    expect(scanA).toBeLessThan(-0.9)
+    expect(scanC).toBeGreaterThan(0.9)
+    expect(Math.abs(scanB)).toBeLessThan(0.2)
+    expect(Math.abs(sampleCandidate('scan', 2100).gazeX - scanA)).toBeLessThan(0.05)
   })
 })

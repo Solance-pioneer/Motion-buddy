@@ -64,6 +64,7 @@ const EXPRESSIONS = [
   ex('glance', 'Side glance', face(eye(28, 40, 18, 24, 0, 0), eye(64, 40, 18, 24, 0, 0), mouth(64, 14, 6, 0, 0, -4), 0, 0, 0)),
   ex('laugh', 'Laugh', featuresFor('laugh', 'soft')),
   ex('tender', 'Tender', face(L(15, 18, 0, 42), R(15, 18, 0, 42), mouth(70, 12, 5, 0, 0, 0), 0, 0, 0)),
+  ex('spiral-dizzy', 'Spiral dizzy', featuresFor('curious', 'soft')),
 ]
 
 function act(id: string, name: string, motion = false): Candidate {
@@ -154,6 +155,7 @@ function lerpFrame(a: PlayFrame, b: PlayFrame, t: number): PlayFrame {
         shift: mix(a.features.mouth.shift, b.features.mouth.shift),
       },
       blush: mix(a.features.blush, b.features.blush),
+      brow: mix(a.features.brow ?? 0, b.features.brow ?? 0),
       sweat: mix(a.features.sweat, b.features.sweat),
       anger: mix(a.features.anger, b.features.anger),
       speed: mix(a.features.speed, b.features.speed),
@@ -191,6 +193,9 @@ export function sampleCandidate(id: string, elapsed: number, reduced = false, st
   const sleepy = featuresOf('sleepy', style)
   const pant = featuresOf('pant', style)
   const wink = featuresOf('wink', style)
+  if (id === 'giggle') return sampleGiggle(time, reduced, style)
+  if (id === 'dizzy') return sampleDizzyPose(time, reduced, style)
+  if (id === 'spiral-dizzy') return sampleSpiralDizzy(time, reduced, style)
   if (isExpression(id)) {
     const gaze = id === 'think' ? { x: 0, y: -0.55 } : id === 'glance' ? { x: -0.7, y: 0.1 } : { x: 0, y: 0 }
     return hold(base, gaze.x, gaze.y, 0)
@@ -229,12 +234,7 @@ export function sampleCandidate(id: string, elapsed: number, reduced = false, st
         { until: 2000, frame: hold(curious, 0, 0, 0) },
       ])
     case 'scan':
-      return between(time % 3200, [
-        { until: 700, frame: hold(curious, -0.9, 0, 0) },
-        { until: 1100, frame: hold(curious, -0.9, 0, 1) },
-        { until: 2000, frame: hold(curious, 0.9, 0, 0) },
-        { until: 3200, frame: hold(curious, 0, 0, 0) },
-      ])
+      return sampleScan(time, reduced, curious)
     case 'sway':
       return between(time % 2800, [
         { until: 900, frame: hold(curious, -0.65, 0, 0) },
@@ -242,11 +242,7 @@ export function sampleCandidate(id: string, elapsed: number, reduced = false, st
         { until: 2800, frame: hold(curious, 0, 0, 0) },
       ])
     case 'take-left':
-      return between(time % 2400, [
-        { until: 500, frame: hold(curious, -0.35, 0, 0) },
-        { until: 1200, frame: hold(startled, -1, -0.05, 0) },
-        { until: 2400, frame: hold(curious, -0.2, 0, 0) },
-      ])
+      return sampleTakeLeft(time, reduced, curious, startled)
     case 'take-right':
       return between(time % 2400, [
         { until: 500, frame: hold(curious, 0.35, 0, 0) },
@@ -325,13 +321,91 @@ export class FrameBlend {
   }
 }
 
-/** Audition playback. Movement candidates add a labelled left, then right, shove. */
+/** Audition playback uses the candidate's own motion. It does not snap gaze to a fixed side. */
 export function sampleAudition(id: string, elapsed: number, reduced = false, style: FaceStyle = 'soft'): PlayFrame {
-  const own = sampleCandidate(id, elapsed, reduced, style)
-  const meta = candidateById(id)
-  if (!meta?.motion || reduced) return own
-  const cycle = elapsed % 3600
-  if (cycle < 1200) return { ...own, gazeX: -1, gazeY: own.gazeY * 0.2 }
-  if (cycle < 2400) return { ...own, gazeX: 1, gazeY: own.gazeY * 0.2 }
-  return { ...own, gazeX: 0 }
+  return sampleCandidate(id, elapsed, reduced, style)
+}
+
+const SCAN_MS = 2100
+const GIGGLE_MS = 1600
+const TAKE_MS = 1800
+const DIZZY_MS = 2300
+const SPIRAL_MS = 2400
+
+function ease(t: number): number {
+  const x = Math.max(0, Math.min(1, t))
+  return x * x * (3 - 2 * x)
+}
+
+function sampleScan(time: number, reduced: boolean, curious: FaceFeatures): PlayFrame {
+  const u = reduced ? 0 : (time % SCAN_MS) / SCAN_MS
+  const gazeX = reduced ? 0 : -Math.cos(2 * Math.PI * u)
+  return hold(curious, gazeX, 0, 0)
+}
+
+function sampleGiggle(time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const face = structuredClone(featuresOf('giggle', style))
+  const u = reduced ? 0 : (time % GIGGLE_MS) / GIGGLE_MS
+  const envelope = Math.sin(Math.PI * u)
+  const bob = reduced ? 0 : Math.sin(u * Math.PI * 5) * envelope * 10
+  const pulse = reduced ? 0 : Math.max(0, Math.sin(u * Math.PI * 5)) * envelope * 3.2
+  face.left.cy += bob
+  face.right.cy += bob
+  face.mouth.curve += pulse
+  return hold(face, 0, bob / 10, 0)
+}
+
+function sampleTakeLeft(time: number, reduced: boolean, curious: FaceFeatures, startled: FaceFeatures): PlayFrame {
+  const u = reduced ? 0.35 : (time % TAKE_MS) / TAKE_MS
+  let gaze = 0
+  if (u < 0.28) gaze = -0.42 * ease(u / 0.28)
+  else if (u < 0.52) gaze = -0.42 + (-1 - -0.42) * ease((u - 0.28) / 0.24)
+  else gaze = -1 * (1 - ease((u - 0.52) / 0.48))
+  const pop = u < 0.24 ? 0 : u < 0.46 ? ease((u - 0.24) / 0.22) : u < 0.72 ? 1 - ease((u - 0.46) / 0.26) : 0
+  const frame = lerpFrame(hold(curious), hold(startled), pop)
+  frame.gazeX = reduced ? -0.2 : gaze
+  frame.features.brow = reduced ? 0 : pop * 0.9
+  frame.features.mouth.open = curious.mouth.open + (1 - curious.mouth.open) * pop * 0.35
+  frame.features.mouth.gape = 3 * pop
+  return frame
+}
+
+function sampleDizzyPose(time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const face = structuredClone(featuresOf('dizzy', style))
+  const u = reduced ? 0 : (time % DIZZY_MS) / DIZZY_MS
+  const sway = reduced ? 0 : Math.sin(2 * Math.PI * u) * 0.75
+  const leftBlink = reduced ? 0 : Math.sin(Math.PI * Math.max(0, Math.min(1, (u - 0.55) / 0.16)))
+  const rightBlink = reduced ? 0 : Math.sin(Math.PI * Math.max(0, Math.min(1, (u - 0.72) / 0.16)))
+  face.left.h *= 1 - 0.82 * (Number.isFinite(leftBlink) ? leftBlink : 0)
+  face.right.h *= 1 - 0.82 * (Number.isFinite(rightBlink) ? rightBlink : 0)
+  return hold(face, sway, 0, 0)
+}
+
+function sampleSpiralDizzy(time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const curious = featuresOf('curious', style)
+  if (reduced) {
+    const still = structuredClone(curious)
+    still.left.spiral = 1.1
+    still.right.spiral = 1.1
+    return hold(still, 0, 0, 0)
+  }
+  const u = (time % SPIRAL_MS) / SPIRAL_MS
+  const spinEnd = 0.58
+  if (u < spinEnd) {
+    const p = 1 - (1 - u / spinEnd) ** 2
+    const turns = 0.2 + p * 1.15
+    const spinning = structuredClone(curious)
+    spinning.left.spiral = turns
+    spinning.right.spiral = turns
+    return hold(spinning, 0, 0, 0)
+  }
+  if (u < 0.78) {
+    const local = (u - spinEnd) / (0.78 - spinEnd)
+    const blink = Math.sin(local * Math.PI)
+    const spinning = structuredClone(curious)
+    spinning.left.spiral = 1.35
+    spinning.right.spiral = 1.35
+    return hold(local < 0.5 ? spinning : curious, 0, 0, blink)
+  }
+  return hold(curious, 0, 0, 0)
 }
