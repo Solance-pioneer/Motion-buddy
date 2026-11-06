@@ -14,13 +14,15 @@ export interface FacePlace {
   originY: number
 }
 
-/** Modest finger offset, in -1..1, asks the face to travel to the far safe edge. The face moves away from the finger. */
-export function desiredTravel(nx: number, ny: number, room: Room): { x: number; y: number } {
+export type PetMode = 'dodge' | 'chase'
+
+/** Modest finger offset, in -1..1. Dodge travels away from the finger. Chase travels toward it. Past the safe edge, the caller squashes instead of leaving the screen. */
+export function desiredTravel(nx: number, ny: number, room: Room, mode: PetMode = 'dodge'): { x: number; y: number } {
   const push = (value: number) => {
     if (value === 0) return 0
-    const away = -Math.sign(value)
+    const direction = mode === 'chase' ? Math.sign(value) : -Math.sign(value)
     const amount = Math.min(1.45, Math.abs(value) / 0.4)
-    return away * amount
+    return direction * amount
   }
   const ax = push(nx)
   const ay = push(ny)

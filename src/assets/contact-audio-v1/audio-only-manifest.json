@@ -1,0 +1,180 @@
+{
+  "status": "AUDIO_READY_FOR_EXISTING_WORKSTREAM_NOT_INTEGRATED",
+  "source": "src/create_playful_assets.py",
+  "source_sha256": "98a4709747f3bfc79a612af7ede92823061027dc0048ac4cda0f84d2b24699bc",
+  "source_scope_note": "Retained original mathematical generator creates full playful batch; no new synthesis performed in audio-only packaging. Integrate ONLY the four listed audio cues.",
+  "provenance": "Original procedural sound synthesis and original vector shapes for Michael Dicker. No downloaded art/audio, existing character costume or reference melody. No public-release/licence grant implied.",
+  "format": "App copies:PCM16 mono48kHz. Masters:IEEE float32 mono48kHz.",
+  "sounds": [
+    {
+      "key": "curious_contact_loop",
+      "description": "Sustained curious contact tone; native sample loop at 0..2.8s, external gain ramps only",
+      "loop": true,
+      "master": {
+        "path": "audio/masters/curious_contact_loop_master_f32_48k.wav",
+        "sha256": "75613d5336e0319569d629e13b2e8ba30582f37fe1de3518ef991ac8c1d69817"
+      },
+      "app": {
+        "path": "audio/app/curious_contact_loop_app_pcm16_48k.wav",
+        "sha256": "87b629cead273de97ac0d496d381d99180227489bd6cdda930945670a01897d0",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 2.8,
+          "peak_dbfs": -17.939403778852373,
+          "active_rms_dbfs": -21.49741885593488,
+          "dc_offset": -3.634658711570453e-20,
+          "first_sample": 0.0,
+          "last_sample": -0.006134220404675436
+        }
+      },
+      "loop_qa": {
+        "start_seconds": 0,
+        "end_seconds": 2.8,
+        "whole_fundamental_cycles": 924,
+        "analytic_periodic_max_error": 6.322071467409259e-13,
+        "wrap_step_amplitude": 0.006123809651989778,
+        "loop_endpoint_note": "Last sample is NOT forced to zero: it is the correct pre-wrap waveform sample. Use uncompressed PCM buffer looping, not repeated ended/restart calls. No baked fade/silent tail."
+      },
+      "loop_start_sample": 0,
+      "loop_end_sample": 134400,
+      "sample_rate_hz": 48000,
+      "mix_policy": {
+        "role": "sustain bed",
+        "fade_in_ms": 120,
+        "fade_out_ms": 150,
+        "crossfade_ms": 120,
+        "never_stack_one_shots": true,
+        "during_one_shot": "Duck bed smoothly by about9dB (gain0.35) over100\u2013150ms, then restore without restarting phase. Alternatively crossfade from bed to one-shot and back; never layer independent full-level cues.",
+        "stop_conditions": [
+          "release/cancel",
+          "mute",
+          "hidden page/navigation"
+        ],
+        "retrigger": "Bed uses one native loop source per contact, never pointermove/ended restarts; one-shots gated at least900ms apart."
+      }
+    },
+    {
+      "key": "pet_soft_squeak",
+      "description": "Gentle single squeeze squeak",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_soft_squeak_master_f32_48k.wav",
+        "sha256": "8c995f1c886df3a84f4575429d14c4725a1105a9440bda4a63997a4c7ba0c283"
+      },
+      "app": {
+        "path": "audio/app/pet_soft_squeak_app_pcm16_48k.wav",
+        "sha256": "3a555a6eeef942f4e634e63336aebac7b57cdabc6fb8efd2bf4b8ebc2969ebad",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.34,
+          "peak_dbfs": -13.685420944645127,
+          "active_rms_dbfs": -20.947668360076094,
+          "dc_offset": -9.350033540276782e-09,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      },
+      "mix_policy": {
+        "role": "serialized petting alternative",
+        "fade_in_ms": 120,
+        "fade_out_ms": 150,
+        "crossfade_ms": 120,
+        "never_stack_one_shots": true,
+        "during_one_shot": "Duck bed smoothly by about9dB (gain0.35) over100\u2013150ms, then restore without restarting phase. Alternatively crossfade from bed to one-shot and back; never layer independent full-level cues.",
+        "stop_conditions": [
+          "release/cancel",
+          "mute",
+          "hidden page/navigation"
+        ],
+        "retrigger": "Bed uses one native loop source per contact, never pointermove/ended restarts; one-shots gated at least900ms apart."
+      }
+    },
+    {
+      "key": "pet_round_chirp",
+      "description": "Rounded two-part contented chirp",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_round_chirp_master_f32_48k.wav",
+        "sha256": "4471942081f33bcefa69593adeb5177a1d7cc4c1aa5508ea1d2e2cbb9623c9d0"
+      },
+      "app": {
+        "path": "audio/app/pet_round_chirp_app_pcm16_48k.wav",
+        "sha256": "bb386e2895847c7ed9ca49cf5711e99b0e9046b67bcce9972ce166724b127edd",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.48,
+          "peak_dbfs": -12.999547169594685,
+          "active_rms_dbfs": -20.94776412624045,
+          "dc_offset": 4.238681871657001e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      },
+      "mix_policy": {
+        "role": "serialized petting alternative",
+        "fade_in_ms": 120,
+        "fade_out_ms": 150,
+        "crossfade_ms": 120,
+        "never_stack_one_shots": true,
+        "during_one_shot": "Duck bed smoothly by about9dB (gain0.35) over100\u2013150ms, then restore without restarting phase. Alternatively crossfade from bed to one-shot and back; never layer independent full-level cues.",
+        "stop_conditions": [
+          "release/cancel",
+          "mute",
+          "hidden page/navigation"
+        ],
+        "retrigger": "Bed uses one native loop source per contact, never pointermove/ended restarts; one-shots gated at least900ms apart."
+      }
+    },
+    {
+      "key": "pet_content_wobble",
+      "description": "Low soft satisfied warble, no speech",
+      "loop": false,
+      "master": {
+        "path": "audio/masters/pet_content_wobble_master_f32_48k.wav",
+        "sha256": "73060926f7a92797fdaf907660bb02a19fe7506e2b09fbce5417a23b318c4566"
+      },
+      "app": {
+        "path": "audio/app/pet_content_wobble_app_pcm16_48k.wav",
+        "sha256": "507a0837d106d62a77ce7af2cd5784937b9d4cd14d4e4cfb9a1a9f2ed8c51dea",
+        "format": "PCM16 mono 48kHz",
+        "metrics": {
+          "seconds": 0.78,
+          "peak_dbfs": -12.999547169594685,
+          "active_rms_dbfs": -21.505630076657347,
+          "dc_offset": -3.097498290806272e-08,
+          "first_sample": 0.0,
+          "last_sample": 0.0
+        }
+      },
+      "mix_policy": {
+        "role": "serialized petting alternative",
+        "fade_in_ms": 120,
+        "fade_out_ms": 150,
+        "crossfade_ms": 120,
+        "never_stack_one_shots": true,
+        "during_one_shot": "Duck bed smoothly by about9dB (gain0.35) over100\u2013150ms, then restore without restarting phase. Alternatively crossfade from bed to one-shot and back; never layer independent full-level cues.",
+        "stop_conditions": [
+          "release/cancel",
+          "mute",
+          "hidden page/navigation"
+        ],
+        "retrigger": "Bed uses one native loop source per contact, never pointermove/ended restarts; one-shots gated at least900ms apart."
+      }
+    }
+  ],
+  "qa": {
+    "sha256_of_all_eight_wavs_rechecked": true,
+    "wav_full_decodes": "All eight listed master/app WAVs passed in original17-file batch; copied byte-identically.",
+    "loop_pcm_wrap_second_difference_maxima": [
+      3.051850947599893e-05,
+      3.051850947599893e-05,
+      3.051850947599893e-05
+    ],
+    "not_performed": [
+      "Human listening/perceived loudness test",
+      "Phone test",
+      "App/browser integration"
+    ]
+  },
+  "audio_priority": "Interaction audio first. Costume assets, scene music and overlays are deliberately absent from this pack."
+}

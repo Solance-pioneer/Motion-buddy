@@ -19,7 +19,7 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v3.3.',
+    'Motion Buddy customer app, Expressive v3.4.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
@@ -53,6 +53,17 @@ mkdirSync(voiceFreeDir, { recursive: true })
 for (const name of ['celebration_three_squeaks_app_pcm16_48k.wav', 'proud_rise_beeps_app_pcm16_48k.wav']) {
   copyFileSync(join('src/assets/voice-free-v1/app', name), join(voiceFreeDir, name))
 }
+const contactDir = join(dist, 'contact-audio-v1')
+mkdirSync(contactDir, { recursive: true })
+for (const name of [
+  'curious_contact_loop_app_pcm16_48k.wav',
+  'pet_soft_squeak_app_pcm16_48k.wav',
+  'pet_round_chirp_app_pcm16_48k.wav',
+  'pet_content_wobble_app_pcm16_48k.wav',
+]) {
+  copyFileSync(join('src/assets/contact-audio-v1/audio/app', name), join(contactDir, name))
+}
+copyFileSync(join('src/assets/contact-audio-v1/audio-only-manifest.json'), join(contactDir, 'audio-only-manifest.json'))
 mkdirSync(join(dist, 'petting-v1'), { recursive: true })
 copyFileSync(
   join('src/assets/petting-v1/app/curious_pet_glide_app_pcm16_48k.wav'),
@@ -113,18 +124,19 @@ try {
 writeFileSync(
   join(dist, 'BUILD.txt'),
   [
-    'Motion Buddy customer build, Expressive v3.3.',
+    'Motion Buddy customer build, Expressive v3.4.',
     `source_commit: ${sourceCommit}`,
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
+    'Contact petting uses curious_contact_loop at gain 1 and three variants at gain 0.84. Masters are not rewritten.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
     '',
   ].join('\n'),
 )
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.3.zip'
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.4.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.3.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v3.4.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

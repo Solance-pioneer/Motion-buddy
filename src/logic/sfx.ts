@@ -1,6 +1,6 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
-import { PET_GLIDE_WAV_BASE64 } from './pet-glide-wav.ts'
+import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
@@ -397,7 +397,7 @@ export function prepareVoices(): Promise<void> {
 
 export function setSoundMuted(muted: boolean): void {
   gate.muted = muted
-  if (muted) fadePetGlide(130)
+  if (muted) endContact(130)
   try {
     window.localStorage.setItem(SOUND_KEY, JSON.stringify({ muted, volume: 0.4 }))
   } catch {
@@ -407,51 +407,174 @@ export function setSoundMuted(muted: boolean): void {
 
 let playingUntil = 0
 
-let petSource: AudioBufferSourceNode | null = null
-let petGain: GainNode | null = null
-let petQuietUntil = 0
+const CONTACT_VARIANTS = ['pet_soft_squeak', 'pet_round_chirp', 'pet_content_wobble'] as const
+const BED_GAIN = 1
+const VARIANT_GAIN = 0.84
+const DUCK_GAIN = 0.35
+const VARIANT_GATE_MS = 900
 
-export function fadePetGlide(ms = 130): void {
-  if (!context || !petSource || !petGain) return
-  const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
-  const t = context.currentTime
-  petGain.gain.cancelScheduledValues(t)
-  petGain.gain.setValueAtTime(petGain.gain.value, t)
-  petGain.gain.linearRampToValueAtTime(0, t + seconds)
-  petSource.stop(t + seconds + 0.02)
-  petSource = null
-  petGain = null
-  petQuietUntil = performance.now() + ms
+export type ContactVariant = (typeof CONTACT_VARIANTS)[number]
+
+export interface ContactStatus {
+  active: boolean
+  bedStarts: number
+  variantStarts: number
+  variantKeys: ContactVariant[]
+  yields: number
+  loop: boolean
+  loopEnd: number
+  liveSources: number
 }
 
-export function startPetGlide(): boolean {
-  if (!context || gate.muted || !gate.unlocked) return false
-  if (petSource || performance.now() < playingUntil || performance.now() < petQuietUntil) return false
-  const clip = pcm16('curious_pet_glide', PET_GLIDE_WAV_BASE64)
+let contactGen = 0
+let bedSource: AudioBufferSourceNode | null = null
+let bedGain: GainNode | null = null
+let bedLevel = 0
+let variantSource: AudioBufferSourceNode | null = null
+let variantGain: GainNode | null = null
+let variantReadyAt = 0
+let variantCursor = 0
+let bedStarts = 0
+let variantKeys: ContactVariant[] = []
+let contactYields = 0
+
+export function contactActive(): boolean {
+  return bedSource !== null
+}
+
+export function contactStatus(): ContactStatus {
+  return {
+    active: bedSource !== null,
+    bedStarts,
+    variantStarts: variantKeys.length,
+    variantKeys: [...variantKeys],
+    yields: contactYields,
+    loop: bedSource?.loop ?? false,
+    loopEnd: bedSource?.loopEnd ?? 0,
+    liveSources: (bedSource ? 1 : 0) + (variantSource ? 1 : 0),
+  }
+}
+
+export function resetContactForTests(): void {
+  endContact(100)
+  bedStarts = 0
+  variantKeys = []
+  contactYields = 0
+  variantReadyAt = 0
+  variantCursor = 0
+}
+
+function fadeNode(gain: GainNode, from: number, to: number, seconds: number): void {
+  if (!context) return
+  const t = context.currentTime
+  gain.gain.cancelScheduledValues(t)
+  gain.gain.setValueAtTime(from, t)
+  gain.gain.linearRampToValueAtTime(to, t + seconds)
+}
+
+function stopLater(source: AudioBufferSourceNode, seconds: number): void {
+  if (!context) return
+  source.stop(context.currentTime + seconds + 0.02)
+}
+
+/** One native looping bed for this contact. A second call while it is running does not start another source. */
+export function beginContact(): boolean {
+  if (!context || gate.muted || !gate.unlocked || bedSource) return false
+  const clip = pcm16('curious_contact_loop', CONTACT_WAV_BASE64.curious_contact_loop)
   const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
   buffer.getChannelData(0).set(clip.samples)
   const source = context.createBufferSource()
   const gain = context.createGain()
-  gain.gain.setValueAtTime(1, context.currentTime)
   source.buffer = buffer
+  source.loop = true
+  source.loopStart = 0
+  source.loopEnd = clip.samples.length / clip.rate
   source.connect(gain)
   gain.connect(context.destination)
+  fadeNode(gain, 0, BED_GAIN, 0.12)
+  bedLevel = BED_GAIN
   source.start()
-  petSource = source
-  petGain = gain
+  bedSource = source
+  bedGain = gain
+  bedStarts += 1
+  const generation = contactGen
   source.onended = () => {
-    if (petSource === source) {
-      petSource = null
-      petGain = null
+    if (generation !== contactGen) return
+    if (bedSource === source) {
+      bedSource = null
+      bedGain = null
     }
   }
   return true
 }
 
+/** Duck the same bed by about 9 dB, play one variant, then restore that bed's phase. */
+export function playContactVariant(now = performance.now()): ContactVariant | null {
+  if (!context || !bedSource || !bedGain || gate.muted || variantSource || now < variantReadyAt) return null
+  const key = CONTACT_VARIANTS[variantCursor % CONTACT_VARIANTS.length]
+  variantCursor += 1
+  const clip = pcm16(key, CONTACT_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(bedGain, bedLevel, DUCK_GAIN, 0.12)
+  bedLevel = DUCK_GAIN
+  fadeNode(gain, 0, VARIANT_GAIN, 0.12)
+  source.start()
+  variantSource = source
+  variantGain = gain
+  variantKeys = [...variantKeys, key]
+  variantReadyAt = now + VARIANT_GATE_MS
+  const generation = contactGen
+  const bed = bedSource
+  source.onended = () => {
+    if (variantSource === source) {
+      variantSource = null
+      variantGain = null
+    }
+    if (generation !== contactGen || bedSource !== bed || !bedGain) return
+    fadeNode(bedGain, DUCK_GAIN, BED_GAIN, 0.12)
+    bedLevel = BED_GAIN
+  }
+  return key
+}
+
+/** Fade the bed and any variant. Pending ended callbacks from this contact cannot start audio again. */
+export function endContact(ms = 130): void {
+  const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
+  contactGen += 1
+  const bed = bedSource
+  const bedAt = bedGain
+  const variant = variantSource
+  const variantAt = variantGain
+  const level = bedLevel
+  bedSource = null
+  bedGain = null
+  variantSource = null
+  variantGain = null
+  bedLevel = 0
+  if (bed && bedAt) {
+    fadeNode(bedAt, level, 0, seconds)
+    stopLater(bed, seconds)
+  }
+  if (variant && variantAt) {
+    fadeNode(variantAt, VARIANT_GAIN, 0, seconds)
+    stopLater(variant, seconds)
+  }
+}
+
 export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
+  if (contactActive()) {
+    contactYields += 1
+    return false
+  }
   const now = performance.now()
-  if (petSource) fadePetGlide(120)
   if (now < playingUntil) return false
   const spoken = kind === 'disapprove'
   const replacement = kind === 'celebration_three_squeaks' || kind === 'proud_rise_beeps'

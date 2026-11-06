@@ -35,6 +35,19 @@ describe('face travel', () => {
     expect(far.originY).toBeCloseTo(1 - inset.bottom / 320, 3)
   })
 
+  it('chases toward the finger and still squashes at the wall', () => {
+    const toward = desiredTravel(0.9, -0.9, room, 'chase')
+    const away = desiredTravel(0.9, -0.9, room, 'dodge')
+    expect(toward.x).toBeGreaterThan(0)
+    expect(toward.y).toBeLessThan(0)
+    expect(Math.sign(toward.x)).not.toBe(Math.sign(away.x))
+    const placed = placeFace(toward.x, toward.y, room)
+    expect(placed.x).toBeCloseTo(room.maxX, 0)
+    expect(placed.y).toBeCloseTo(room.minY, 0)
+    expect(placed.sx).toBeLessThan(0.9)
+    expect(placed.sy).toBeLessThan(0.9)
+  })
+
   it('keeps a centered finger at rest', () => {
     const still = desiredTravel(0, 0, room)
     const placed = placeFace(still.x, still.y, room)

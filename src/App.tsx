@@ -12,8 +12,8 @@ import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, claimChirp, fadePetGlide, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCue, setSoundMuted, soundStatus, startPetGlide, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
-import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace } from './logic/face-room.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
 function featureInset(svg: SVGSVGElement, size: number) {
@@ -58,6 +58,8 @@ type TestApi = {
   setReactionEnabled: (kind: ReactionKind, enabled: boolean) => void
   elapse: (ms: number) => void
   setHidden: (hidden: boolean) => void
+  contact: () => ReturnType<typeof contactStatus>
+  tryCue: (kind: 'chirp' | 'dizzy' | 'scan') => boolean
 }
 
 function prefersReducedMotion(): boolean {
@@ -128,7 +130,7 @@ export function App() {
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
-  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, dragging: false })
+  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, onFace: false, mode: 'chase' as PetMode, dragging: false })
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
     return current + (target - current) * (1 - Math.exp(-dt / ms))
@@ -179,7 +181,7 @@ export function App() {
       top: measured.inset.top / measured.size,
       bottom: 1 - measured.inset.bottom / measured.size,
     }
-    const desired = desiredTravel(nx, ny, measured.room)
+    const desired = desiredTravel(nx, ny, measured.room, p.mode)
     const raw: FacePlace = placeFace(desired.x, desired.y, measured.room, anchor)
     const mute = document.querySelector('.mute-chip')?.getBoundingClientRect() ?? null
     const placed = clearControl(
@@ -198,11 +200,47 @@ export function App() {
     p.tox = placed.originX
     p.toy = placed.originY
   }
-  const releasePet = () => aimPet(0, 0, false)
+  const releasePet = () => {
+    pet.current.onFace = false
+    aimPet(0, 0, false)
+  }
+  const drawnCluster = (pad: number) => {
+    const svg = faceButtonRef.current?.querySelector('svg.face')
+    if (!svg) return null
+    let left = Infinity
+    let top = Infinity
+    let right = -Infinity
+    let bottom = -Infinity
+    for (const part of ['eye-l-path', 'eye-r-path', 'mouth']) {
+      const node = svg.querySelector(`[data-part="${part}"]`)
+      const box = node?.getBoundingClientRect()
+      if (!box || box.width < 1 || box.height < 1) continue
+      left = Math.min(left, box.left)
+      top = Math.min(top, box.top)
+      right = Math.max(right, box.right)
+      bottom = Math.max(bottom, box.bottom)
+    }
+    if (!(right > left && bottom > top)) return null
+    return { left: left - pad, top: top - pad, right: right + pad, bottom: bottom + pad }
+  }
+  const drawnHit = (x: number, y: number, was: boolean) => {
+    const enter = drawnCluster(10)
+    const leave = drawnCluster(28)
+    const inside = (box: { left: number; top: number; right: number; bottom: number } | null) =>
+      Boolean(box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
+    if (inside(enter)) return true
+    if (!inside(leave)) return false
+    return was
+  }
   const stepPet = (dt: number) => {
     const p = pet.current
     if (p.dragging) aimPet(p.nx, p.ny, true)
     const reduced = engine.snapshot().reduced
+    const touching = p.dragging && drawnHit(p.px, p.py, p.onFace)
+    if (touching && !p.onFace) playContactVariant()
+    if (touching) p.onFace = true
+    const squeezeTarget = reduced || !p.onFace ? 1 : 0.9
+    p.squeeze = damp(p.squeeze, squeezeTarget, dt, reduced ? 0 : 140)
     const posMs = reduced ? 0 : p.dragging ? 90 : 520
     const squMs = reduced ? 0 : p.dragging ? 110 : 250
     p.x = damp(p.x, reduced ? 0 : p.tx, dt, posMs)
@@ -211,13 +249,20 @@ export function App() {
     p.sy = damp(p.sy, reduced ? 1 : p.tsy, dt, squMs)
     p.ox = damp(p.ox, p.tox, dt, squMs)
     p.oy = damp(p.oy, p.toy, dt, squMs)
+    const showSx = Math.max(0.76, p.sx * p.squeeze)
+    const showSy = Math.max(0.8, p.sy * p.squeeze)
     const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
     if (svg) {
-      svg.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${p.sx.toFixed(3)}, ${p.sy.toFixed(3)})`
+      svg.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${showSx.toFixed(3)}, ${showSy.toFixed(3)})`
       svg.style.transformOrigin = `${(p.ox * 100).toFixed(1)}% ${(p.oy * 100).toFixed(1)}%`
     }
     const root = rootRef.current
-    if (root) root.dataset.pet = `${p.x.toFixed(1)},${p.y.toFixed(1)},${p.sx.toFixed(2)},${p.sy.toFixed(2)}`
+    if (root) {
+      root.dataset.pet = `${p.x.toFixed(1)},${p.y.toFixed(1)},${showSx.toFixed(2)},${showSy.toFixed(2)}`
+      root.dataset.petMode = p.dragging ? p.mode : 'rest'
+      root.dataset.squeeze = p.squeeze.toFixed(2)
+      root.dataset.contact = contactStatus().active ? 'on' : 'off'
+    }
   }
   const [muteLit, setMuteLit] = useState(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
@@ -393,14 +438,22 @@ export function App() {
       loop.last = performance.now()
       loop.raf = requestAnimationFrame(frame)
     }
+    const abandonGesture = () => {
+      touch.current = touchCancel(touch.current).clock
+      releasePet()
+      endContact(130)
+      engine.feedLook(0, 0)
+    }
     const stop = () => {
       loop.running = false
       engine.setHidden(true)
-      fadePetGlide(130)
+      abandonGesture()
       cancelAnimationFrame(loop.raf)
     }
-    const onBlur = () => fadePetGlide(130)
+    const onBlur = () => abandonGesture()
+    const onLeave = () => abandonGesture()
     window.addEventListener('blur', onBlur)
+    window.addEventListener('pagehide', onLeave)
     const onVisibility = () => {
       if (document.hidden) stop()
       else start()
@@ -410,6 +463,7 @@ export function App() {
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       window.removeEventListener('blur', onBlur)
+      window.removeEventListener('pagehide', onLeave)
       stop()
     }
   }, [engine, publish])
@@ -519,6 +573,8 @@ export function App() {
         engine.setHidden(hidden)
         publish(engine.snapshot())
       },
+      contact: () => contactStatus(),
+      tryCue: (kind) => playCue(kind),
     }
     return () => {
       delete testWindow.__motionBuddyTest
@@ -561,6 +617,8 @@ export function App() {
           if (event.key !== 'Enter' && event.key !== ' ') return
           event.preventDefault()
           unlockQuiet()
+          endContact(130)
+          releasePet()
           setSeenControls(true)
           setHintOn(false)
           setOpen(true)
@@ -581,14 +639,19 @@ export function App() {
           const rect = event.currentTarget.getBoundingClientRect()
           const nx = ((event.clientX - rect.left) / rect.width) * 2 - 1
           const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1
-          if (step.chirp) startPetGlide()
+          pet.current.px = event.clientX
+          pet.current.py = event.clientY
+          if (step.chirp) {
+            pet.current.mode = pet.current.mode === 'dodge' ? 'chase' : 'dodge'
+            beginContact()
+          }
           aimPet(nx, ny, true)
         }}
         onPointerUp={() => {
           const step = touchUp(touch.current, performance.now())
           touch.current = step.clock
           releasePet()
-          fadePetGlide(130)
+          endContact(130)
           engine.feedLook(0, 0)
           if (step.openMenu) {
             setSeenControls(true)
@@ -601,7 +664,7 @@ export function App() {
         onPointerCancel={() => {
           touch.current = touchCancel(touch.current).clock
           releasePet()
-          fadePetGlide(130)
+          endContact(130)
           engine.feedLook(0, 0)
         }}
       >
