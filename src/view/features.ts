@@ -64,33 +64,24 @@ export function lerpFeatures(a: FaceFeatures, b: FaceFeatures, t: number): FaceF
   }
 }
 
+/**
+ * One continuous lens. Open eyes are symmetric pills. Closed eyes become
+ * crescents by lifting the lower curve. There is no flat base and no center spike,
+ * including while height and peak are halfway between two poses.
+ */
 export function eyePath(eye: EyeSpec): string {
-  const w = Math.max(2.2, eye.w)
-  const h = Math.max(2.2, eye.h)
+  const w = Math.max(4, eye.w)
+  const h = Math.max(3, eye.h)
   const mid = eye.cx
-  if (eye.peak > h * 0.75) {
-    const rise = Math.min(eye.peak, w * 0.48)
-    const y = eye.cy
-    const left = mid - w / 2
-    const right = mid + w / 2
-    return `M ${n(left)} ${n(y)} Q ${n(mid)} ${n(y - rise)} ${n(right)} ${n(y)} Q ${n(mid)} ${n(y - rise * 0.28)} ${n(left)} ${n(y)} Z`
-  }
-  const x = mid - w / 2
-  const y = eye.cy - h / 2
-  const r = Math.max(0.8, Math.min(eye.radius, w / 2, h / 2))
-  const peak = Math.min(eye.peak, h * 0.28)
-  return [
-    `M ${n(x + r)} ${n(y)}`,
-    `Q ${n(mid)} ${n(y - peak)} ${n(x + w - r)} ${n(y)}`,
-    `Q ${n(x + w)} ${n(y)} ${n(x + w)} ${n(y + r)}`,
-    `V ${n(y + h - r)}`,
-    `Q ${n(x + w)} ${n(y + h)} ${n(x + w - r)} ${n(y + h)}`,
-    `H ${n(x + r)}`,
-    `Q ${n(x)} ${n(y + h)} ${n(x)} ${n(y + h - r)}`,
-    `V ${n(y + r)}`,
-    `Q ${n(x)} ${n(y)} ${n(x + r)} ${n(y)}`,
-    'Z',
-  ].join(' ')
+  const y = eye.cy
+  const left = mid - w / 2
+  const right = mid + w / 2
+  const smile = Math.max(0, eye.peak)
+  const top = Math.min(h / 2 + smile * 0.2, w * 0.55)
+  let bottom = h / 2 - smile * 0.9
+  bottom = Math.max(bottom, -top * 0.42)
+  if (top - bottom < 2.4) bottom = top - 2.4
+  return `M ${n(left)} ${n(y)} Q ${n(mid)} ${n(y - top)} ${n(right)} ${n(y)} Q ${n(mid)} ${n(y + bottom)} ${n(left)} ${n(y)} Z`
 }
 
 /** One filled loop for every mouth, so a smile can open, frown, or yawn without swapping shapes. */
@@ -140,7 +131,7 @@ function poseSpec(pose: PoseId): FaceFeatures {
     case 'happy':
       return face(eye(32, 40, 20, 9, 13, 0), eye(68, 40, 20, 9, 13, 0), mouth(66, 20, 9, 0.15, 3, 0), 0, 0, 0)
     case 'laugh':
-      return face(eye(32, 40, 18, 8, 10, 0), eye(68, 40, 18, 8, 10, 0), mouth(67, 26, 6, 0.7, 8, 0), 0, 0, 0)
+      return face(eye(32, 40, 18, 8, 11, 0), eye(68, 40, 18, 8, 11, 0), mouth(66, 22, 12, 0, 0, 0), 0, 0, 0)
     case 'shy':
       return face(eye(33, 42, 14, 22, 0, 0), eye(67, 42, 14, 22, 0, 0), mouth(70, 14, 6, 0, 0, 0), 0, 0, 0)
     case 'smug':

@@ -10,6 +10,7 @@ import { Face } from './view/Face.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
+import { loadSoundPrefs, playCue, setSoundMuted, soundStatus, unlockSound } from './logic/sfx.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -85,6 +86,8 @@ export function App() {
   const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
+  const [soundOn, setSoundOn] = useState(false)
+  const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
   const blendRef = useRef(new FaceBlend())
@@ -216,6 +219,17 @@ export function App() {
     const id = window.setTimeout(() => setHintOn(false), hintDuration())
     return () => window.clearTimeout(id)
   }, [])
+
+  useEffect(() => {
+    loadSoundPrefs()
+    setSoundAvailable(soundStatus().available)
+    setSoundOn(soundStatus().unlocked && !soundStatus().muted)
+  }, [])
+
+  useEffect(() => {
+    if (view.reaction === 'dizzy') playCue('dizzy')
+    else if (view.reaction === 'startled' || view.reaction === 'worried') playCue('surprise')
+  }, [view.reaction])
 
   useEffect(() => {
     if (!testHookEnabled()) return
@@ -409,6 +423,18 @@ export function App() {
             publish(engine.snapshot())
           }}
           onToggleWakeLock={wakeLock.toggle}
+          soundOn={soundOn}
+          soundAvailable={soundAvailable}
+          onToggleSound={() => {
+            if (!unlockSound()) {
+              setSoundAvailable(false)
+              return
+            }
+            const enable = !soundOn
+            setSoundMuted(!enable)
+            setSoundOn(enable)
+            if (enable) playCue('chirp')
+          }}
         />
       ) : null}
       <p className="sr-only" aria-live="polite">

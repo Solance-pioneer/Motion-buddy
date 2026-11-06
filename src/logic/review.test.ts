@@ -4,6 +4,16 @@ import { companionBeats, sampleBeats } from './playlist.ts'
 import { counts, keptIds, parseReview } from './review.ts'
 
 describe('review file', () => {
+  it('keeps an earlier 48-face review and ignores ids that are not in this build', () => {
+    const decisions = Object.fromEntries(CANDIDATES.map((item, index) => [item.id, index % 2 === 0 ? 'keep' : 'reject']))
+    decisions.retired = 'keep'
+    const parsed = parseReview(JSON.stringify({ version: 1, decisions, index: 4 }))
+    expect(parsed?.decisions.curious).toBe('keep')
+    expect(parsed?.decisions.retired).toBeUndefined()
+    expect(Object.keys(parsed?.decisions ?? {})).toHaveLength(CANDIDATES.length)
+    expect(parsed?.index).toBe(4)
+  })
+
   it('rejects malformed files and unknown faces', () => {
     expect(parseReview('nope')).toBeNull()
     expect(parseReview(JSON.stringify({ version: 2, decisions: {} }))).toBeNull()

@@ -11,6 +11,7 @@ import {
   type Decision,
   type ReviewFile,
 } from '../logic/review.ts'
+import { cueForCandidate, playCue, setSoundMuted, unlockSound } from '../logic/sfx.ts'
 import { applyPose, type FaceHandles } from '../view/applyPose.ts'
 import { Face } from '../view/Face.tsx'
 import { ReviewDeck } from '../view/ReviewDeck.tsx'
@@ -21,6 +22,7 @@ export function OwnerApp() {
   const [overview, setOverview] = useState(false)
   const [preview, setPreview] = useState(false)
   const [notice, setNotice] = useState('')
+  const [soundOn, setSoundOn] = useState(false)
   const handles = useRef<FaceHandles | null>(null)
   const blend = useRef(new FrameBlend())
   const clock = useRef(0)
@@ -62,6 +64,10 @@ export function OwnerApp() {
   )
 
   useEffect(() => {
+    if (soundOn && candidate) playCue(cueForCandidate(candidate.id))
+  }, [candidate?.id, soundOn])
+
+  useEffect(() => {
     let frame = 0
     let last = performance.now()
     const tick = (now: number) => {
@@ -88,6 +94,22 @@ export function OwnerApp() {
   const fileName = candidate?.name ?? 'Face'
   return (
     <main className="owner" data-stage={preview ? 'owner-preview' : 'owner-review'} data-candidate={candidate?.id ?? ''}>
+      <button
+        type="button"
+        className="stage-switch"
+        onClick={() => {
+          if (!unlockSound()) {
+            setNotice('Sound is unavailable in this browser.')
+            return
+          }
+          const enable = !soundOn
+          setSoundMuted(!enable)
+          setSoundOn(enable)
+          if (enable && candidate) playCue(cueForCandidate(candidate.id))
+        }}
+      >
+        {soundOn ? 'Sound preview on' : 'Sound preview off'}
+      </button>
       <p className="owner-banner">
         Owner audition. This is not the customer app and it is not a private website. Choices stay in this browser until you export them.
         Opening this file on a phone does not grant motion sensors. Simulated movement works here. Real iPhone motion needs a secure page, which this file is not.

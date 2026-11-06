@@ -19,8 +19,8 @@ export const POSE_IDS = [
 export type PoseId = (typeof POSE_IDS)[number]
 export type Profile = 'desk' | 'car' | 'wrist'
 
-/** Laugh is the wide parted mouth. It stays out of Auto until Use Laugh is turned on. */
-export const DEFAULT_AUTO: PoseId[] = POSE_IDS.filter((pose) => pose !== 'laugh')
+/** Clean robot laugh is in the default showcase. It is a wide smile, not a parted human mouth. */
+export const DEFAULT_AUTO: PoseId[] = [...POSE_IDS]
 
 export const IDLE_POSES: PoseId[] = ['curious', 'happy', 'laugh', 'shy', 'smug', 'grumpy', 'determined', 'sleepy', 'pant']
 

@@ -542,7 +542,7 @@ test('a stationary ten seconds visits several gazes and a readable smile', async
 test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await expect(page.getByText('Expressive v2.4')).toBeVisible()
+  await expect(page.getByText('Expressive v2.5')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Car', exact: true }).click()
   await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
@@ -578,14 +578,14 @@ test('reduced motion keeps the new face still', async ({ page }) => {
   expect(still.blink).toBe(0)
 })
 
-test('everyday eyes stay level and unblushed, and Laugh starts opted out', async ({ page }) => {
+test('everyday eyes stay level and unblushed, and the clean laugh is included', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await expect(page.locator('[data-part="blush-l"]')).toHaveAttribute('opacity', '0.000')
   const tilt = await page.locator('[data-part="eye-l"]').getAttribute('transform')
   const rot = Number(tilt?.match(/rotate\(([-\d.]+)/)?.[1])
   expect(Math.abs(rot)).toBeLessThanOrEqual(0.5)
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await expect(page.getByRole('button', { name: 'Use Laugh' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByRole('button', { name: 'Use Laugh' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Close' }).click()
   const seen = await page.evaluate(() => {
     const api = (window as unknown as { __motionBuddyTest: { elapse: (ms: number) => void; getState: () => { expression: string } } })
@@ -597,8 +597,9 @@ test('everyday eyes stay level and unblushed, and Laugh starts opted out', async
     }
     return [...poses]
   })
-  expect(seen).not.toContain('laugh')
+  expect(seen).toContain('laugh')
   expect(seen).toContain('wink')
+  expect(seen.length).toBeGreaterThan(3)
 })
 
 test('an expression change travels through the current face', async ({ page }) => {

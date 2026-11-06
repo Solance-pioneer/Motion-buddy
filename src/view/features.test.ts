@@ -54,7 +54,8 @@ describe('face blend', () => {
       expect(Math.abs(face.right.rot)).toBeLessThanOrEqual(0)
       expect(Math.min(face.left.w, face.right.w)).toBeGreaterThan(12)
     }
-    expect(featuresFor('laugh', 'soft').mouth.open).toBeGreaterThan(featuresFor('curious', 'soft').mouth.open)
+    expect(featuresFor('laugh', 'soft').mouth.curve).toBeGreaterThan(featuresFor('curious', 'soft').mouth.curve)
+    expect(featuresFor('laugh', 'soft').mouth.open).toBe(0)
   })
 })
 

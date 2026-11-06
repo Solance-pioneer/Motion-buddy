@@ -56,6 +56,9 @@ export function Controls({
   onToggleReaction,
   onEnableMotion,
   onStopMotion,
+  soundOn,
+  soundAvailable,
+  onToggleSound,
   onPreviewWake,
   onPreviewGlance,
   onPreviewReaction,
@@ -85,6 +88,9 @@ export function Controls({
   onToggleReaction: (kind: ReactionKind, enabled: boolean) => void
   onEnableMotion: () => void
   onStopMotion: () => void
+  soundOn: boolean
+  soundAvailable: boolean
+  onToggleSound: () => void
   onPreviewWake: () => void
   onPreviewGlance: () => void
   onPreviewReaction: (kind: ReactionKind) => void
@@ -132,7 +138,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v2.4</p>
+          <p className="release">Expressive v2.5</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk
@@ -282,6 +288,10 @@ export function Controls({
           <p className="note" role="status">
             {motionCopy(motionStatus, signals)}
           </p>
+          <button type="button" onClick={onToggleSound} disabled={!soundAvailable}>
+            {soundAvailable ? (soundOn ? 'Sound on' : 'Sound off') : 'Sound unavailable'}
+          </button>
+          <p className="note">Sound stays off until you turn it on. Nothing plays when the page opens.</p>
         </fieldset>
 
         <fieldset>

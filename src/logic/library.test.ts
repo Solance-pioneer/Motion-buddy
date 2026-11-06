@@ -39,7 +39,7 @@ describe('sampleIdle', () => {
     for (const pose of ['curious', 'shy', 'happy', 'startled', 'grumpy', 'sleepy', 'yawn', 'wink', 'content']) {
       expect(frames, pose).toContain(pose)
     }
-    expect(frames).not.toContain('laugh')
+    expect(frames.filter((pose) => pose === 'laugh').length / frames.length).toBeLessThan(0.12)
     expect(frames.filter((pose) => pose === 'wink').length / frames.length).toBeLessThan(0.12)
   })
 

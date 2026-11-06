@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { eyePath, featuresFor } from '../view/features.ts'
+import { eyePath, type EyeSpec } from '../view/features.ts'
 import { ACTION_IDS, CANDIDATES, EXPRESSION_IDS, sampleAudition, sampleCandidate } from './catalog.ts'
+
+function mixEye(a: EyeSpec, b: EyeSpec, t: number): EyeSpec {
+  const m = (x: number, y: number) => x + (y - x) * t
+  return {
+    cx: m(a.cx, b.cx),
+    cy: m(a.cy, b.cy),
+    w: m(a.w, b.w),
+    h: m(a.h, b.h),
+    peak: m(a.peak, b.peak),
+    rot: 0,
+    radius: m(a.radius, b.radius),
+  }
+}
 
 describe('catalog', () => {
   it('has a large distinct set of expressions and actions', () => {
@@ -24,14 +37,25 @@ describe('catalog', () => {
     }
   })
 
-  it('draws closed eyes as a clean crescent, not a lumpy peak', () => {
-    const eye = featuresFor('happy', 'soft').left
-    const path = eyePath(eye)
-    const controls = [...path.matchAll(/Q [\d.-]+ ([\d.-]+)/g)].map((match) => Number(match[1]))
-    const rise = eye.cy - Math.min(...controls)
-    expect(rise).toBeGreaterThan(4)
-    expect(rise).toBeLessThanOrEqual(eye.w * 0.5)
-    expect(path.split('Q').length).toBe(3)
+  it('draws every candidate and the frames between them as a lens, not a pointy block', () => {
+    const samples = []
+    for (const id of EXPRESSION_IDS) samples.push(sampleCandidate(id, 0).features.left, sampleCandidate(id, 0).features.right)
+    const curious = sampleCandidate('curious', 0).features
+    const beam = sampleCandidate('beam', 0).features
+    const sleepy = sampleCandidate('sleepy', 0).features
+    for (const t of [0.25, 0.5, 0.75]) {
+      samples.push(mixEye(curious.left, beam.left, t), mixEye(curious.left, sleepy.left, t))
+    }
+    for (const eye of samples) {
+      const path = eyePath(eye)
+      expect(path.includes(' H ') || path.includes(' V ')).toBe(false)
+      expect(path.split('Q').length).toBe(3)
+      const controls = [...path.matchAll(/Q [\d.-]+ ([\d.-]+)/g)].map((match) => Number(match[1]))
+      const top = Math.min(...controls)
+      const low = Math.max(...controls)
+      expect(eye.cy - top).toBeLessThanOrEqual(eye.w * 0.56)
+      expect(low - top).toBeGreaterThan(1.5)
+    }
   })
 
   it('plays an action instead of freezing, and labels motion previews with opposite gazes', () => {

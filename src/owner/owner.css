@@ -33,6 +33,18 @@
   touch-action: none;
 }
 
+.stage-switch {
+  margin: 8px 12px 0;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: #111;
+}
+
 .owner-face {
   display: grid;
   place-items: center;
