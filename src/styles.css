@@ -103,7 +103,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 2;
-  background: rgba(36, 49, 46, 0.12);
+  background: rgba(0, 0, 0, 0.72);
   display: grid;
   align-items: end;
   justify-items: center;
@@ -118,7 +118,7 @@ body {
   width: min(560px, 100%);
   max-height: min(62dvh, 560px);
   overflow: auto;
-  background: var(--card);
+  background: #f7f6f2;
   color: var(--ink);
   border-radius: 24px;
   padding: 14px;

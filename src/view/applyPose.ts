@@ -35,12 +35,16 @@ export function applyPose(
   showStyle(handles.softL, handles.tileL, style, face)
   showStyle(handles.softR, handles.tileR, style, face)
 
-  const control = pose.mouthCurve * 2.4
-  handles.mouthCurve.setAttribute('d', `M -3 0 Q 0 ${control.toFixed(2)} 3 0`)
+  const control = pose.mouthCurve * 2.6
+  handles.mouthCurve.setAttribute('d', `M -3.2 0 Q 0 ${control.toFixed(2)} 3.2 0`)
   handles.mouthCurve.setAttribute('stroke', face)
+  handles.mouthCurve.setAttribute('transform', `rotate(${(pose.asym * 0.45).toFixed(2)})`)
   handles.mouthCurve.style.opacity = Math.max(0, 1 - pose.mouthOpen * 1.35).toFixed(3)
+  const open = Math.min(1, Math.max(0, pose.mouthOpen))
+  handles.mouthOpen.setAttribute('rx', (1.15 + open * 0.7).toFixed(2))
+  handles.mouthOpen.setAttribute('ry', (1.45 + open * 0.85).toFixed(2))
   handles.mouthOpen.setAttribute('fill', face)
-  handles.mouthOpen.style.opacity = Math.min(1, pose.mouthOpen).toFixed(3)
+  handles.mouthOpen.style.opacity = open.toFixed(3)
 }
 
 function placeEye(

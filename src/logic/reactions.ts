@@ -119,8 +119,8 @@ export function forceReaction(kind: ReactionKind): ReactionClock {
 }
 
 export const REACTION_POSES: Record<Exclude<ReactionName, 'none'>, FacePose> = {
-  worried: { eyeOpen: 1.16, eyeWide: 1.2, eyeTilt: 7, skew: 0, asym: 2, mouthCurve: 0, mouthOpen: 0.85, lookX: 0, lookY: -0.08 },
-  startled: { eyeOpen: 1.24, eyeWide: 1.08, eyeTilt: 2, skew: 0, asym: 0, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.12 },
-  dizzy: { eyeOpen: 0.82, eyeWide: 1, eyeTilt: 5, skew: 0, asym: 16, mouthCurve: -0.15, mouthOpen: 0, lookX: 0, lookY: 0 },
+  worried: { eyeOpen: 1.34, eyeWide: 1.32, eyeTilt: 16, skew: 0, asym: 0, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.1 },
+  startled: { eyeOpen: 1.48, eyeWide: 1.16, eyeTilt: 4, skew: 0, asym: 0, mouthCurve: 0, mouthOpen: 1, lookX: 0, lookY: -0.16 },
+  dizzy: { eyeOpen: 0.9, eyeWide: 1, eyeTilt: 0, skew: 0, asym: 28, mouthCurve: -1, mouthOpen: 0, lookX: 0, lookY: 0 },
   recovery: { eyeOpen: 0.92, eyeWide: 1, eyeTilt: 0, skew: 0, asym: 0, mouthCurve: 0.12, mouthOpen: 0, lookX: 0, lookY: 0 },
 }

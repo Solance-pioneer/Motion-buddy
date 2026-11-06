@@ -60,6 +60,17 @@ test('face mode has no control panel until a deliberate open', async ({ page }) 
   await expect(page.getByTestId('face')).toBeVisible()
 })
 
+test('dismissing controls leaves only the face', async ({ page }) => {
+  await openApp(page)
+  await expect(page.getByTestId('hint')).toBeVisible()
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await page.getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByTestId('hint')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Happy', exact: true })).toHaveCount(0)
+  await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
+  await expect(page.getByRole('button', { name: /Motion Buddy/ })).toBeFocused()
+})
+
 test('the discoverable hint does not stay on the face', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=250')
   await expect(page.getByTestId('hint')).toBeVisible()
@@ -89,7 +100,7 @@ test('keyboard opens and Escape closes', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: /Motion Buddy/ })).toBeFocused()
-  await expect(page.getByTestId('hint')).toBeVisible()
+  await expect(page.getByTestId('hint')).toHaveCount(0)
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Close' })).toBeFocused()

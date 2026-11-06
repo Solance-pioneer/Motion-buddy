@@ -65,9 +65,10 @@ Unit tests, 25 passed:
 - Hidden time does not advance Auto or motion.
 - Blinks open again. Reduced motion does not blink during the normal gap.
 
-Browser tests, 26 passed, against `npm run build`:
+Browser tests, 27 passed, against `npm run build`:
 
 - The production page does not expose the test hook.
+- After Close, the hint is gone and only the face remains, even though focus returns to it.
 - The companion view is black, the eyes are plain white filled shapes with no iris, pupil, or outline, and the expression controls stay hidden.
 - A labelled simulation starts worried without marking the sensor on, then returns to idle.
 - A quicker movement reading starts dizzy. Turning dizzy off blocks it, and it is not turned back on by itself.

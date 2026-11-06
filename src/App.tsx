@@ -80,7 +80,7 @@ export function App() {
   const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
-  const [faceFocus, setFaceFocus] = useState(false)
+  const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
 
   const publish = useCallback((state: BuddyState) => {
@@ -252,7 +252,7 @@ export function App() {
     requestAnimationFrame(() => faceButtonRef.current?.focus())
   }, [])
 
-  const showHint = !open && (hintOn || faceFocus)
+  const showHint = hintOn && !seenControls && !open
   const live = view.reaction !== 'none'
     ? `Motion Buddy looks ${view.reaction}.`
     : view.presence === 'rest' && view.wakefulness < 0.5
@@ -280,10 +280,12 @@ export function App() {
         tabIndex={open ? -1 : 0}
         inert={open}
         onClick={() => {
-          if (!open) setOpen(true)
+          if (!open) {
+            setSeenControls(true)
+            setHintOn(false)
+            setOpen(true)
+          }
         }}
-        onFocus={() => setFaceFocus(true)}
-        onBlur={() => setFaceFocus(false)}
       >
         <Face onReady={onReady} />
         {showHint ? (
