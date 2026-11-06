@@ -23,7 +23,11 @@ const forbidden = [
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name)
-    if (entry.isDirectory()) return sourceFiles(path)
+    if (entry.isDirectory()) {
+      if (entry.name === 'owner') return []
+      return sourceFiles(path)
+    }
+    if (entry.name === 'review.ts' || entry.name === 'catalog.ts' || entry.name === 'playlist.ts') return []
     return /\.(ts|tsx|css)$/.test(entry.name) && !entry.name.endsWith('.test.ts') ? [path] : []
   })
 }

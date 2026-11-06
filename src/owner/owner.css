@@ -1,0 +1,40 @@
+.owner {
+  min-height: 100dvh;
+  background: #000;
+  color: #f4f4f4;
+}
+
+.owner-banner {
+  position: relative;
+  z-index: 5;
+  margin: 0;
+  padding: 10px 14px;
+  background: #24180f;
+  color: #f3d4c4;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.owner .face {
+  width: min(78vmin, 68dvh, 560px);
+}
+
+.review {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+}
+
+.review-stage {
+  min-height: 72px;
+  touch-action: none;
+}
+
+.owner-face {
+  display: grid;
+  place-items: center;
+  min-height: 42dvh;
+}

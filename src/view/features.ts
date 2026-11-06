@@ -67,11 +67,18 @@ export function lerpFeatures(a: FaceFeatures, b: FaceFeatures, t: number): FaceF
 export function eyePath(eye: EyeSpec): string {
   const w = Math.max(2.2, eye.w)
   const h = Math.max(2.2, eye.h)
-  const x = eye.cx - w / 2
+  const mid = eye.cx
+  if (eye.peak > h * 0.75) {
+    const rise = Math.min(eye.peak, w * 0.48)
+    const y = eye.cy
+    const left = mid - w / 2
+    const right = mid + w / 2
+    return `M ${n(left)} ${n(y)} Q ${n(mid)} ${n(y - rise)} ${n(right)} ${n(y)} Q ${n(mid)} ${n(y - rise * 0.28)} ${n(left)} ${n(y)} Z`
+  }
+  const x = mid - w / 2
   const y = eye.cy - h / 2
   const r = Math.max(0.8, Math.min(eye.radius, w / 2, h / 2))
-  const peak = eye.peak
-  const mid = eye.cx
+  const peak = Math.min(eye.peak, h * 0.28)
   return [
     `M ${n(x + r)} ${n(y)}`,
     `Q ${n(mid)} ${n(y - peak)} ${n(x + w - r)} ${n(y)}`,
@@ -164,15 +171,15 @@ function poseSpec(pose: PoseId): FaceFeatures {
   }
 }
 
-function eye(cx: number, cy: number, w: number, h: number, peak: number, rot: number): EyeSpec {
+export function eye(cx: number, cy: number, w: number, h: number, peak: number, rot: number): EyeSpec {
   return { cx, cy, w, h, peak, rot, radius: Math.min(w, h) / 2 }
 }
 
-function mouth(y: number, width: number, curve: number, open: number, gape: number, shift: number): MouthSpec {
+export function mouth(y: number, width: number, curve: number, open: number, gape: number, shift: number): MouthSpec {
   return { y, width, curve, open, gape, shift }
 }
 
-function face(left: EyeSpec, right: EyeSpec, lips: MouthSpec, blush: number, sweat: number, anger: number): FaceFeatures {
+export function face(left: EyeSpec, right: EyeSpec, lips: MouthSpec, blush: number, sweat: number, anger: number): FaceFeatures {
   return { left, right, mouth: lips, blush, sweat, anger, speed: 0 }
 }
 
