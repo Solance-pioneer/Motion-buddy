@@ -22,6 +22,7 @@ const EXPRESSION_LABEL: Record<PoseId, string> = {
   dizzy: 'Dizzy',
   wink: 'Wink',
   content: 'Content',
+  yawn: 'Yawn',
 }
 
 const PROFILE_NOTE: Record<Profile, string> = {
@@ -131,7 +132,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v2.2</p>
+          <p className="release">Expressive v2.3</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk

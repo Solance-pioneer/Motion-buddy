@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  lateralFromAccel,
   lookFromDegrees,
+  orientedDelta,
   resolveMotionPermission,
   smoothToward,
   WAKE_CAP_DEG,
@@ -24,6 +26,21 @@ describe('wake and look mapping', () => {
     expect(Math.abs(lookFromDegrees(1))).toBe(0)
     expect(Math.abs(lookFromDegrees(10))).toBeGreaterThan(0.7)
     expect(wakeLevelFromDegrees(10, 0)).toBeLessThan(WAKE_LEVEL)
+  })
+})
+
+describe('screen direction', () => {
+  it('keeps opposite tilts and shoves opposite after the screen turns', () => {
+    expect(orientedDelta(12, 0, 0).x).toBeGreaterThan(0)
+    expect(orientedDelta(-12, 0, 0).x).toBeLessThan(0)
+    expect(orientedDelta(12, 0, 180).x).toBeLessThan(0)
+    expect(orientedDelta(0, 9, 90).x).toBeGreaterThan(0)
+    expect(orientedDelta(0, 9, 270).x).toBeLessThan(0)
+    expect(lateralFromAccel(3, 0, 0)).toBeGreaterThan(0.8)
+    expect(lateralFromAccel(-3, 0, 0)).toBeLessThan(-0.8)
+    expect(Math.sign(lateralFromAccel(3, 0, 0))).not.toBe(Math.sign(lateralFromAccel(-3, 0, 0)))
+    expect(lateralFromAccel(0, 3, 90)).toBeGreaterThan(0.8)
+    expect(lateralFromAccel(0, 3, 270)).toBeLessThan(-0.8)
   })
 })
 

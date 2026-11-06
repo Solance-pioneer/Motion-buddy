@@ -13,6 +13,7 @@ export const POSE_IDS = [
   'dizzy',
   'wink',
   'content',
+  'yawn',
 ] as const
 
 export type PoseId = (typeof POSE_IDS)[number]
@@ -47,34 +48,40 @@ interface Beat {
 }
 
 const DESK: Beat[] = [
-  { until: 2200, pose: 'curious', gazeX: -0.9, gazeY: 0.05 },
-  { until: 2360, pose: 'curious', gazeX: -0.9, gazeY: 0.05, blink: true },
-  { until: 5200, pose: 'curious', gazeX: 0.86, gazeY: 0.12 },
-  { until: 7000, pose: 'curious', gazeX: 0.12, gazeY: 0.7 },
-  { until: 14000, pose: 'happy', gazeX: 0, gazeY: -0.12 },
-  { until: 21000, pose: 'curious', gazeX: -0.45, gazeY: 0.05 },
-  { until: 27000, pose: 'sleepy', gazeX: 0, gazeY: 0.08 },
-  { until: 30500, pose: 'wink', gazeX: 0.25, gazeY: 0 },
-  { until: 36000, pose: 'curious', gazeX: 0.1, gazeY: -0.05 },
-  { until: 39000, pose: 'laugh', gazeX: 0, gazeY: 0 },
+  { until: 1800, pose: 'curious', gazeX: -0.9, gazeY: 0.05 },
+  { until: 1960, pose: 'curious', gazeX: -0.9, gazeY: 0.05, blink: true },
+  { until: 3800, pose: 'curious', gazeX: 0.9, gazeY: 0.08 },
+  { until: 5600, pose: 'shy', gazeX: -0.55, gazeY: 0.4 },
+  { until: 7600, pose: 'happy', gazeX: 0.1, gazeY: -0.12 },
+  { until: 9200, pose: 'curious', gazeX: 0, gazeY: 0 },
+  { until: 10000, pose: 'startled', gazeX: 0.75, gazeY: -0.08 },
+  { until: 11800, pose: 'grumpy', gazeX: 0, gazeY: 0.08 },
+  { until: 13600, pose: 'sleepy', gazeX: 0, gazeY: 0.12 },
+  { until: 15400, pose: 'yawn', gazeX: 0, gazeY: 0.05 },
+  { until: 17000, pose: 'wink', gazeX: 0.3, gazeY: 0 },
+  { until: 19000, pose: 'content', gazeX: 0, gazeY: -0.05 },
+  { until: 21400, pose: 'curious', gazeX: -0.25, gazeY: 0 },
+  { until: 23200, pose: 'laugh', gazeX: 0, gazeY: 0 },
 ]
 
 const CAR: Beat[] = [
-  { until: 2800, pose: 'determined', gazeX: 0.25, gazeY: 0, speed: true },
-  { until: 2960, pose: 'determined', gazeX: 0.25, gazeY: 0, blink: true, speed: true },
-  { until: 6200, pose: 'smug', gazeX: 0.7, gazeY: -0.1, speed: true },
-  { until: 9400, pose: 'curious', gazeX: -0.75, gazeY: 0.05 },
-  { until: 12000, pose: 'determined', gazeX: 0.1, gazeY: 0.1, speed: true },
-  { until: 15000, pose: 'smug', gazeX: -0.2, gazeY: -0.05 },
+  { until: 2600, pose: 'determined', gazeX: 0.35, gazeY: 0, speed: true },
+  { until: 2760, pose: 'determined', gazeX: 0.35, gazeY: 0, blink: true, speed: true },
+  { until: 5200, pose: 'smug', gazeX: 0.7, gazeY: -0.08, speed: true },
+  { until: 7400, pose: 'curious', gazeX: -0.75, gazeY: 0.05 },
+  { until: 8400, pose: 'startled', gazeX: 0.85, gazeY: -0.1 },
+  { until: 11200, pose: 'determined', gazeX: 0.15, gazeY: 0, speed: true },
+  { until: 14000, pose: 'smug', gazeX: -0.2, gazeY: -0.05 },
 ]
 
 const WRIST: Beat[] = [
-  { until: 4200, pose: 'pant', gazeX: 0.35, gazeY: 0.05 },
-  { until: 4360, pose: 'pant', gazeX: 0.35, gazeY: 0.05, blink: true },
-  { until: 9000, pose: 'happy', gazeX: -0.45, gazeY: -0.1 },
-  { until: 16000, pose: 'curious', gazeX: 0.75, gazeY: 0.1 },
-  { until: 19000, pose: 'content', gazeX: 0, gazeY: -0.05 },
-  { until: 25000, pose: 'curious', gazeX: -0.2, gazeY: 0.05 },
+  { until: 3200, pose: 'pant', gazeX: 0.4, gazeY: 0.05 },
+  { until: 3360, pose: 'pant', gazeX: 0.4, gazeY: 0.05, blink: true },
+  { until: 6200, pose: 'happy', gazeX: -0.4, gazeY: -0.1 },
+  { until: 9000, pose: 'curious', gazeX: 0.75, gazeY: 0.1 },
+  { until: 11600, pose: 'pant', gazeX: -0.2, gazeY: 0.15 },
+  { until: 14000, pose: 'content', gazeX: 0, gazeY: -0.05 },
+  { until: 16800, pose: 'curious', gazeX: 0.2, gazeY: 0 },
 ]
 
 const LOOPS: Record<Profile, Beat[]> = { desk: DESK, car: CAR, wrist: WRIST }

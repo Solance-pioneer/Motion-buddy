@@ -131,7 +131,7 @@ export class FaceBlend {
 function poseSpec(pose: PoseId): FaceFeatures {
   switch (pose) {
     case 'happy':
-      return face(eye(32, 40, 18, 8, 12, 0), eye(68, 40, 18, 8, 12, 0), mouth(66, 22, 10, 0, 0, 0), 0, 0, 0)
+      return face(eye(32, 40, 20, 9, 13, 0), eye(68, 40, 20, 9, 13, 0), mouth(66, 20, 9, 0.15, 3, 0), 0, 0, 0)
     case 'laugh':
       return face(eye(32, 40, 18, 8, 10, 0), eye(68, 40, 18, 8, 10, 0), mouth(67, 26, 6, 0.7, 8, 0), 0, 0, 0)
     case 'shy':
@@ -145,7 +145,7 @@ function poseSpec(pose: PoseId): FaceFeatures {
     case 'worried':
       return face(eye(31, 38, 18, 34, 0, 0), eye(69, 38, 18, 34, 0, 0), mouth(72, 11, 1.5, 1, 7.5, 0), 0, 1, 0)
     case 'startled':
-      return face(eye(31, 38, 20, 20, 0, 0), eye(69, 38, 18, 18, 0, 0), mouth(73, 13, 0, 1, 9, 0), 0, 0, 0)
+      return face(eye(30, 36, 22, 22, 0, 0), eye(70, 38, 18, 18, 0, 0), mouth(73, 12, 0, 1, 10, 0), 0, 0, 0)
     case 'sleepy':
       return face(eye(32, 46, 18, 5, 3, 0), eye(68, 46, 18, 5, 3, 0), mouth(72, 15, 4, 0.15, 3, 0), 0, 0, 0)
     case 'pant':
@@ -156,9 +156,11 @@ function poseSpec(pose: PoseId): FaceFeatures {
       return face(eye(32, 38, 16, 30, 0, 0), eye(68, 42, 16, 6, 8, 0), mouth(68, 18, 8, 0, 0, 0), 0.4, 0, 0)
     case 'content':
       return face(eye(32, 42, 17, 16, 2, 0), eye(68, 42, 17, 16, 2, 0), mouth(69, 16, 6, 0, 0, 0), 0, 0, 0)
+    case 'yawn':
+      return face(eye(32, 44, 18, 7, 4, 0), eye(68, 44, 18, 7, 4, 0), mouth(70, 12, 1, 1, 11, 0), 0, 0, 0)
     case 'curious':
     default:
-      return face(eye(32, 37, 17, 32, 0, 0), eye(68, 37, 17, 32, 0, 0), mouth(67, 22, 11, 0, 0, 0), 0, 0, 0)
+      return face(eye(32, 38, 20, 28, 0, 0), eye(68, 38, 20, 28, 0, 0), mouth(67, 20, 10, 0, 0, 0), 0, 0, 0)
   }
 }
 

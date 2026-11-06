@@ -51,6 +51,25 @@ describe('BuddyEngine', () => {
     expect(engine.snapshot().expression).not.toBe('happy')
   })
 
+  it('sends opposite signed moves to opposite sides and then settles', () => {
+    const engine = new BuddyEngine({ random: () => 0.5 })
+    engine.feedLook(-1, 0)
+    engine.feedAcceleration(2, -1)
+    const left = advance(engine, 900)
+    expect(left.reaction === 'worried' || left.reaction === 'startled').toBe(true)
+    expect(left.gazeX).toBeLessThan(-0.7)
+    engine.feedLook(1, 0)
+    engine.feedAcceleration(2, 1)
+    const right = advance(engine, 480)
+    expect(right.gazeX).toBeGreaterThan(0.7)
+    expect(Math.sign(right.gazeX)).not.toBe(Math.sign(left.gazeX))
+    engine.feedLook(0, 0)
+    engine.feedAcceleration(0, 0)
+    const calm = advance(engine, 2_200)
+    expect(calm.reaction).toBe('none')
+    expect(calm.expression === 'startled' || calm.expression === 'worried' || calm.expression === 'dizzy').toBe(false)
+  })
+
   it('uses a gentle move for worried and a quicker move for dizzy, without stacking', () => {
     const engine = new BuddyEngine({ random: () => 0.5 })
     engine.feedAcceleration(2)

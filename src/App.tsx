@@ -18,7 +18,7 @@ type TestApi = {
   setPresence: (presence: Presence) => void
   previewWake: () => void
   feedMotion: (level: number) => void
-  feedAcceleration: (magnitude: number) => void
+  feedAcceleration: (magnitude: number, lateral?: number) => void
   feedLook: (x: number, y: number) => void
   previewReaction: (kind: ReactionKind) => void
   setReactionEnabled: (kind: ReactionKind, enabled: boolean) => void
@@ -142,8 +142,8 @@ export function App() {
     },
     [engine],
   )
-  const onAcceleration = useCallback((magnitude: number) => {
-    engine.feedAcceleration(magnitude)
+  const onAcceleration = useCallback((magnitude: number, lateral: number) => {
+    engine.feedAcceleration(magnitude, lateral)
   }, [engine])
 
   const tilt = useTilt(onSample, onAcceleration)
@@ -249,8 +249,8 @@ export function App() {
       feedMotion: (level: number) => {
         engine.feedMotion(level)
       },
-      feedAcceleration: (magnitude: number) => {
-        engine.feedAcceleration(magnitude)
+      feedAcceleration: (magnitude: number, lateral?: number) => {
+        engine.feedAcceleration(magnitude, lateral ?? 0)
       },
       feedLook: (x: number, y: number) => {
         engine.feedLook(x, y)

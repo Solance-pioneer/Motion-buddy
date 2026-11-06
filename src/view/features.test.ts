@@ -45,7 +45,7 @@ describe('face blend', () => {
   })
 
   it('keeps eyes level and saves blush for the rare wink', () => {
-    const ids = ['curious', 'happy', 'laugh', 'shy', 'smug', 'grumpy', 'determined', 'worried', 'startled', 'sleepy', 'pant', 'dizzy', 'wink', 'content'] as const
+    const ids = ['curious', 'happy', 'laugh', 'shy', 'smug', 'grumpy', 'determined', 'worried', 'startled', 'sleepy', 'pant', 'dizzy', 'wink', 'content', 'yawn'] as const
     const blushed = ids.filter((id) => featuresFor(id, 'soft').blush > 0)
     expect(blushed).toEqual(['wink'])
     for (const id of ids) {

@@ -32,21 +32,21 @@ describe('sampleIdle', () => {
     expect(fallbackPose(allowed, 'desk')).toBe('happy')
   })
 
-  it('keeps ordinary faces for most of a desk minute and saves wink for a short beat', () => {
+  it('plays the documented desk actions and keeps wink and laugh uncommon', () => {
     const allowed = new Set<PoseId>(DEFAULT_AUTO)
     const frames = []
-    for (let t = 0; t < 39_000; t += 200) frames.push(sampleIdle(t, 'desk', allowed, false))
-    const poses = frames.map((frame) => frame.pose)
-    expect(poses.includes('laugh')).toBe(false)
-    expect(poses.includes('wink')).toBe(true)
-    expect(poses.filter((pose) => pose === 'wink').length / poses.length).toBeLessThan(0.15)
-    expect(poses.filter((pose) => pose === 'curious' || pose === 'happy').length / poses.length).toBeGreaterThan(0.55)
+    for (let t = 0; t < 23_200; t += 200) frames.push(sampleIdle(t, 'desk', allowed, false).pose)
+    for (const pose of ['curious', 'shy', 'happy', 'startled', 'grumpy', 'sleepy', 'yawn', 'wink', 'content']) {
+      expect(frames, pose).toContain(pose)
+    }
+    expect(frames).not.toContain('laugh')
+    expect(frames.filter((pose) => pose === 'wink').length / frames.length).toBeLessThan(0.12)
   })
 
   it('shows the parted laugh only after it is opted in, and only briefly', () => {
     const opted = new Set<PoseId>(POSE_IDS)
     const frames = []
-    for (let t = 0; t < 39_000; t += 200) frames.push(sampleIdle(t, 'desk', opted, false).pose)
+    for (let t = 0; t < 23_200; t += 200) frames.push(sampleIdle(t, 'desk', opted, false).pose)
     const laughs = frames.filter((pose) => pose === 'laugh').length / frames.length
     expect(laughs).toBeGreaterThan(0)
     expect(laughs).toBeLessThan(0.12)

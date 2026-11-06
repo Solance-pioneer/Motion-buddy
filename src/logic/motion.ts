@@ -1,8 +1,7 @@
 import { clamp } from './math.ts'
 
 /**
- * Orientation only. Acceleration is unused, so a hard jerk is not a wake.
- * Wake uses a wider deadband than a small glance.
+ * Wake uses a wider deadband than a small glance. A hard jerk is not required.
  */
 export const LOOK_DEADBAND_DEG = 1.5
 export const LOOK_CAP_DEG = 12
@@ -24,6 +23,25 @@ export function smoothToward(current: number, target: number, dtMs: number, tauM
 
 export function lookFromDegrees(degrees: number | null | undefined): number {
   return unitFromDegrees(degrees, LOOK_DEADBAND_DEG, LOOK_CAP_DEG)
+}
+
+/**
+ * Map a device tilt into screen left/right. Sensors report device axes, not a
+ * position on the page. Angle is `screen.orientation.angle` when the browser has it.
+ */
+export function orientedDelta(gamma: number, beta: number, angle: number): { x: number; y: number } {
+  const turn = ((angle % 360) + 360) % 360
+  if (turn === 90) return { x: beta, y: -gamma }
+  if (turn === 270) return { x: -beta, y: gamma }
+  if (turn === 180) return { x: -gamma, y: -beta }
+  return { x: gamma, y: beta }
+}
+
+/** Signed screen-left/right from a device acceleration sample. Positive is screen-right. */
+export function lateralFromAccel(x: number, y: number, angle: number): number {
+  const turn = ((angle % 360) + 360) % 360
+  const screenX = turn === 90 ? y : turn === 270 ? -y : turn === 180 ? -x : x
+  return clamp(screenX / 2.2, -1, 1)
 }
 
 /** 0 inside the wake deadband, 1 at the cap. Combined with hypot for both axes. */

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, resolveMotionPermission, wakeLevelFromDegrees } from '../logic/motion.ts'
+import { lateralFromAccel, lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, orientedDelta, resolveMotionPermission, wakeLevelFromDegrees } from '../logic/motion.ts'
 
 export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events' | 'paused' | 'off'
 
@@ -19,7 +19,7 @@ export interface SensorSignals {
  * "Active" means numeric orientation events arrived. Permission alone is not enough.
  * The listener is removed while the page is hidden.
  */
-export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: (magnitude: number) => void) {
+export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: (magnitude: number, lateral: number) => void) {
   const [status, setStatus] = useState<MotionUiStatus>('idle')
   const [signals, setSignals] = useState<SensorSignals>({ tilt: false, movement: false })
   const statusRef = useRef<MotionUiStatus>('idle')
@@ -80,17 +80,18 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
       if (!originRef.current) originRef.current = reading
       const dx = reading.gamma - originRef.current.gamma
       const dy = reading.beta - originRef.current.beta
+      const screen = orientedDelta(dx, dy, readAngle())
       onSampleRef.current({
-        x: lookFromDegrees(dx),
-        y: lookFromDegrees(dy),
+        x: lookFromDegrees(screen.x),
+        y: lookFromDegrees(screen.y),
         level: wakeLevelFromDegrees(dx, dy),
       })
       noteArrival('tilt')
     }
     const onMovement = (event: Event) => {
-      const magnitude = readMovement(event, gravityRef)
-      if (magnitude == null) return
-      onAccelerationRef.current(magnitude)
+      const reading = readMovement(event, gravityRef)
+      if (!reading) return
+      onAccelerationRef.current(reading.magnitude, lateralFromAccel(reading.x, reading.y, readAngle()))
       noteArrival('movement')
     }
     orientationRef.current = onOrientation
@@ -158,19 +159,30 @@ export function motionNeedsGesture(): boolean {
 function readMovement(
   event: Event,
   gravityRef: { current: { x: number; y: number; z: number } | null },
-): number | null {
+): { magnitude: number; x: number; y: number } | null {
   const motion = event as {
     acceleration?: { x?: number | null; y?: number | null; z?: number | null } | null
     accelerationIncludingGravity?: { x?: number | null; y?: number | null; z?: number | null } | null
   }
   const user = axis(motion.acceleration)
-  if (user) return Math.hypot(user.x, user.y, user.z)
+  if (user) return { magnitude: Math.hypot(user.x, user.y, user.z), x: user.x, y: user.y }
   const gravity = axis(motion.accelerationIncludingGravity)
   if (!gravity) return null
   const previous = gravityRef.current
   gravityRef.current = gravity
   if (!previous) return null
-  return Math.hypot(gravity.x - previous.x, gravity.y - previous.y, gravity.z - previous.z)
+  return {
+    magnitude: Math.hypot(gravity.x - previous.x, gravity.y - previous.y, gravity.z - previous.z),
+    x: gravity.x - previous.x,
+    y: gravity.y - previous.y,
+  }
+}
+
+function readAngle(): number {
+  const modern = screen.orientation?.angle
+  if (typeof modern === 'number' && !Number.isNaN(modern)) return modern
+  const legacy = (window as Window & { orientation?: number }).orientation
+  return typeof legacy === 'number' && !Number.isNaN(legacy) ? legacy : 0
 }
 
 function axis(value: { x?: number | null; y?: number | null; z?: number | null } | null | undefined) {

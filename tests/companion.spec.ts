@@ -138,7 +138,7 @@ test('touch wording is used for a coarse pointer', async ({ page }) => {
 test('Auto can be limited to a chosen subset', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  const extras = ['Grumpy', 'Sleepy', 'Curious', 'Laugh', 'Shy', 'Smug', 'Determined', 'Worried', 'Startled', 'Pant', 'Dizzy', 'Wink', 'Content']
+  const extras = ['Grumpy', 'Sleepy', 'Curious', 'Laugh', 'Shy', 'Smug', 'Determined', 'Worried', 'Startled', 'Pant', 'Dizzy', 'Wink', 'Content', 'Yawn']
   for (const name of extras) {
     const toggle = page.getByRole('button', { name: `Use ${name}` })
     if ((await toggle.getAttribute('aria-pressed')) === 'true') await toggle.click()
@@ -542,7 +542,7 @@ test('a stationary ten seconds visits several gazes and a readable smile', async
 test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await expect(page.getByText('Expressive v2.2')).toBeVisible()
+  await expect(page.getByText('Expressive v2.3')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Car', exact: true }).click()
   await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
@@ -620,6 +620,27 @@ test('an expression change travels through the current face', async ({ page }) =
   expect(result.mid).toBeLessThan(result.start - 3)
   expect(result.mid).toBeGreaterThan(result.settled + 3)
   expect(result.settled).toBeLessThan(12)
+})
+
+test('opposite simulated shoves move the rendered face to opposite sides', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  const read = () => page.locator('[data-part="glance"]').getAttribute('transform').then((value) => Number(value?.match(/translate\(([-\d.]+)/)?.[1]))
+  await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { feedLook: (x: number, y: number) => void; feedAcceleration: (magnitude: number, lateral?: number) => void; elapse: (ms: number) => void } }).__motionBuddyTest
+    api.feedLook(-1, 0)
+    api.feedAcceleration(2, -1)
+    api.elapse(900)
+  })
+  const left = await read()
+  await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { feedLook: (x: number, y: number) => void; feedAcceleration: (magnitude: number, lateral?: number) => void; elapse: (ms: number) => void } }).__motionBuddyTest
+    api.feedLook(1, 0)
+    api.feedAcceleration(2, 1)
+    api.elapse(520)
+  })
+  const right = await read()
+  expect(left).toBeLessThan(-12)
+  expect(right).toBeGreaterThan(12)
 })
 
 test('a full look moves the rendered face by a clearly visible amount', async ({ page }) => {

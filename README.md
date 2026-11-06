@@ -1,6 +1,6 @@
 # Motion Buddy
 
-Motion Buddy is a browser face for the screen you already have open. The page is black, with original white eye shapes and a readable smile. There are no pupils, outlines, or a body. Controls stay hidden until you ask for them. Accents tint those shapes; white is the default. This build is Expressive v2.2. Expressions morph on one face, a modest tilt moves that face clearly, and motion starts without a settings hunt. Eyes stay level. Blush is only the rare wink. The wide parted Laugh mouth stays out of Auto until Use Laugh is turned on. Desk, Car, and Wrist still change the idle faces. Car speed lines are a simulated decoration, not engine speed or location. Wrist is a browser profile, not a watch or a health sensor.
+Motion Buddy is a browser face for the screen you already have open. The page is black, with original white eye shapes and a readable smile. There are no pupils, outlines, or a body. Controls stay hidden until you ask for them. Accents tint those shapes; white is the default. This build is Expressive v2.3. A tilt or shove to the left looks left, and the opposite looks right. Shock holds that direction, then settles. Desk idle now includes the documented shy glance, happy caret, double-take, yawn, and a short wink. Laugh stays opt-in. This build was Expressive v2.2 in this respect: Expressions morph on one face, a modest tilt moves that face clearly, and motion starts without a settings hunt. Eyes stay level. Blush is only the rare wink. The wide parted Laugh mouth stays out of Auto until Use Laugh is turned on. Desk, Car, and Wrist still change the idle faces. Car speed lines are a simulated decoration, not engine speed or location. Wrist is a browser profile, not a watch or a health sensor.
 
 This is a browser prototype only. It is not an iPhone app and not an Apple Watch app. A square window is a layout check for a possible later watch face, not a watch build. It does not wake a locked or sleeping phone, and it does not keep running if the browser suspends the tab.
 
@@ -54,7 +54,7 @@ Auto timing and rest timing in the browser tests use `/?e2e=1` and `window.__mot
 
 Desktop Chromium via Playwright. Not a physical iPhone, and not a watch.
 
-Unit tests, 37 passed:
+Unit tests, 39 passed:
 
 - Auto walks only the selected expressions, and a single choice does not cycle.
 - The last Auto expression cannot be removed.
@@ -69,7 +69,7 @@ Unit tests, 37 passed:
 - Expression changes pass through the in-between face. Reduced motion snaps. A full look moves the drawn face more than 12 units in the 100-unit canvas. A 10° tilt maps into that same obvious range. A 1° tilt does not.
 - Every pose has level eyes. Only the rare wink blushes. Laugh is out of the default Auto set, appears only after opt-in, and then only for a short beat. Wink is a short slice of the desk loop.
 
-Browser tests, 34 passed, against `npm run build`:
+Browser tests, 35 passed, against `npm run build`:
 
 - The production page does not expose the test hook.
 - After Close, the hint is gone and only the face remains, even though focus returns to it.

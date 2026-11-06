@@ -85,6 +85,8 @@ export class BuddyEngine {
   private accelLevel = 0
   private simLookX = 0
   private simLookUntil = 0
+  private reactionDir = 0
+  private settleUntil = 0
   private readonly random: () => number
 
   constructor(options?: { random?: () => number }) {
@@ -179,9 +181,10 @@ export class BuddyEngine {
     this.simLookUntil = this.uiElapsed + 1_400
   }
 
-  feedAcceleration(magnitude: number): void {
+  feedAcceleration(magnitude: number, lateral = 0): void {
     if (this.hidden) return
     this.accelTarget = Math.max(0, magnitude)
+    this.steerLook(lateral)
   }
 
   feedMotion(level: number): void {
@@ -193,14 +196,25 @@ export class BuddyEngine {
     if (this.hidden || this.reduced) return
     this.lookTargetX = clampUnit(x)
     this.lookTargetY = clampUnit(y)
+    if (Math.abs(x) >= 0.35) this.reactionDir = Math.sign(x)
+  }
+
+  private steerLook(lateral: number): void {
+    if (this.reduced || Math.abs(lateral) < 0.35) return
+    const opposite = this.lookTargetX !== 0 && Math.sign(lateral) !== Math.sign(this.lookTargetX)
+    if (opposite || Math.abs(lateral) > Math.abs(this.lookTargetX)) {
+      this.lookTargetX = clampUnit(lateral)
+      this.reactionDir = Math.sign(lateral)
+    }
   }
 
   tick(dtMs: number): BuddyState {
     if (!this.hidden) {
       const dt = Math.max(0, Math.min(dtMs, MAX_FRAME_DT_MS))
       this.uiElapsed += dt
-      if (this.presence === 'awake' && this.reaction.name === 'none') this.idleElapsed += dt
-      if (this.selection === 'auto' && this.presence === 'awake' && this.reaction.name === 'none') this.autoElapsed += dt
+      const holdingFace = this.reaction.name !== 'none' || this.uiElapsed < this.settleUntil
+      if (this.presence === 'awake' && !holdingFace) this.idleElapsed += dt
+      if (this.selection === 'auto' && this.presence === 'awake' && !holdingFace) this.autoElapsed += dt
       this.advanceMotion(dt)
       this.advanceReaction(dt)
       this.advanceWake(dt)
@@ -247,18 +261,23 @@ export class BuddyEngine {
       frame = { ...frame, pose: resolvePose(this.selection, allowed, this.profile), speed: false }
     }
     const reaction = this.reaction.name
-    if (reaction === 'worried' || reaction === 'startled' || reaction === 'dizzy') {
+    const directed = reaction === 'worried' || reaction === 'startled' || reaction === 'dizzy'
+    if (directed) {
       frame = { ...frame, pose: resolvePose(reaction, allowed, this.profile), speed: false }
-    } else if (reaction === 'recovery') {
+    } else if (reaction === 'recovery' || (this.uiElapsed < this.settleUntil && this.selection === 'auto' && !(this.presence === 'rest' && this.resting))) {
       frame = { ...frame, pose: resolvePose(this.profile === 'wrist' ? 'happy' : 'curious', allowed, this.profile), speed: false }
     } else if (this.presence === 'rest' && this.resting) {
       frame = { pose: resolvePose('sleepy', allowed, this.profile), gazeX: 0, gazeY: 0, blink: 0, speed: false }
     }
-    if (!this.reduced) {
+    if (!this.reduced && directed) {
+      const dir = Math.abs(this.lookX) > 0.15 ? this.lookX : this.reactionDir
+      frame.gazeX = clampUnit(dir === 0 ? frame.gazeX : Math.sign(dir))
+      frame.gazeY = clampUnit(this.lookY * 0.35)
+    } else if (!this.reduced) {
       const steerX = clampUnit(this.lookX)
       const steerY = clampUnit(this.lookY)
-      frame.gazeX = clampUnit(frame.gazeX * (1 - Math.min(1, Math.abs(steerX))) + steerX)
-      frame.gazeY = clampUnit(frame.gazeY * (1 - Math.min(1, Math.abs(steerY))) + steerY)
+      frame.gazeX = Math.abs(steerX) > 0.35 ? steerX : clampUnit(frame.gazeX * (1 - Math.abs(steerX) / 0.35) + steerX)
+      frame.gazeY = Math.abs(steerY) > 0.35 ? steerY : clampUnit(frame.gazeY * (1 - Math.abs(steerY) / 0.35) + steerY)
     }
     return frame
   }
@@ -300,6 +319,7 @@ export class BuddyEngine {
       this.resting = false
       this.holdMs = REST_HOLD_MS
     }
+    if (before !== 'none' && this.reaction.name === 'none') this.settleUntil = this.uiElapsed + 800
     if (this.uiElapsed < this.simLookUntil && !this.reduced) this.lookTargetX = this.simLookX
   }
 
