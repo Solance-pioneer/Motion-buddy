@@ -1,0 +1,63 @@
+{
+  "retrieved_date": "2026-11-06",
+  "items": [
+    {
+      "file": "voice_13_1.mp3",
+      "creator_label": "ぱちぱちぱちぱち",
+      "english_description": "clap clap clap",
+      "item": 13,
+      "variant": "_1; mapped to Happy/うれしい by displayed order; not audition-confirmed",
+      "source_url": "https://conte-de-fees.com/voice/voice_13_1.mp3",
+      "source_page": "https://conte-de-fees.com/voice",
+      "voice_credit": "りこ。",
+      "bytes": 48428,
+      "sha256": "44dceb3afc7676c01f9ac0b204584560e82c7cd1959515345d1b2da2ca72411a",
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "1.992000",
+          "size": "48428"
+        }
+      },
+      "download_method": "ordinary creator per-clip browser download",
+      "listened": false
+    },
+    {
+      "file": "voice_16_1.mp3",
+      "creator_label": "レベルアーーップ！",
+      "english_description": "level up",
+      "item": 16,
+      "variant": "_1; mapped to Happy/うれしい by displayed order; not audition-confirmed",
+      "source_url": "https://conte-de-fees.com/voice/voice_16_1.mp3",
+      "source_page": "https://conte-de-fees.com/voice",
+      "voice_credit": "りこ。",
+      "bytes": 60524,
+      "sha256": "11f7c3071f31de9b7502866bd0056b5c5aa872e06dce9a675207a9f4b44260d1",
+      "media": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "mp3",
+            "sample_rate": "48000",
+            "channels": 1
+          }
+        ],
+        "format": {
+          "duration": "2.496000",
+          "size": "60524"
+        }
+      },
+      "download_method": "ordinary creator per-clip browser download",
+      "listened": false
+    }
+  ]
+}

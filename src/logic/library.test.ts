@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_AUTO, POSE_IDS, SHOWCASE_INTRO_MS, deskLoopMs, fallbackPose, gazeCount, placeApproved, resolvePose, sampleIdle, type PoseId } from './library.ts'
+import { CLAP_AT_MS, DEFAULT_AUTO, POSE_IDS, SHOWCASE_INTRO_MS, VOICE_PERIOD_MS, deskLoopMs, fallbackPose, gazeCount, placeApproved, resolvePose, sampleIdle, type PoseId } from './library.ts'
 
 const all = new Set<PoseId>(POSE_IDS)
 
@@ -76,6 +76,24 @@ describe('sampleIdle', () => {
     expect(blocked.has('take-left')).toBe(false)
     expect(blocked.has('scan')).toBe(true)
     expect(blocked.has('giggle')).toBe(true)
+    expect(placeApproved(CLAP_AT_MS + 80, allow).showcase?.id).toBe('clap')
+    expect(placeApproved(CLAP_AT_MS + 2_400, allow).showcase?.id).toBe('level-up')
+    let beeps = 0
+    let voices = 0
+    let previous = ''
+    for (let t = 0; t < 180_000; t += 100) {
+      const id = placeApproved(t, allow).showcase?.id ?? ''
+      if (id === previous) continue
+      previous = id
+      if (id === 'clap' || id === 'level-up') voices += 1
+      if (id === 'scan' || id === 'giggle' || id === 'take-left' || id === 'dizzy' || id === 'spiral-dizzy') beeps += 1
+    }
+    expect(beeps).toBeGreaterThan(voices * 3)
+    expect(voices).toBeGreaterThan(0)
+    expect(placeApproved(VOICE_PERIOD_MS / 2, allow).showcase?.id).not.toBe('clap')
+    expect(placeApproved(36_100, allow).showcase?.id).toBe('eye-pop')
+    expect(placeApproved(38_200, allow).showcase?.id).toBe('eye-bounce')
+    expect(placeApproved(40_200, allow).showcase?.id).toBe('eye-sleepy')
   })
 
   it('drops travel and blinks when reduced motion is on', () => {

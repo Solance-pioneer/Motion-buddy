@@ -138,7 +138,7 @@ export function Controls({
 
         <fieldset>
           <legend>Where it is</legend>
-          <p className="release">Expressive v2.8</p>
+          <p className="release">Expressive v2.9</p>
           <div className="choice-row">
             <button type="button" aria-pressed={profile === 'desk'} onClick={() => onProfile('desk')}>
               Desk
@@ -291,7 +291,7 @@ export function Controls({
           <button type="button" onClick={onToggleSound} disabled={!soundAvailable}>
             {soundAvailable ? (soundOn ? 'Sound on' : 'Sound off') : 'Sound unavailable'}
           </button>
-          <p className="note">Sound stays off until you turn it on. Nothing plays when the page opens.</p>
+          <p className="note">Sound is on until you turn it off here. Nothing plays until the first tap.</p>
         </fieldset>
 
         <fieldset>

@@ -11,7 +11,7 @@ import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
-import { advanceSound, claimChirp, initialSoundMemory, loadSoundPrefs, playCue, setSoundMuted, soundStatus, unlockSound, type SoundMemory } from './logic/sfx.ts'
+import { advanceSound, claimChirp, initialMoveClock, initialSoundMemory, loadSoundPrefs, noteMovement, playCue, setSoundMuted, soundStatus, unlockSound, type MoveClock, type SoundMemory } from './logic/sfx.ts'
 
 type TestApi = {
   seek: (ms: number) => void
@@ -88,8 +88,11 @@ export function App() {
   const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
-  const [soundOn, setSoundOn] = useState(false)
+  const [soundOn, setSoundOn] = useState(true)
+  const [soundReady, setSoundReady] = useState(false)
   const heard = useRef<SoundMemory>(initialSoundMemory())
+  const moves = useRef<MoveClock>(initialMoveClock())
+  const chirped = useRef(false)
   const [soundAvailable, setSoundAvailable] = useState(true)
   const [seenControls, setSeenControls] = useState(false)
   const accentRef = useRef(accent)
@@ -156,9 +159,43 @@ export function App() {
     },
     [engine],
   )
+  const armAudio = useCallback(() => {
+    if (!unlockSound()) {
+      setSoundAvailable(false)
+      return
+    }
+    setSoundReady(true)
+    if (chirped.current || soundStatus().muted) return
+    chirped.current = true
+    const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
+    heard.current = claimed.memory
+    if (claimed.ok) playCue('chirp')
+  }, [])
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
     engine.feedAcceleration(magnitude, lateral)
-  }, [engine])
+    const status = soundStatus()
+    const state = engine.snapshot()
+    const next = noteMovement(moves.current, {
+      now: performance.now(),
+      magnitude,
+      reduced: state.reduced,
+      muted: status.muted || !soundOn,
+      unlocked: status.unlocked,
+      allowDizzy: state.allowDizzy,
+      busyUntil: heard.current.voiceUntil,
+    })
+    moves.current = next.clock
+    if (next.cue === 'dizzy') {
+      const already = state.reaction === 'dizzy'
+      engine.previewReaction('dizzy')
+      publish(engine.snapshot())
+      if (already && playCue('dizzy')) heard.current = { ...heard.current, voiceUntil: performance.now() + 1_200 }
+    } else if (next.cue === 'chirp') {
+      const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
+      heard.current = claimed.memory
+      if (claimed.ok) playCue('chirp')
+    }
+  }, [engine, publish, soundOn])
 
   const tilt = useTilt(onSample, onAcceleration)
   const wakeLock = useScreenWakeLock()
@@ -234,7 +271,7 @@ export function App() {
   useEffect(() => {
     loadSoundPrefs()
     setSoundAvailable(soundStatus().available)
-    setSoundOn(soundStatus().unlocked && !soundStatus().muted)
+    setSoundOn(!soundStatus().muted)
   }, [])
 
   useEffect(() => {
@@ -254,7 +291,7 @@ export function App() {
     )
     heard.current = next.memory
     if (next.cue) playCue(next.cue)
-  }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden, view.showcase?.id])
+  }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden, view.showcase?.id, soundReady])
 
   useEffect(() => {
     if (!testHookEnabled()) return
@@ -346,6 +383,7 @@ export function App() {
         tabIndex={open ? -1 : 0}
         inert={open}
         onClick={() => {
+          armAudio()
           if (!open) {
             setSeenControls(true)
             setHintOn(false)
@@ -366,13 +404,17 @@ export function App() {
             type="button"
             className="allow-motion"
             onClick={() => {
+              armAudio()
               setPromptDone(true)
               void tilt.enable()
             }}
           >
             Allow motion
           </button>
-          <button type="button" className="allow-skip" onClick={() => setPromptDone(true)}>
+          <button type="button" className="allow-skip" onClick={() => {
+            armAudio()
+            setPromptDone(true)
+          }}>
             Not now
           </button>
         </div>

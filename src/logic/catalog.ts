@@ -193,6 +193,9 @@ export function sampleCandidate(id: string, elapsed: number, reduced = false, st
   const sleepy = featuresOf('sleepy', style)
   const pant = featuresOf('pant', style)
   const wink = featuresOf('wink', style)
+  if (id === 'eye-pop' || id === 'eye-bounce' || id === 'eye-sleepy') return sampleWebEye(id, time, reduced, style)
+  if (id === 'clap') return sampleClap(time, reduced, style)
+  if (id === 'level-up') return sampleLevelUp(time, reduced, style)
   if (id === 'giggle') return sampleGiggle(time, reduced, style)
   if (id === 'dizzy') return sampleDizzyPose(time, reduced, style)
   if (id === 'spiral-dizzy') return sampleSpiralDizzy(time, reduced, style)
@@ -408,4 +411,119 @@ function sampleSpiralDizzy(time: number, reduced: boolean, style: FaceStyle): Pl
     return hold(local < 0.5 ? spinning : curious, 0, 0, blink)
   }
   return hold(curious, 0, 0, 0)
+}
+
+const CLAP_HITS = [250, 600, 900]
+
+/**
+ * Eye motions adapted from Web-Eye-Animation (MIT, CyberAgent AI Lab, commit 424773d).
+ * Timings follow that file's surprise, joy-bounce, and sleepy scales.
+ * GSAP is not included. Eyes stay level, round, and white. No rotation.
+ */
+function sampleWebEye(id: string, time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const face = structuredClone(featuresOf('curious', style))
+  face.mouth.open = 0
+  face.mouth.gape = 0
+  if (reduced) return hold(face, 0, 0, 0)
+  const t = Math.max(0, time)
+  if (id === 'eye-pop') {
+    let scale = 1
+    if (t < 200) scale = 1 + 0.35 * ease(t / 200)
+    else if (t < 700) scale = 1.35
+    else if (t < 1000) scale = 1.35 - 0.35 * ease((t - 700) / 300)
+    face.left.w *= scale
+    face.left.h *= scale
+    face.right.w *= scale
+    face.right.h *= scale
+    return hold(face, 0, 0, 0)
+  }
+  if (id === 'eye-bounce') {
+    let bob = 0
+    for (const hit of [80, 280, 480]) {
+      const along = (t - hit) / 140
+      if (along > -0.15 && along < 1) {
+        const x = Math.max(0, Math.min(1, (along + 0.15) / 1.15))
+        bob += Math.sin(x * Math.PI) * 6
+      }
+    }
+    face.left.cy -= bob
+    face.right.cy -= bob
+    return hold(face, 0, -bob / 14, 0)
+  }
+  let scale = 1
+  let drop = 0
+  if (t < 500) scale = 1 - 0.65 * ease(t / 500)
+  else if (t < 1000) {
+    scale = 0.35
+    drop = 6 * ease((t - 500) / 500)
+  } else if (t < 1600) {
+    scale = 0.35
+    drop = 6
+  } else if (t < 2200) {
+    const p = ease((t - 1600) / 600)
+    scale = 0.35 + 0.65 * p
+    drop = 6 * (1 - p)
+  }
+  face.left.h *= scale
+  face.right.h *= scale
+  face.left.cy += drop
+  face.right.cy += drop
+  return hold(face, 0, drop / 10, 0)
+}
+
+function sampleClap(time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const face = structuredClone(featuresOf('giggle', style))
+  face.mouth.open = 0
+  face.mouth.gape = 0
+  if (reduced || time <= 0) return hold(face, 0, 0, 0)
+  let bob = 0
+  for (const hit of CLAP_HITS) {
+    const along = (time - hit) / 180
+    if (along > -0.2 && along < 1) {
+      const x = Math.max(0, Math.min(1, (along + 0.2) / 1.2))
+      bob += Math.sin(x * Math.PI) * 7
+    }
+  }
+  face.left.cy += bob
+  face.right.cy += bob
+  return hold(face, 0, bob / 12, 0)
+}
+
+function sampleLevelUp(time: number, reduced: boolean, style: FaceStyle): PlayFrame {
+  const base = featuresOf('curious', style)
+  const grin = structuredClone(base)
+  grin.left.w = 20
+  grin.left.h = 22
+  grin.left.peak = 2
+  grin.right.w = 20
+  grin.right.h = 22
+  grin.right.peak = 2
+  grin.mouth.width = 12
+  grin.mouth.curve = 7
+  grin.mouth.open = 0
+  grin.mouth.gape = 0
+  if (reduced) return hold(grin, 0, 0, 0)
+  const wide = structuredClone(base)
+  wide.left.w = 24
+  wide.left.h = 28
+  wide.left.peak = 0
+  wide.right.w = 24
+  wide.right.h = 28
+  wide.right.peak = 0
+  wide.mouth.width = 8
+  wide.mouth.curve = 1
+  wide.mouth.open = 0.25
+  wide.mouth.gape = 3
+  wide.brow = 0.55
+  const t = Math.max(0, time)
+  let frame = hold(grin, 0, 0, 0)
+  if (t < 420) frame = hold(wide, 0, -0.1, 0)
+  else if (t < 900) frame = lerpFrame(hold(wide), hold(grin), ease((t - 420) / 480))
+  if (t >= 1470 && t <= 2200) {
+    const hop = Math.sin(((t - 1470) / 730) * Math.PI) * 8
+    frame.features.left.cy -= hop
+    frame.features.right.cy -= hop
+    frame.gazeY = -hop / 14
+  }
+  return frame
 }

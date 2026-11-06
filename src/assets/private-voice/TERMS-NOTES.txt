@@ -1,0 +1,18 @@
+Riri/Lily Japanese voice clips — internal Motion Buddy integration candidates
+Source and FAQ: https://conte-de-fees.com/voice
+Checked 6 November 2026 by public WebFetch and ordinary browser page.
+Performer credited on source: りこ。
+
+English summary of source FAQ (not a substitute for the original Japanese terms):
+- Free commercial use, including embedding in games and apps that are sold.
+- Attribution not required (optional).
+- Pitch changes, cutting, joining and effects allowed.
+- Do not redistribute or resell the audio files themselves as raw sound assets.
+- Do not misrepresent the source character/performer as having said things they did not say; defamatory, impersonating or contrary-to-public-morals uses are prohibited.
+The page labels the clips as Content-ID free.
+
+These files are kept internally for the user's requested Motion Buddy app work. Do not publish this folder as an asset pack or attach/repost the raw collection. Preserve this notice/source URL with eventual app source assets. No AI voice model, cloning or new speech creation is authorised here.
+
+Files: voice_13_1.mp3 (clap clap clap), voice_16_1.mp3 (level up).
+_1 was mapped to the Happy/うれしい variant by the ordinary page link ordering; no listening confirmation has been performed. Original MP3s, unmodified. ffprobe validates file type and records duration in manifest.json; this is not a subjective audition.
+No files were added to the app or publicly deployed in this research/download step.

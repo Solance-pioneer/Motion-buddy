@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { sampleCandidate } from './catalog.ts'
+import { PLAYBACK_GAIN } from './sfx.ts'
 
 function series(id: string, period: number, step = 40) {
   const frames = []
@@ -67,5 +68,33 @@ describe('reviewed motion fixes', () => {
     expect(wink.features.blush).toBeGreaterThan(0.3)
     expect(wink.features.right.h).toBeLessThan(wink.features.left.h)
     expect(sampleCandidate('wink-play', 0).features.blush).toBe(0)
+  })
+
+  it('bounces the clap face on the recording hits and hops the level-up grin', () => {
+    const rest = sampleCandidate('clap', 0).features.left.cy
+    for (const hit of [290, 640, 940]) {
+      expect(sampleCandidate('clap', hit).features.left.cy).toBeGreaterThan(rest + 4)
+    }
+    expect(sampleCandidate('clap', 1_900).features.mouth.open).toBe(0)
+    const wide = sampleCandidate('level-up', 200)
+    const proud = sampleCandidate('level-up', 1_200)
+    const hop = sampleCandidate('level-up', 1_800)
+    expect(wide.features.left.h).toBeGreaterThan(proud.features.left.h)
+    expect(wide.features.mouth.open).toBeGreaterThan(0)
+    expect(wide.features.mouth.open).toBeLessThan(0.4)
+    expect(proud.features.mouth.open).toBe(0)
+    expect(proud.features.mouth.curve).toBeGreaterThan(4)
+    expect(hop.features.left.cy).toBeLessThan(proud.features.left.cy)
+    expect(sampleCandidate('level-up', 200, true).features.left.cy).toBe(sampleCandidate('level-up', 1_800, true).features.left.cy)
+    const peaks = { scan: -7.5, giggle: -7.5, surprise: -7.5, yawn: -7.5, wink: -7.5, dizzy: -7.5, clap: -1.5, 'level-up': -1.6 }
+    for (const [cue, peak] of Object.entries(peaks)) {
+      const gain = PLAYBACK_GAIN[cue as keyof typeof PLAYBACK_GAIN]
+      expect(peak + 20 * Math.log10(gain)).toBeLessThanOrEqual(-11.5)
+    }
+    const popped = sampleCandidate('eye-pop', 400)
+    expect(popped.features.left.h).toBeGreaterThan(sampleCandidate('eye-pop', 0).features.left.h)
+    expect(popped.features.left.rot).toBe(0)
+    expect(sampleCandidate('eye-bounce', 160).features.left.cy).toBeLessThan(sampleCandidate('eye-bounce', 0).features.left.cy)
+    expect(sampleCandidate('eye-sleepy', 800, true).features.left.h).toBeCloseTo(sampleCandidate('eye-sleepy', 0, true).features.left.h, 0)
   })
 })

@@ -1,6 +1,7 @@
 import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
+import { VOICE_MP3_BASE64 } from './voice-mp3.ts'
 
-export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy'
+export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'clap' | 'level-up'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
 
 export const APPROVED_MS: Record<ApprovedCue, number> = {
@@ -10,6 +11,27 @@ export const APPROVED_MS: Record<ApprovedCue, number> = {
   yawn: 900,
   wink: 340,
   dizzy: 1200,
+  clap: 1992,
+  'level-up': 2496,
+}
+
+/**
+ * Playback gains only. Files are not rewritten.
+ * Active-region RMS was about -13 to -16 dBFS for the six cues at full scale,
+ * -17 dBFS for the chirp at its old 0.35 gain, and about -10 dBFS for the two voices,
+ * whose peaks sat near -1.5 dBFS. These gains aim near -18 dBFS active RMS
+ * and keep peaks no hotter than about -12 dBFS.
+ */
+export const PLAYBACK_GAIN: Record<ApprovedCue | 'chirp', number> = {
+  scan: 0.56,
+  giggle: 0.6,
+  surprise: 0.6,
+  yawn: 0.6,
+  wink: 0.6,
+  dizzy: 0.56,
+  chirp: 0.32,
+  clap: 0.3,
+  'level-up': 0.3,
 }
 
 export const SOUND_KEY = 'motion-buddy-sound-v1'
@@ -22,7 +44,7 @@ export interface SoundGate {
 }
 
 export function initialGate(): SoundGate {
-  return { muted: true, unlocked: false, last: {} }
+  return { muted: false, unlocked: false, last: {} }
 }
 
 export function gateCue(gate: SoundGate, kind: Cue, now: number): boolean {
@@ -77,6 +99,8 @@ export function cueForCandidate(id: string): ApprovedCue | null {
   if (id === 'yawn' || id === 'yawn-stretch') return 'yawn'
   if (id === 'wink' || id === 'wink-play') return 'wink'
   if (id === 'dizzy' || id === 'spiral-dizzy') return 'dizzy'
+  if (id === 'clap') return 'clap'
+  if (id === 'level-up') return 'level-up'
   return null
 }
 
@@ -108,6 +132,8 @@ export function cueForHearState(state: HearState): ApprovedCue | null {
   if (state.expression === 'wink' || state.expression === 'wink-play') return 'wink'
   if (state.expression === 'scan') return 'scan'
   if (state.expression === 'giggle') return 'giggle'
+  if (state.expression === 'clap') return 'clap'
+  if (state.expression === 'level-up') return 'level-up'
   return null
 }
 
@@ -120,8 +146,20 @@ export function advanceSound(memory: SoundMemory, state: HearState, now: number)
   const cue = cueForHearState(state)
   const beatKey = hearKey(state, cue)
   if (!cue) return { memory: { ...memory, beatKey }, cue: null }
-  if (beatKey === memory.beatKey || now < memory.voiceUntil) return { memory, cue: null }
+  if (beatKey === memory.beatKey || now < memory.voiceUntil - 40) return { memory, cue: null }
   return { memory: { beatKey, voiceUntil: now + APPROVED_MS[cue] }, cue }
+}
+
+/** Absent storage means sound is wanted. An explicit mute is remembered. */
+export function mutedFromStorage(raw: string | null): boolean {
+  if (!raw) return false
+  try {
+    const parsed = JSON.parse(raw) as { muted?: boolean }
+    if (typeof parsed.muted === 'boolean') return parsed.muted
+  } catch {
+    return false
+  }
+  return false
 }
 
 /** One approved sound when a review candidate is entered. Repeating the same id does not retrigger. */
@@ -133,7 +171,64 @@ export function advanceCandidate(memory: SoundMemory, id: string, now: number): 
   return { memory: { beatKey, voiceUntil: now + APPROVED_MS[cue] }, cue }
 }
 
-/** The chirp is only the explicit sound-on confirmation, and it waits until the voice is free. */
+export interface MoveClock {
+  armed: boolean
+  moves: number
+  recent: number[]
+  quietUntil: number
+}
+
+export function initialMoveClock(): MoveClock {
+  return { armed: false, moves: 0, recent: [], quietUntil: 0 }
+}
+
+const MOVE_NOTICE = 0.9
+const MOVE_RELEASE = 0.45
+const MOVE_FAST = 3.4
+const RAPID_WINDOW_MS = 1_400
+const RAPID_MOVES = 3
+
+/**
+ * One chirp for every second distinct shove. Held tilt, jitter, and idle do not count.
+ * Three distinct moves in a short window become the dizzy cue instead, and extra
+ * cues during playback or that window are dropped.
+ */
+export function noteMovement(
+  clock: MoveClock,
+  input: {
+    now: number
+    magnitude: number
+    reduced: boolean
+    muted: boolean
+    unlocked: boolean
+    allowDizzy: boolean
+    busyUntil: number
+  },
+): { clock: MoveClock; cue: 'chirp' | 'dizzy' | null } {
+  const recent = clock.recent.filter((time) => input.now - time <= RAPID_WINDOW_MS)
+  let armed = clock.armed
+  if (input.magnitude < MOVE_RELEASE) armed = false
+  const rising = !clock.armed && input.magnitude >= MOVE_NOTICE
+  let moves = clock.moves
+  if (rising) {
+    armed = true
+    moves += 1
+    recent.push(input.now)
+  }
+  const rapid = recent.length >= RAPID_MOVES
+  const silent = input.reduced || input.muted || !input.unlocked || input.now < clock.quietUntil
+  let cue: 'chirp' | 'dizzy' | null = null
+  let quietUntil = clock.quietUntil
+  if (rising && !silent && rapid && input.allowDizzy) {
+    cue = 'dizzy'
+    quietUntil = input.now + 1_600
+  } else if (rising && !silent && input.now >= input.busyUntil && !rapid && moves % 2 === 0 && input.magnitude < MOVE_FAST) {
+    cue = 'chirp'
+  }
+  return { clock: { armed, moves, recent, quietUntil }, cue }
+}
+
+/** The chirp is the explicit confirmation and the movement answer. It waits until the voice is free. */
 export function claimChirp(
   memory: SoundMemory,
   now: number,
@@ -175,7 +270,7 @@ export function decodeApprovedWav(bytes: Uint8Array): Float32Array {
 
 const approvedCache = new Map<ApprovedCue, Float32Array>()
 
-export function approvedSamples(kind: ApprovedCue): Float32Array {
+export function approvedSamples(kind: Exclude<ApprovedCue, 'clap' | 'level-up'>): Float32Array {
   const cached = approvedCache.get(kind)
   if (cached) return cached
   const binary = Uint8Array.from(atob(APPROVED_WAV_BASE64[kind]), (char) => char.charCodeAt(0))
@@ -191,8 +286,7 @@ export function loadSoundPrefs(): void {
   try {
     const raw = window.localStorage.getItem(SOUND_KEY)
     if (!raw) return
-    const parsed = JSON.parse(raw) as { muted?: boolean; volume?: number }
-    if (typeof parsed.muted === 'boolean') gate.muted = parsed.muted
+    gate.muted = mutedFromStorage(raw)
   } catch {
     gate = initialGate()
   }
@@ -202,12 +296,32 @@ export function soundStatus(): { muted: boolean; unlocked: boolean; available: b
   return { muted: gate.muted, unlocked: gate.unlocked, available: typeof AudioContext !== 'undefined' }
 }
 
+const voicePcm = new Map<string, { samples: Float32Array; rate: number }>()
+let voicePrepare: Promise<void> | null = null
+
 export function unlockSound(): boolean {
   if (typeof AudioContext === 'undefined') return false
   if (!context) context = new AudioContext()
   void context.resume()
   gate.unlocked = true
+  void prepareVoices()
   return true
+}
+
+export function prepareVoices(): Promise<void> {
+  if (!context) return Promise.resolve()
+  if (voicePrepare) return voicePrepare
+  const audio = context
+  voicePrepare = (async () => {
+    for (const kind of ['clap', 'level-up'] as const) {
+      if (voicePcm.has(kind)) continue
+      const bytes = Uint8Array.from(atob(VOICE_MP3_BASE64[kind]), (char) => char.charCodeAt(0))
+      const copy = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+      const decoded = await audio.decodeAudioData(copy)
+      voicePcm.set(kind, { samples: decoded.getChannelData(0).slice(), rate: decoded.sampleRate })
+    }
+  })()
+  return voicePrepare
 }
 
 export function setSoundMuted(muted: boolean): void {
@@ -225,19 +339,33 @@ export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
   const now = performance.now()
   if (now < playingUntil) return false
+  const spoken = kind === 'clap' || kind === 'level-up'
   const approved = kind === 'scan' || kind === 'giggle' || kind === 'surprise' || kind === 'yawn' || kind === 'wink' || kind === 'dizzy'
-  if (!approved && kind !== 'chirp') return false
-  const samples = approved ? approvedSamples(kind) : renderCue('chirp', 22050)
-  const buffer = context.createBuffer(1, samples.length, 22050)
+  if (!approved && !spoken && kind !== 'chirp') return false
+  const voice = spoken ? voicePcm.get(kind) : undefined
+  if (spoken && !voice) return false
+  let samples: Float32Array
+  let rate: number
+  if (voice) {
+    samples = voice.samples
+    rate = voice.rate
+  } else if (kind === 'chirp') {
+    samples = renderCue('chirp', 22050)
+    rate = 22050
+  } else if (approved) {
+    samples = approvedSamples(kind)
+    rate = 22050
+  } else return false
+  const buffer = context.createBuffer(1, samples.length, rate)
   buffer.getChannelData(0).set(samples)
   const source = context.createBufferSource()
   const gain = context.createGain()
-  gain.gain.value = kind === 'chirp' ? 0.35 : 1
+  gain.gain.value = PLAYBACK_GAIN[kind === 'chirp' || approved || spoken ? kind : 'chirp']
   source.buffer = buffer
   source.connect(gain)
   gain.connect(context.destination)
   source.start()
-  playingUntil = now + (samples.length / 22050) * 1000
+  playingUntil = now + (samples.length / rate) * 1000
   return true
 }
 

@@ -19,12 +19,12 @@ writeFileSync(join(dist, 'motion-buddy.html'), single)
 writeFileSync(
   join(dist, 'DEPLOY.txt'),
   [
-    'Motion Buddy customer app, Expressive v2.8.',
+    'Motion Buddy customer app, Expressive v2.9.',
     'This zip is the public companion. It does not include the owner audition.',
     'Upload this whole folder to a static host and open index.html.',
     'motion-buddy.html is the same app with the script and styles inlined. It does not load fonts or other remote files.',
     'Opening the file directly is not a secure-page sensor test. Phone tilt and movement need HTTPS.',
-    'Sound stays off until a tap turns it on. Scan, giggle, surprise, yawn, wink, and dizzy play the approved WAV recordings once when that expression starts. The chirp is the existing in-app confirmation tone from when sound is turned on. This package does not contain a chirp WAV.',
+    'Sound is on until it is turned off in the menu. The browser still stays quiet until the first tap. Scan, giggle, surprise, yawn, wink, and dizzy play the approved WAV recordings. The chirp is the existing synthesized tone. Spoken clap and level-up lines are embedded for playback and are not separate files. Voice credit, optional: りこ。 https://conte-de-fees.com/voice',
     'On an iPhone, the first tap must be Allow motion on the face. iOS shows the permission prompt only after that tap. Not now leaves the face running. Other browsers start listening when the secure page opens.',
     'This build does not wake a locked phone and is not an Apple Watch app.',
     '',
@@ -43,15 +43,55 @@ for (const name of [
 ]) {
   copyFileSync(join('src/assets/approved-sfx', name), join(soundDir, name))
 }
+writeFileSync(
+  join(dist, 'THIRD-PARTY.txt'),
+  [
+    'Third-party notices for this customer build.',
+    '',
+    'Web-Eye-Animation',
+    'https://github.com/CyberAgentAILab/Web-Eye-Animation',
+    'Commit 424773d1a6e1d28c1c168dbbb068ed4d0d220364',
+    'Copyright (c) 2024 CyberAgent AI Lab',
+    'MIT License. The surprise, joy-bounce, and sleepy eye timings were adapted into this app\'s own renderer.',
+    'GSAP 3.11.4 is loaded by that project\'s demo from a CDN and is not part of the MIT grant. This package does not include GSAP.',
+    '',
+    'MIT License',
+    '',
+    'Permission is hereby granted, free of charge, to any person obtaining a copy',
+    'of this software and associated documentation files (the "Software"), to deal',
+    'in the Software without restriction, including without limitation the rights',
+    'to use, copy, modify, merge, publish, distribute, sublicense, and/or sell',
+    'copies of the Software, and to permit persons to whom the Software is',
+    'furnished to do so, subject to the following conditions:',
+    '',
+    'The above copyright notice and this permission notice shall be included in all',
+    'copies or substantial portions of the Software.',
+    '',
+    'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR',
+    'IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,',
+    'FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE',
+    'AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER',
+    'LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,',
+    'OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE',
+    'SOFTWARE.',
+    '',
+    'Spoken lines',
+    'Performer: りこ。',
+    'Source: https://conte-de-fees.com/voice',
+    'The clap and level-up lines are embedded for playback inside the app.',
+    'The creator allows commercial app embedding. The raw files are not shipped as a separate download.',
+    '',
+  ].join('\n'),
+)
 mkdirSync('/opt/cursor/artifacts', { recursive: true })
 const customerJs = readFileSync(join(dist, scriptSrc.replace(/^\//, '')), 'utf8')
 for (const term of ['Export review', 'Face audition', 'Owner audition', 'motion-buddy-review', 'Try my companion']) {
   if (customerJs.includes(term)) throw new Error(`Customer bundle contains owner audition text: ${term}`)
 }
-const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v2.8.zip'
+const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v2.9.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })
-console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v2.8.zip')
+console.log('Wrote dist/motion-buddy.html and /opt/cursor/artifacts/motion-buddy-customer-v2.9.zip')
 
 execFileSync('npx', ['vite', 'build', '--config', 'vite.owner.config.ts'], { stdio: 'inherit' })
 const ownerDist = 'dist-owner'

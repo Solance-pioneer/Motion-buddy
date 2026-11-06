@@ -147,10 +147,38 @@ export function deskLoopMs(): number {
   return DESK[DESK.length - 1]?.until ?? 1
 }
 
+/** Spoken lines appear once per this stretch. Beeps keep cycling underneath. */
+export const VOICE_PERIOD_MS = 150_000
+export const CLAP_AT_MS = 28_000
+const CLAP_SLOT_MS = 2_200
+const LEVEL_SLOT_MS = 2_700
+
+function voiceShowcase(idleMs: number): ShowcaseFrame | null {
+  const phase = ((idleMs % VOICE_PERIOD_MS) + VOICE_PERIOD_MS) % VOICE_PERIOD_MS
+  if (phase >= CLAP_AT_MS && phase < CLAP_AT_MS + CLAP_SLOT_MS) {
+    return { id: 'clap', elapsed: phase - CLAP_AT_MS }
+  }
+  const levelAt = CLAP_AT_MS + CLAP_SLOT_MS
+  if (phase >= levelAt && phase < levelAt + LEVEL_SLOT_MS) {
+    return { id: 'level-up', elapsed: phase - levelAt }
+  }
+  const eyes: { id: string; at: number; ms: number }[] = [
+    { id: 'eye-pop', at: 36_000, ms: 1_000 },
+    { id: 'eye-bounce', at: 38_000, ms: 900 },
+    { id: 'eye-sleepy', at: 40_000, ms: 2_200 },
+  ]
+  for (const beat of eyes) {
+    if (phase >= beat.at && phase < beat.at + beat.ms) return { id: beat.id, elapsed: phase - beat.at }
+  }
+  return null
+}
+
 export function placeApproved(
   idleMs: number,
   allow: { dizzy: boolean; startled: boolean },
 ): { idleMs: number; showcase: ShowcaseFrame | null } {
+  const voice = voiceShowcase(idleMs)
+  if (voice) return { idleMs: SHOWCASE_INTRO_MS, showcase: voice }
   const beats = SHOWCASE_BEATS.filter((beat) => {
     if (beat.gate === 'dizzy') return allow.dizzy
     if (beat.gate === 'startled') return allow.startled
