@@ -138,8 +138,11 @@ test('touch wording is used for a coarse pointer', async ({ page }) => {
 test('Auto can be limited to a chosen subset', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  const extras = ['Grumpy', 'Sleepy', 'Curious', 'Laugh', 'Shy', 'Smug', 'Determined', 'Worried', 'Startled', 'Pant', 'Dizzy']
-  for (const name of extras) await page.getByRole('button', { name: `Use ${name}` }).click()
+  const extras = ['Grumpy', 'Sleepy', 'Curious', 'Laugh', 'Shy', 'Smug', 'Determined', 'Worried', 'Startled', 'Pant', 'Dizzy', 'Wink', 'Content']
+  for (const name of extras) {
+    const toggle = page.getByRole('button', { name: `Use ${name}` })
+    if ((await toggle.getAttribute('aria-pressed')) === 'true') await toggle.click()
+  }
   await expect(page.getByRole('button', { name: 'Grumpy', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Use Happy' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Use Happy' }).click()
@@ -539,7 +542,7 @@ test('a stationary ten seconds visits several gazes and a readable smile', async
 test('Desk, Car, and Wrist are real modes and close leaves no hint', async ({ page }) => {
   await openApp(page, 'e2e=1&hintMs=0')
   await page.getByRole('button', { name: /Motion Buddy/ }).click()
-  await expect(page.getByText('Expressive v2.1')).toBeVisible()
+  await expect(page.getByText('Expressive v2.2')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Desk', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Car', exact: true }).click()
   await expect(page.locator('main')).toHaveAttribute('data-profile', 'car')
@@ -573,6 +576,29 @@ test('reduced motion keeps the new face still', async ({ page }) => {
   expect(still.gazeX).toBe(0)
   expect(still.gazeY).toBe(0)
   expect(still.blink).toBe(0)
+})
+
+test('everyday eyes stay level and unblushed, and Laugh starts opted out', async ({ page }) => {
+  await openApp(page, 'e2e=1&hintMs=0')
+  await expect(page.locator('[data-part="blush-l"]')).toHaveAttribute('opacity', '0.000')
+  const tilt = await page.locator('[data-part="eye-l"]').getAttribute('transform')
+  const rot = Number(tilt?.match(/rotate\(([-\d.]+)/)?.[1])
+  expect(Math.abs(rot)).toBeLessThanOrEqual(0.5)
+  await page.getByRole('button', { name: /Motion Buddy/ }).click()
+  await expect(page.getByRole('button', { name: 'Use Laugh' })).toHaveAttribute('aria-pressed', 'false')
+  await page.getByRole('button', { name: 'Close' }).click()
+  const seen = await page.evaluate(() => {
+    const api = (window as unknown as { __motionBuddyTest: { elapse: (ms: number) => void; getState: () => { expression: string } } })
+      .__motionBuddyTest
+    const poses = new Set<string>()
+    for (let step = 0; step < 200; step += 1) {
+      api.elapse(200)
+      poses.add(api.getState().expression)
+    }
+    return [...poses]
+  })
+  expect(seen).not.toContain('laugh')
+  expect(seen).toContain('wink')
 })
 
 test('an expression change travels through the current face', async ({ page }) => {

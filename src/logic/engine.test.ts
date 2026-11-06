@@ -26,7 +26,7 @@ describe('BuddyEngine', () => {
   it('does not drop the last Auto expression', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     for (const pose of POSE_IDS) {
-      if (pose !== 'curious') engine.toggleAutoExpression(pose)
+      if (pose !== 'curious' && engine.snapshot().autoSet.includes(pose)) engine.toggleAutoExpression(pose)
     }
     engine.toggleAutoExpression('curious')
     expect(engine.snapshot().autoSet).toEqual(['curious'])

@@ -10,7 +10,7 @@ import {
   type ExpressionPhase,
   type FacePose,
 } from './expressions.ts'
-import { POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile } from './library.ts'
+import { DEFAULT_AUTO, POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile } from './library.ts'
 import { MAX_FRAME_DT_MS, REST_HOLD_MS, smoothToward, WAKE_DEBOUNCE_MS, WAKE_LEVEL } from './motion.ts'
 import {
   forceReaction,
@@ -56,7 +56,7 @@ const BLINK_HALF_REDUCED_MS = 260
 export class BuddyEngine {
   private presence: Presence = 'awake'
   private selection: Selection = 'auto'
-  private autoSet: PoseId[] = [...POSE_IDS]
+  private autoSet: PoseId[] = [...DEFAULT_AUTO]
   private profile: Profile = 'desk'
   private idleElapsed = 0
   private autoElapsed = 0

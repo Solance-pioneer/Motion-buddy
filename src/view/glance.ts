@@ -7,7 +7,7 @@ export const GLANCE_Y_UNITS = 11
 export function glanceOffset(gazeX: number, gazeY: number): { x: number; y: number; rotate: number } {
   const x = clamp(gazeX, -1, 1)
   const y = clamp(gazeY, -1, 1)
-  return { x: x * GLANCE_X_UNITS, y: y * GLANCE_Y_UNITS, rotate: x * 9 }
+  return { x: x * GLANCE_X_UNITS, y: y * GLANCE_Y_UNITS, rotate: 0 }
 }
 
 export function glanceTransform(gazeX: number, gazeY: number): string {

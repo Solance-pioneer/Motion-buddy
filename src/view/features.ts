@@ -131,30 +131,34 @@ export class FaceBlend {
 function poseSpec(pose: PoseId): FaceFeatures {
   switch (pose) {
     case 'happy':
-      return face(eye(32, 40, 18, 8, 12, 0), eye(68, 40, 18, 8, 12, 0), mouth(66, 22, 10, 0, 0, 0), 1, 0, 0)
+      return face(eye(32, 40, 18, 8, 12, 0), eye(68, 40, 18, 8, 12, 0), mouth(66, 22, 10, 0, 0, 0), 0, 0, 0)
     case 'laugh':
-      return face(eye(32, 40, 18, 7, 14, 0), eye(68, 41, 17, 7, 13, 0), mouth(67, 26, 8, 0.45, 7, 0), 1, 0, 0)
+      return face(eye(32, 40, 18, 8, 10, 0), eye(68, 40, 18, 8, 10, 0), mouth(67, 26, 6, 0.7, 8, 0), 0, 0, 0)
     case 'shy':
-      return face(eye(33, 43, 13, 20, 1, -4), eye(67, 44, 12, 18, 1, 3), mouth(70, 14, 6, 0, 0, 0), 1, 0, 0)
+      return face(eye(33, 42, 14, 22, 0, 0), eye(67, 42, 14, 22, 0, 0), mouth(70, 14, 6, 0, 0, 0), 0, 0, 0)
     case 'smug':
-      return face(eye(32, 41, 16, 11, 9, -8), eye(69, 40, 15, 10, 7, 7), mouth(69, 15, 5, 0, 0, 5), 0.2, 0, 0)
+      return face(eye(32, 42, 16, 12, 4, 0), eye(68, 41, 16, 11, 2, 0), mouth(69, 14, 4, 0, 0, 3), 0, 0, 0)
     case 'grumpy':
-      return face(eye(33, 42, 15, 16, 0, -12), eye(67, 42, 15, 16, 0, 12), mouth(72, 18, -9, 0, 0, 0), 0, 0, 1)
+      return face(eye(32, 42, 16, 15, 0, 0), eye(68, 42, 16, 15, 0, 0), mouth(72, 18, -9, 0, 0, 0), 0, 0, 1)
     case 'determined':
-      return face(eye(32, 42, 16, 13, 0, 0), eye(68, 42, 16, 13, 0, 0), mouth(70, 16, 0, 0, 0, 0), 0, 0, 0)
+      return face(eye(32, 42, 16, 14, 0, 0), eye(68, 42, 16, 14, 0, 0), mouth(70, 16, 0, 0, 0, 0), 0, 0, 0)
     case 'worried':
-      return face(eye(31, 38, 17, 34, 0, -6), eye(69, 38, 17, 34, 0, 6), mouth(72, 10, 1.5, 1, 7.5, 0), 0, 1, 0)
+      return face(eye(31, 38, 18, 34, 0, 0), eye(69, 38, 18, 34, 0, 0), mouth(72, 11, 1.5, 1, 7.5, 0), 0, 1, 0)
     case 'startled':
-      return face(eye(30, 37, 20, 20, 0, -4), eye(70, 39, 16, 16, 0, 8), mouth(73, 13, 0, 1, 9, 0), 0, 0.3, 0)
+      return face(eye(31, 38, 20, 20, 0, 0), eye(69, 38, 18, 18, 0, 0), mouth(73, 13, 0, 1, 9, 0), 0, 0, 0)
     case 'sleepy':
       return face(eye(32, 46, 18, 5, 3, 0), eye(68, 46, 18, 5, 3, 0), mouth(72, 15, 4, 0.15, 3, 0), 0, 0, 0)
     case 'pant':
-      return face(eye(31, 39, 18, 24, 0, -3), eye(69, 40, 17, 22, 0, 4), mouth(72, 14, 1, 1, 11, 0), 0.15, 1, 0)
+      return face(eye(31, 39, 18, 24, 0, 0), eye(69, 39, 18, 24, 0, 0), mouth(72, 14, 1, 1, 11, 0), 0, 1, 0)
     case 'dizzy':
-      return face(eye(31, 42, 13, 26, 0, -18), eye(70, 36, 12, 18, 0, 16), mouth(73, 13, -6, 0.25, 4, 1), 0, 1, 0)
+      return face(eye(31, 40, 16, 24, 0, 0), eye(69, 36, 14, 16, 0, 0), mouth(73, 13, -4, 0.2, 3, 0), 0, 1, 0)
+    case 'wink':
+      return face(eye(32, 38, 16, 30, 0, 0), eye(68, 42, 16, 6, 8, 0), mouth(68, 18, 8, 0, 0, 0), 0.4, 0, 0)
+    case 'content':
+      return face(eye(32, 42, 17, 16, 2, 0), eye(68, 42, 17, 16, 2, 0), mouth(69, 16, 6, 0, 0, 0), 0, 0, 0)
     case 'curious':
     default:
-      return face(eye(32, 37, 16, 32, 0, -2), eye(68, 38, 15, 29, 0, 3), mouth(67, 24, 12, 0, 0, 0), 0, 0, 0)
+      return face(eye(32, 37, 17, 32, 0, 0), eye(68, 37, 17, 32, 0, 0), mouth(67, 22, 11, 0, 0, 0), 0, 0, 0)
   }
 }
 

@@ -43,6 +43,19 @@ describe('face blend', () => {
     expect(worried.mouth.open).toBe(1)
     expect(worried.left.h).toBeGreaterThan(curious.left.h)
   })
+
+  it('keeps eyes level and saves blush for the rare wink', () => {
+    const ids = ['curious', 'happy', 'laugh', 'shy', 'smug', 'grumpy', 'determined', 'worried', 'startled', 'sleepy', 'pant', 'dizzy', 'wink', 'content'] as const
+    const blushed = ids.filter((id) => featuresFor(id, 'soft').blush > 0)
+    expect(blushed).toEqual(['wink'])
+    for (const id of ids) {
+      const face = featuresFor(id, 'soft')
+      expect(Math.abs(face.left.rot)).toBeLessThanOrEqual(0)
+      expect(Math.abs(face.right.rot)).toBeLessThanOrEqual(0)
+      expect(Math.min(face.left.w, face.right.w)).toBeGreaterThan(12)
+    }
+    expect(featuresFor('laugh', 'soft').mouth.open).toBeGreaterThan(featuresFor('curious', 'soft').mouth.open)
+  })
 })
 
 describe('rendered glance', () => {
@@ -51,5 +64,6 @@ describe('rendered glance', () => {
     expect(Math.abs(shift.x)).toBeGreaterThan(12)
     expect(Math.abs(glanceOffset(lookFromDegrees(1), 0).x)).toBe(0)
     expect(Math.abs(glanceOffset(1, 0).x)).toBeLessThanOrEqual(18)
+    expect(glanceOffset(1, 0.4).rotate).toBe(0)
   })
 })

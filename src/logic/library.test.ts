@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { POSE_IDS, fallbackPose, gazeCount, resolvePose, sampleIdle, type PoseId } from './library.ts'
+import { DEFAULT_AUTO, POSE_IDS, fallbackPose, gazeCount, resolvePose, sampleIdle, type PoseId } from './library.ts'
 
 const all = new Set<PoseId>(POSE_IDS)
 
@@ -30,6 +30,26 @@ describe('sampleIdle', () => {
     }
     expect(resolvePose('determined', allowed, 'car')).toBe('happy')
     expect(fallbackPose(allowed, 'desk')).toBe('happy')
+  })
+
+  it('keeps ordinary faces for most of a desk minute and saves wink for a short beat', () => {
+    const allowed = new Set<PoseId>(DEFAULT_AUTO)
+    const frames = []
+    for (let t = 0; t < 39_000; t += 200) frames.push(sampleIdle(t, 'desk', allowed, false))
+    const poses = frames.map((frame) => frame.pose)
+    expect(poses.includes('laugh')).toBe(false)
+    expect(poses.includes('wink')).toBe(true)
+    expect(poses.filter((pose) => pose === 'wink').length / poses.length).toBeLessThan(0.15)
+    expect(poses.filter((pose) => pose === 'curious' || pose === 'happy').length / poses.length).toBeGreaterThan(0.55)
+  })
+
+  it('shows the parted laugh only after it is opted in, and only briefly', () => {
+    const opted = new Set<PoseId>(POSE_IDS)
+    const frames = []
+    for (let t = 0; t < 39_000; t += 200) frames.push(sampleIdle(t, 'desk', opted, false).pose)
+    const laughs = frames.filter((pose) => pose === 'laugh').length / frames.length
+    expect(laughs).toBeGreaterThan(0)
+    expect(laughs).toBeLessThan(0.12)
   })
 
   it('drops travel and blinks when reduced motion is on', () => {
