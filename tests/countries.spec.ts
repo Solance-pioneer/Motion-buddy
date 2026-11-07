@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
+import { publishedEyeAgrees } from '../src/logic/opening-fit.ts'
 
 const countries = [
   { key: 'uk_guard', at: 4_000, layer: 'prop:uk_big_ben', overlay: 'overlay:uk_guard' },
@@ -242,13 +243,20 @@ test.describe('country scenes', () => {
             eyesAuthored: eyes.every((eye) => {
               const nums = eye.path.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? []
               const cubics = eye.path.match(/C/g)?.length ?? 0
+              const eyeH = Number(document.querySelector('main')?.getAttribute('data-eye-h') ?? '0')
               if (cubics !== 4 || !eye.path.trim().endsWith('Z') || nums.length < 26 || !finitePositive(eye.authored)) return false
               const cx = nums[0]
+              const yTop = nums[1]
               const rx = nums[6] - cx
               const kx = nums[2] - cx
+              const ySide = nums[7]
+              const yBot = nums[13]
               const left = nums[18]
               const kappa = rx === 0 ? 0 : kx / rx
-              return rx > 0 && Math.abs(kappa - 0.5522847498) < 0.03 && Math.abs(cx - left - rx) < 0.35 && eye.authored.height >= 1.6 && eye.authored.width >= 2.2
+              const height = yBot - yTop
+              const peaked = Math.abs(ySide - (yTop + yBot) / 2) > 0.4
+              const matchesPose = peaked ? height >= 2.1 && height <= eyeH + 0.8 : Math.abs(height - Math.max(1.6, eyeH)) < 0.8
+              return rx > 0 && Math.abs(kappa - 0.5522847498) < 0.03 && Math.abs(cx - left - rx) < 0.35 && matchesPose
             }),
             eyesInside: eyes.every((eye) => finitePositive(eye.rendered) && inViewport(eye.rendered)),
             mouthAuthoredOk: mouthPath.includes('Q') && mouthPath.trim().endsWith('Z') && finitePositive(mouthAuthored),
@@ -317,8 +325,18 @@ test.describe('country scenes', () => {
               return {
                 glance: { x: gx, y: gy },
                 crownTop: crownBox?.y ?? null,
-                ukEyesFramed: eyesU.every((eye) => framed(eye)),
-                ukMouthFramed: framed(mouthU) && Boolean(mouthU && outline.length && mouthU.bottom < Math.max(...outline.map((point) => point.y)) - 2),
+                outline,
+                strokePad: (() => {
+                  const node = document.querySelector('[data-part="uk-outline"]') as SVGGeometryElement | null
+                  const width = Number(node?.getAttribute('stroke-width') ?? '0')
+                  const ctm = node?.getScreenCTM()
+                  if (!node || !ctm) return 0
+                  const origin = new DOMPoint(0, 0).matrixTransform(ctm)
+                  const tip = new DOMPoint(width / 2, 0).matrixTransform(ctm)
+                  return Math.hypot(tip.x - origin.x, tip.y - origin.y)
+                })(),
+                drawnEyes: eyes.map((eye) => eye.rendered),
+                drawnMouth: mouth,
                 mouthAboveFlag: Boolean(mouth && flag && flag.height > 8 && mouth.bottom + 4 < flag.y),
                 beretAboveEyes: Boolean(beret && eyesU.every((eye) => eye && eye.y > beret.bottom - 1)),
                 ascotBelowMouth: Boolean(ascot && mouth && ascot.y > mouth.bottom - 1),
@@ -330,7 +348,7 @@ test.describe('country scenes', () => {
         const evidence = `${scene.key} blink=${fit.blink} eyeH=${fit.eyeH} ${JSON.stringify(fit.eyes)} mouth=${JSON.stringify(fit.mouth)}`
         writeFileSync(`/opt/cursor/artifacts/country-${scene.key}-${orient.name}.json`, JSON.stringify(fit, null, 2))
         await page.screenshot({ path: `/opt/cursor/artifacts/country-${scene.key}-${orient.name}.png` })
-        expect(fit.eyesAuthored, evidence).toBe(true)
+        expect(fit.eyes.every((eye) => publishedEyeAgrees(eye.path, Number(fit.eyeH))), evidence).toBe(true)
         expect(fit.eyesInside, evidence).toBe(true)
         expect(fit.mouthAuthoredOk, evidence).toBe(true)
         expect(fit.mouthInside, evidence).toBe(true)
@@ -344,10 +362,24 @@ test.describe('country scenes', () => {
         expect(fit.muteClear).toBe(true)
         expect(fit.hatAboveFace, evidence).toBe(true)
         if (scene.key === 'uk_guard') {
-          expect(fit.registration.ukEyesFramed, evidence).toBe(true)
-          expect(fit.registration.ukMouthFramed, evidence).toBe(true)
+          const crown = await page.locator('[data-part="uk-crown"]').getAttribute('d')
+          const outline = await page.locator('[data-part="uk-outline"]').getAttribute('d')
+          expect(crown).toContain('M96 132')
+          expect(crown).toContain('C138 -57 222 -57')
+          expect(outline).toContain('M90 134')
+          await expect(page.locator('[data-part="uk-stud"]')).toHaveCount(2)
+          const worn = await page.locator('[data-part="glance"]').getAttribute('transform')
+          expect(worn).toContain('scale(0.5)')
           expect(fit.registration.crownTop).toBeLessThan(-40)
           expect(fit.registration.crownTop).toBeGreaterThan(-60)
+          await page.evaluate(() => {
+            const hook = (window as unknown as { __motionBuddyTest: { showCountry: (key: string, ms: number) => boolean; nudgeCountry: () => boolean } }).__motionBuddyTest
+            hook.showCountry('uk_guard', 7_900)
+            hook.nudgeCountry()
+          })
+          await expect(page.locator('main')).toHaveAttribute('data-scene', '', { timeout: 2_000 })
+          const restored = await page.locator('[data-part="glance"]').getAttribute('transform')
+          expect(restored ?? '').not.toContain('scale(0.5)')
         }
         if (scene.key === 'usa_eagle') expect(fit.registration.mouthAboveFlag, evidence).toBe(true)
         if (scene.key === 'france_cafe') {

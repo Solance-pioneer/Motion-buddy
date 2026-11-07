@@ -362,6 +362,15 @@ export function App() {
       else if (name.startsWith('overlay:')) node.setAttribute('transform', `translate(0 ${layer.ty.toFixed(2)})`)
       else node.removeAttribute('transform')
     }
+    const glance = svg.querySelector('[data-part="glance"]') as SVGGElement | null
+    const uk = pose.layers['overlay:uk_guard']
+    if (glance && uk && uk.opacity > 0.01) {
+      const placed = /translate\(\s*(-?\d+(?:\.\d+)?)(?:\s+|,)(-?\d+(?:\.\d+)?)/.exec(glance.getAttribute('transform') || '')
+      const gx = placed ? Number(placed[1]) : 0
+      const gy = placed ? Number(placed[2]) : 0
+      // Approved board: translate(90 102) scale(1.8) in 360 space is half size at (25, 28.333) here.
+      glance.setAttribute('transform', `translate(${(25 + gx * 0.5).toFixed(3)} ${(28.333 + gy * 0.5).toFixed(3)}) scale(0.5)`)
+    }
   }
   const beginScene = (key: SceneKey) => {
     if (sceneRef.current || contactStatus().active || waitRelease.current) return false

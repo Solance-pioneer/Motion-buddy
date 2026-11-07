@@ -18,12 +18,12 @@ export function CountryOverlays() {
   return (
     <g data-part="country-overlays">
       <g data-country-layer="overlay:uk_guard" opacity="0">
-        <path data-part="uk-crown" d="M68 80 C82 34 90 6 112 -22 C138 -57 222 -57 248 -22 C270 6 278 34 292 80 Q180 72 68 80Z" fill="#242426" stroke="#424244" strokeWidth="2" />
-        <path d="M108 68 C104 28 110 -6 136 -24 M120 70 C116 26 122 2 144 -18 M240 70 C248 26 238 -8 224 -20" stroke="#343436" strokeWidth="5" fill="none" strokeLinecap="round" />
-        <path d="M76 74 Q180 64 284 74" stroke="#c8a24a" strokeWidth="5" fill="none" strokeLinecap="round" />
-        <path data-part="uk-outline" d="M72 80 Q48 150 58 200 Q70 270 130 325 Q180 352 230 325 Q290 270 302 200 Q312 150 288 80" stroke="#c8a24a" strokeWidth="5" fill="none" strokeLinecap="round" />
-        <circle cx="72" cy="80" r="7" fill="#c8a24a" />
-        <circle cx="288" cy="80" r="7" fill="#c8a24a" />
+        <path data-part="uk-crown" d="M96 132 C90 80 90 6 112 -22 C138 -57 222 -57 248 -22 C270 6 270 80 264 132 Q180 122 96 132Z" fill="#242426" stroke="#424244" strokeWidth="2" />
+        <path d="M112 94 C106 48 110 -6 136 -24 M124 100 C120 46 124 2 144 -18 M238 96 C246 36 238 -8 224 -20" stroke="#343436" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <path data-part="uk-band" d="M98 128 Q180 116 262 128" stroke="#c8a24a" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <path data-part="uk-outline" d="M90 134 Q86 200 112 238 Q180 262 248 238 Q274 200 270 134" stroke="#c8a24a" strokeWidth="5" fill="none" strokeLinecap="round" />
+        <circle data-part="uk-stud" cx="90" cy="134" r="7" fill="#c8a24a" />
+        <circle data-part="uk-stud" cx="270" cy="134" r="7" fill="#c8a24a" />
       </g>
       <g data-country-layer="overlay:france_cafe" opacity="0">
         <ellipse data-part="france-beret" cx="190" cy="46" rx="104" ry="30" fill="#1f2a44" />
