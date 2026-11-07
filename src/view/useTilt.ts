@@ -7,6 +7,9 @@ export interface TiltSample {
   x: number
   y: number
   level: number
+  /** Screen-axis degrees from the captured neutral, before the glance deadzone. */
+  tiltX: number
+  tiltY: number
 }
 
 export interface SensorSignals {
@@ -85,6 +88,8 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
         x: lookFromDegrees(screen.x),
         y: lookFromDegrees(screen.y),
         level: wakeLevelFromDegrees(dx, dy),
+        tiltX: screen.x,
+        tiltY: screen.y,
       })
       noteArrival('tilt')
     }
@@ -149,7 +154,11 @@ export function useTilt(onSample: (sample: TiltSample) => void, onAcceleration: 
     setMotionStatus('off')
   }, [detach, setMotionStatus])
 
-  return { status, signals, enable, stop }
+  const recenter = useCallback(() => {
+    originRef.current = null
+  }, [])
+
+  return { status, signals, enable, stop, recenter }
 }
 
 export function motionNeedsGesture(): boolean {

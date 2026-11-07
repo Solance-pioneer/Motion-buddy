@@ -28,7 +28,7 @@ const EXPRESSION_LABEL: Record<PoseId, string> = {
 
 const PROFILE_NOTE: Record<Profile, string> = {
   desk: 'Chill and curious, with daydreams and an occasional yawn. The face stays the whole picture.',
-  car: 'Focused and cool, with a short simulated rev. The speed lines are a decoration, not engine RPM, vehicle speed, or location.',
+  car: 'Lean the phone from a neutral you set. Toward you leans ahead, away eases off, left and right bank. This is phone tilt, not the car’s speed or brakes, and it is not the Little racer scene.',
   wrist: 'Walking and running faces, including a pant and a happy recovery. A browser profile, not a watch, step count, or heart rate.',
 }
 
@@ -50,6 +50,7 @@ export function Controls({
   onPlayScene,
   onPresence,
   onProfile,
+  onCarNeutral,
   onSelection,
   onToggleAuto,
   onAccent,
@@ -83,6 +84,7 @@ export function Controls({
   onPlayScene: (key: SceneKey) => void
   onPresence: (presence: Presence) => void
   onProfile: (profile: Profile) => void
+  onCarNeutral: () => void
   onSelection: (selection: Selection) => void
   onToggleAuto: (expression: PoseId) => void
   onAccent: (accent: AccentId) => void
@@ -154,6 +156,14 @@ export function Controls({
             </button>
           </div>
           <p className="note">{PROFILE_NOTE[profile]}</p>
+          {profile === 'car' ? (
+            <>
+              <div className="choice-row">
+                <button type="button" onClick={onCarNeutral}>Set neutral</button>
+              </div>
+              <p className="note">{carTiltStatus(motionStatus, reduced)}</p>
+            </>
+          ) : null}
         </fieldset>
 
         <fieldset>
@@ -164,7 +174,7 @@ export function Controls({
             <button type="button" onClick={() => onPlayScene('racer')}>Little racer</button>
             <button type="button" onClick={() => onPlayScene('sheet_ghost')}>Sheet ghost</button>
           </div>
-          <p className="note">Each scene plays through, then Buddy is plain again. Mute still silences it.</p>
+          <p className="note">Each scene plays through, then Buddy is plain again. Little racer is that short scene. Car tilt is the phone lean while Car is selected. Mute still silences a scene.</p>
         </fieldset>
 
         <fieldset>
@@ -365,6 +375,27 @@ function motionCopy(status: MotionUiStatus, signals: SensorSignals): string {
       return 'No tilt or movement events arrived, so motion was not turned on.'
     case 'paused':
       return 'Sensor listening is paused while this page is hidden.'
+  }
+}
+
+function carTiltStatus(status: MotionUiStatus, reduced: boolean): string {
+  if (reduced) return 'Reduced motion is on, so Car tilt stays neutral.'
+  switch (status) {
+    case 'active':
+      return 'Tilt is live from the neutral you set. Toward you leans ahead, away eases off, left and right bank.'
+    case 'waiting':
+      return 'Waiting for a tilt reading. Car stays neutral until one arrives.'
+    case 'denied':
+      return 'Motion permission was denied. Car tilt stays neutral.'
+    case 'unavailable':
+      return 'This browser has no tilt sensor. Car tilt stays neutral.'
+    case 'no-events':
+      return 'No tilt events arrived. Car tilt stays neutral.'
+    case 'paused':
+      return 'Tilt paused while this page is hidden. Car stays neutral.'
+    case 'off':
+    case 'idle':
+      return 'Motion is off. Car tilt stays neutral until you turn it on.'
   }
 }
 

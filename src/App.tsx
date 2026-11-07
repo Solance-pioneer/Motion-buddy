@@ -9,11 +9,12 @@ import { Controls } from './view/Controls.tsx'
 import { Face } from './view/Face.tsx'
 import { CountryBackdrop, CountryEagle } from './view/country-art.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
-import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
+import { motionNeedsGesture, useTilt, type MotionUiStatus } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCountrySting, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { carTiltLive, smoothCarTilt, type CarTilt } from './logic/car-tilt.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -68,6 +69,12 @@ type TestApi = {
   showCountry: (key: CountryKey, ms: number) => boolean
   nudgeCountry: () => boolean
   sceneAudio: () => { active: boolean }
+}
+
+function leanWord(throttle: number): 'accel' | 'brake' | 'neutral' {
+  if (throttle > 0.08) return 'accel'
+  if (throttle < -0.08) return 'brake'
+  return 'neutral'
 }
 
 function prefersReducedMotion(): boolean {
@@ -152,6 +159,9 @@ export function App() {
   const calmRef = useRef(0)
   const lastScene = useRef<SceneKey | null>(null)
   const countryCursor = useRef(0)
+  const carTarget = useRef<CarTilt>({ throttle: 0, bank: 0 })
+  const carShown = useRef<CarTilt>({ throttle: 0, bank: 0 })
+  const tiltStatusRef = useRef<MotionUiStatus>('idle')
   const openRef = useRef(false)
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
@@ -292,6 +302,14 @@ export function App() {
     if (root) {
       root.dataset.pet = `${p.x.toFixed(1)},${p.y.toFixed(1)},${showSx.toFixed(2)},${showSy.toFixed(2)}`
       root.dataset.petMode = p.dragging ? p.mode : 'rest'
+      const carOn = engine.snapshot().profile === 'car' && !engine.snapshot().reduced && !sceneRef.current && tiltStatusRef.current === 'active'
+      if (carOn && !p.dragging && svg) {
+        const lean = carShown.current
+        svg.style.transform = `translate(0px, ${(-lean.throttle * 10).toFixed(1)}px) rotate(${(lean.bank * 8).toFixed(1)}deg) scale(1, ${(1 + lean.throttle * 0.06).toFixed(3)})`
+      }
+      const label = !carOn ? 'off' : leanWord(carShown.current.throttle)
+      root.dataset.car = label
+      root.dataset.carBank = carShown.current.bank.toFixed(2)
       root.dataset.squeeze = p.squeeze.toFixed(2)
       root.dataset.contact = contactStatus().active ? 'on' : 'off'
     }
@@ -572,6 +590,9 @@ export function App() {
       root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
+    const carVisual = state.profile === 'car' && !state.reduced && !sceneRef.current && tiltStatusRef.current === 'active'
+    if (!carVisual) carTarget.current = { throttle: 0, bank: 0 }
+    carShown.current = smoothCarTilt(carShown.current, carTarget.current, dt)
     const played = state.showcase ? sampleCandidate(state.showcase.id, state.showcase.elapsed, state.reduced, 'soft') : null
     const features = blendRef.current.sample(
       state.expression,
@@ -587,6 +608,9 @@ export function App() {
     }
     if (handlesRef.current) {
       applyPose(handlesRef.current, features, state.blink, colors.face, state.gazeX, state.gazeY)
+      if (state.profile === 'car' && !sceneRef.current) {
+        handlesRef.current.speed.setAttribute('opacity', Math.max(0, carShown.current.throttle).toFixed(2))
+      }
     }
     const cue = stepOriginalCue(
       originalArm.current,
@@ -610,8 +634,17 @@ export function App() {
   }, [])
 
   const onSample = useCallback(
-    (sample: { x: number; y: number; level: number }) => {
+    (sample: { x: number; y: number; level: number; tiltX: number; tiltY: number }) => {
       if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
+      const state = engine.snapshot()
+      if (state.profile === 'car') {
+        const live = !state.reduced && !sceneRef.current && tiltStatusRef.current === 'active'
+        const command = carTiltLive(sample.tiltX, sample.tiltY, live)
+        carTarget.current = command
+        engine.feedLook(command.bank, 0)
+        engine.feedMotion(live ? sample.level : 0)
+        return
+      }
       engine.feedLook(sample.x, sample.y)
       engine.feedMotion(sample.level)
     },
@@ -686,6 +719,7 @@ export function App() {
   }, [engine, publish, soundOn])
 
   const tilt = useTilt(onSample, onAcceleration)
+  tiltStatusRef.current = tilt.status
   const wakeLock = useScreenWakeLock()
   const enableMotion = tilt.enable
   const askForMotion = motionNeedsGesture() && !promptDone && tilt.status === 'idle'
@@ -1128,7 +1162,18 @@ onClick={() => {
             publish(engine.snapshot())
           }}
           onProfile={(profile) => {
+            if (profile !== 'car') {
+              carTarget.current = { throttle: 0, bank: 0 }
+              carShown.current = { throttle: 0, bank: 0 }
+            }
             engine.setProfile(profile)
+            publish(engine.snapshot())
+          }}
+          onCarNeutral={() => {
+            tilt.recenter()
+            carTarget.current = { throttle: 0, bank: 0 }
+            carShown.current = { throttle: 0, bank: 0 }
+            engine.feedLook(0, 0)
             publish(engine.snapshot())
           }}
           onSelection={(selection) => {

@@ -132,6 +132,7 @@ writeFileSync(
     'uk_soft_march_once and egypt_wonder_once play once, do not loop, and duck country music by 3 dB. Masters are not rewritten.',
     'The rope hero plays hero_original_fanfare once from the start for 7 seconds. It replaces the short flourish and does not loop. The float master is not rewritten.',
     'The racer plays racer_accelerate_return_brake once from the start for 7 seconds. It replaces the wind cue and does not loop. The float master is not rewritten.',
+    'Car tilt leans Buddy from a neutral you set: top toward you leans ahead, away eases off, left and right bank. It is phone tilt, not vehicle speed or brakes. A missing or denied sensor stays neutral.',
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
     'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, and egypt_cinematic play once at gain 0.68. Masters are not rewritten.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
