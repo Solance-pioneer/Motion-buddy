@@ -8,5 +8,7 @@ The UK bearskin crown is 40.625% taller than the previous hat and is drawn to y=
 
 Timing choices used by the app:
 - USA eagle meets Buddy at the precise music marker 2.7938 s. The prose times 2.6 s and about 2.48 s are not used for that hit.
-- The UK march stops at 6.6 s. Listed beats at 6.6111 s and 7.1667 s do not add steps.
+- The UK march steps the soft-march beats from 1.25 s through 6.75 s and is back at centre by 7 s. Older listed beats at 6.6111 s and 7.1667 s do not add steps.
+- uk_soft_march_once and egypt_wonder_once are finite app copies. They play once, do not loop, and duck the country music by 3 dB while they sound. Masters are kept and not rewritten. They were not human-listened.
+- The France tower is the studio daylight redraw in the same 360 space. No cartoon reference was supplied, so it is not a match to a reference drawing.
 - Note attacks are softened by about 40–70 ms. Playback is not claimed to be listening-perfect.

@@ -129,6 +129,7 @@ writeFileSync(
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
     'A drag plays curious_contact_loop once at gain 1. It does not loop or restart while the finger stays down. Masters are not rewritten.',
+    'uk_soft_march_once and egypt_wonder_once play once, do not loop, and duck country music by 3 dB. Masters are not rewritten.',
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
     'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, and egypt_cinematic play once at gain 0.68. Masters are not rewritten.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
@@ -153,6 +154,8 @@ for (const name of [
   'france_cafe_waltz_app_pcm16_48k.wav',
   'usa_anthem_eagle_app_pcm16_48k.wav',
   'egypt_cinematic_app_pcm16_48k.wav',
+  'egypt_wonder_once_app_pcm16_48k.wav',
+  'uk_soft_march_once_app_pcm16_48k.wav',
 ]) {
   copyFileSync(join('src/assets/scenes-v2/audio/app', name), join(countryDir, name))
 }

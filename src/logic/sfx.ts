@@ -595,6 +595,50 @@ export function playSceneCue(key: keyof typeof SCENE_WAV_BASE64): boolean {
   return true
 }
 
+const CUE_DUCK = 10 ** (-3 / 20)
+let cueSource: AudioBufferSourceNode | null = null
+let cueGain: GainNode | null = null
+let cueToken = 0
+let cueLevel = 1
+
+export type CountrySting = 'egypt_wonder_once' | 'uk_soft_march_once'
+
+/** One finite country sting. A second call while it is sounding does nothing. Music ducks 3 dB until it ends. */
+export function playCountrySting(key: CountrySting): boolean {
+  if (!context || gate.muted || !gate.unlocked || cueSource) return false
+  const clip = pcm16(key, COUNTRY_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  cueLevel = 1
+  fadeNode(gain, 0, cueLevel, 0.03)
+  source.start()
+  cueSource = source
+  cueGain = gain
+  if (sceneGain) {
+    const ducked = COUNTRY_GAIN * CUE_DUCK
+    fadeNode(sceneGain, sceneLevel, ducked, 0.04)
+    sceneLevel = ducked
+  }
+  const token = cueToken
+  source.onended = () => {
+    if (token !== cueToken) return
+    if (cueSource === source) {
+      cueSource = null
+      cueGain = null
+    }
+    if (!sceneGain) return
+    fadeNode(sceneGain, sceneLevel, COUNTRY_GAIN, 0.05)
+    sceneLevel = COUNTRY_GAIN
+  }
+  return true
+}
+
 /** Full supplied country cue, once, through the same mute ramp as the other scenes. */
 export function playCountryMusic(key: keyof typeof COUNTRY_WAV_BASE64): boolean {
   if (!context || gate.muted || !gate.unlocked) return false
@@ -627,14 +671,24 @@ export function playCountryMusic(key: keyof typeof COUNTRY_WAV_BASE64): boolean 
 export function stopSceneAudio(ms = 130): void {
   const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
   sceneToken += 1
+  cueToken += 1
   const source = sceneSource
   const gain = sceneGain
   const from = sceneLevel
+  const sting = cueSource
+  const stingGain = cueGain
+  const stingFrom = cueLevel
   sceneSource = null
   sceneGain = null
+  cueSource = null
+  cueGain = null
   if (source && gain) {
     fadeNode(gain, from, 0, seconds)
     stopLater(source, seconds)
+  }
+  if (sting && stingGain) {
+    fadeNode(stingGain, stingFrom, 0, seconds)
+    stopLater(sting, seconds)
   }
 }
 

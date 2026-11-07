@@ -6,9 +6,12 @@ import {
   COUNTRY_GAIN,
   COUNTRY_MS,
   COUNTRY_ORDER,
+  EGYPT_WONDER_S,
   pickCountry,
   sampleCountry,
+  takeCountryTurn,
   TRANSITION_MS,
+  UK_MARCH_BEATS_S,
   USA_GRAB_S,
 } from './countries.ts'
 import { SCENE_MS, nextAmbientScene } from './scenes.ts'
@@ -18,6 +21,8 @@ const files = {
   france_cafe_waltz: ['src/assets/scenes-v2/audio/app/france_cafe_waltz_app_pcm16_48k.wav', '1d9615a9ffee8b87e91f2c26f17d357edb470a2166077da4c3e49b7127a5d59d'],
   usa_anthem_eagle: ['src/assets/scenes-v2/audio/app/usa_anthem_eagle_app_pcm16_48k.wav', '43b4f60ed0336f380123bc0ce64adbee69c45410bbbbe4257682b666adc25429'],
   egypt_cinematic: ['src/assets/scenes-v2/audio/app/egypt_cinematic_app_pcm16_48k.wav', '64c464fa653df9f08b141f717d56cf4f6d7ade02829f22054d48504d911ad3c2'],
+  egypt_wonder_once: ['src/assets/scenes-v2/audio/app/egypt_wonder_once_app_pcm16_48k.wav', 'f9aa04a607e519af7e1b8644eb375866b67ebf15ac75f94f37bdef3b71ebe3a2'],
+  uk_soft_march_once: ['src/assets/scenes-v2/audio/app/uk_soft_march_once_app_pcm16_48k.wav', 'a6f1e98d53edd38042a696308c7f26798ea832cfc631a98cd9ec816860fa1b68'],
 } as const
 
 describe('country scenes', () => {
@@ -45,16 +50,16 @@ describe('country scenes', () => {
     }
   })
 
-  it('stops the UK march at 6.6s and does not step the later beats', () => {
-    const marching = sampleCountry('uk_guard', 3_000)
-    expect(Math.abs(marching.tx)).toBeGreaterThan(5)
-    expect(marching.layers['overlay:uk_guard'].opacity).toBe(1)
-    expect(marching.layers['prop:uk_big_ben'].opacity).toBeCloseTo(0.72, 2)
-    const halted = sampleCountry('uk_guard', 6_700)
-    expect(halted.tx).toBe(0)
-    expect(halted.ty).toBe(12)
-    const afterListedBeat = sampleCountry('uk_guard', 7_170)
-    expect(afterListedBeat.tx).toBe(0)
+  it('steps the UK march on the soft-march beats and is home by 7s', () => {
+    expect(UK_MARCH_BEATS_S).toEqual([1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.25, 4.75, 5.25, 5.75, 6.25, 6.75])
+    const left = sampleCountry('uk_guard', 3_250)
+    const right = sampleCountry('uk_guard', 3_750)
+    expect(left.tx).toBeLessThan(-40)
+    expect(right.tx).toBeGreaterThan(40)
+    expect(left.layers['overlay:uk_guard'].opacity).toBe(1)
+    expect(left.layers['prop:uk_big_ben'].opacity).toBeCloseTo(0.72, 2)
+    expect(Math.abs(sampleCountry('uk_guard', 6_750).tx)).toBeGreaterThan(40)
+    expect(sampleCountry('uk_guard', 7_170).tx).toBe(0)
     expect(sampleCountry('uk_guard', 3_000, true).tx).toBe(0)
   })
 
@@ -68,6 +73,10 @@ describe('country scenes', () => {
     expect(atMarker.ty).toBe(0)
     const lifted = sampleCountry('usa_eagle', 3_050)
     expect(lifted.ty).toBeLessThan(0)
+    expect(lifted.sx).toBeLessThan(0.8)
+    const carried = sampleCountry('usa_eagle', 4_500)
+    expect(carried.sx).toBeLessThan(0.6)
+    expect(Math.abs(carried.tx - carried.layers['prop:us_eagle'].tx)).toBeLessThan(1)
     expect(sampleCountry('usa_eagle', 2_200, true).tx).toBe(0)
     expect(sampleCountry('usa_eagle', 2_200, true).layers['prop:us_eagle'].tx).toBe(0)
   })
@@ -77,9 +86,15 @@ describe('country scenes', () => {
     expect(Math.abs(france.tx)).toBeGreaterThan(1)
     expect(france.layers['overlay:france_cafe'].opacity).toBe(1)
     expect(france.layers['prop:france_eiffel_tower'].opacity).toBeCloseTo(0.72, 2)
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/props/france_eiffel_tower.svg')).digest('hex')).toBe(
+      '57e13c7996127d6ca10d9ffcc61500b79446b75200437ff8ea7f9ded143ad631',
+    )
     expect(sampleCountry('france_cafe', 3_000, true).tx).toBe(0)
     const egypt = sampleCountry('egypt_pharaoh', 5_500)
-    expect(egypt.tx).toBeLessThan(-20)
+    expect(EGYPT_WONDER_S).toBe(3)
+    expect(egypt.ty).toBeLessThan(-40)
+    expect(egypt.sx).toBeLessThan(0.55)
+    expect(egypt.layers['overlay:egypt_pharaoh'].opacity).toBe(1)
     expect(egypt.layers['prop:egypt_pyramids'].scaleY).toBe(1)
     expect(sampleCountry('egypt_pharaoh', 5_500, true).tx).toBe(0)
     expect(sampleCountry('egypt_pharaoh', 5_500, true).layers['prop:egypt_pyramids'].scaleY).toBe(1)
@@ -90,5 +105,24 @@ describe('country scenes', () => {
     expect(pickCountry(0.5)).toBe('usa_eagle')
     expect(pickCountry(0.75)).toBe('egypt_pharaoh')
     expect(pickCountry(0.99)).toBe('egypt_pharaoh')
+  })
+
+  it('visits each country once per cycle and does not spend a locked press', () => {
+    let cursor = 0
+    const take = (accepted: boolean) => {
+      const turn = takeCountryTurn(cursor, accepted)
+      cursor = turn.cursor
+      return turn.key
+    }
+    const first = Array.from({ length: 4 }, () => take(true))
+    const second = Array.from({ length: 4 }, () => take(true))
+    expect(first).toEqual(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh'])
+    expect(new Set(first).size).toBe(4)
+    expect(second).toEqual(first)
+    expect(first[3]).not.toBe(second[0])
+    const before = cursor
+    expect(take(false)).toBeNull()
+    expect(cursor).toBe(before)
+    expect(take(true)).toBe('uk_guard')
   })
 })

@@ -194,18 +194,18 @@ body {
   min-width: 48px;
   min-height: 44px;
   padding: 0 10px;
-  border: 0;
+  border: 2px solid #ffffff;
   border-radius: 999px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.62);
-  font: 600 11px/1 system-ui, sans-serif;
+  background: rgba(70, 130, 220, 0.94);
+  color: #ffffff;
+  font: 700 13px/1 system-ui, sans-serif;
   white-space: nowrap;
-  opacity: 0.55;
+  opacity: 1;
   touch-action: manipulation;
 }
 
 .portal-chip[aria-disabled='true'] {
-  opacity: 0.28;
+  opacity: 0.45;
 }
 
 .portal-chip:focus-visible,

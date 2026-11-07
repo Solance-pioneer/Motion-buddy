@@ -13,9 +13,9 @@ import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCountrySting, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
-import { COUNTRY_MUSIC, pickCountry, sampleCountry, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
+import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
@@ -143,7 +143,7 @@ export function App() {
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
   const sceneRef = useRef<
     | { kind: 'costume'; key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean }
-    | { kind: 'country'; key: CountryKey; started: number; banked: number; paused: boolean; cueFired: boolean; leadUntil: number; reduced: boolean }
+    | { kind: 'country'; key: CountryKey; started: number; banked: number; paused: boolean; cueFired: boolean; stingFired: boolean; leadUntil: number; reduced: boolean }
     | null
   >(null)
   const cancelCountryRef = useRef<() => void>(() => {})
@@ -151,6 +151,7 @@ export function App() {
   const waitRelease = useRef(false)
   const calmRef = useRef(0)
   const lastScene = useRef<SceneKey | null>(null)
+  const countryCursor = useRef(0)
   const openRef = useRef(false)
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
@@ -364,12 +365,21 @@ export function App() {
     }
     const glance = svg.querySelector('[data-part="glance"]') as SVGGElement | null
     const uk = pose.layers['overlay:uk_guard']
+    const france = pose.layers['overlay:france_cafe']
+    const egypt = pose.layers['overlay:egypt_pharaoh']
+    const eagle = pose.layers['prop:us_eagle']
     if (glance && uk && uk.opacity > 0.01) {
       const placed = /translate\(\s*(-?\d+(?:\.\d+)?)(?:\s+|,)(-?\d+(?:\.\d+)?)/.exec(glance.getAttribute('transform') || '')
       const gx = placed ? Number(placed[1]) : 0
       const gy = placed ? Number(placed[2]) : 0
       // Approved board: translate(90 102) scale(1.8) in 360 space is half size at (25, 28.333) here.
       glance.setAttribute('transform', `translate(${(25 + gx * 0.5).toFixed(3)} ${(28.333 + gy * 0.5).toFixed(3)}) scale(0.5)`)
+    } else if (glance && france && france.opacity > 0.2) {
+      glance.setAttribute('transform', 'translate(0 0)')
+    } else if (glance && egypt && egypt.opacity > 0.2) {
+      glance.setAttribute('transform', 'translate(0 6)')
+    } else if (glance && eagle && eagle.opacity > 0.2 && pose.sx < 0.9) {
+      glance.setAttribute('transform', 'translate(0 0)')
     }
   }
   const beginScene = (key: SceneKey) => {
@@ -394,6 +404,7 @@ export function App() {
       banked: 0,
       paused: false,
       cueFired: false,
+      stingFired: false,
       leadUntil: performance.now() + (reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal),
       reduced,
     }
@@ -444,6 +455,15 @@ export function App() {
         current.banked = 0
         const status = soundStatus()
         if (!status.muted && status.unlocked) playCountryMusic(COUNTRY_MUSIC[current.key])
+      }
+      const elapsedForSting = current.banked + (current.paused ? 0 : now - current.started)
+      const stingDue = current.key === 'uk_guard' || (current.key === 'egypt_pharaoh' && elapsedForSting >= EGYPT_WONDER_S * 1000)
+      if (!current.stingFired && stingDue && now >= current.leadUntil) {
+        current.stingFired = true
+        const status = soundStatus()
+        if (!status.muted && status.unlocked) {
+          playCountrySting(current.key === 'uk_guard' ? 'uk_soft_march_once' : 'egypt_wonder_once')
+        }
       }
       bolt?.setAttribute('data-on', '0')
       const elapsed = current.banked + (current.paused ? 0 : now - current.started)
@@ -589,6 +609,7 @@ export function App() {
 
   const onSample = useCallback(
     (sample: { x: number; y: number; level: number }) => {
+      if (sceneRef.current?.kind === 'country') return
       engine.feedLook(sample.x, sample.y)
       engine.feedMotion(sample.level)
     },
@@ -632,6 +653,7 @@ export function App() {
     playChirp()
   }, [engine, playChirp, publish, soundOn])
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
+    if (sceneRef.current?.kind === 'country') return
     engine.feedAcceleration(magnitude, lateral)
     const status = soundStatus()
     const state = engine.snapshot()
@@ -881,6 +903,7 @@ export function App() {
           banked: ms,
           paused: true,
           cueFired: true,
+          stingFired: true,
           leadUntil: 0,
           reduced,
         }
@@ -1023,7 +1046,9 @@ export function App() {
           onClick={() => {
             if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion) return
             unlockQuiet()
-            beginCountry(pickCountry())
+            const turn = takeCountryTurn(countryCursor.current, true)
+            if (!turn.key || !beginCountry(turn.key)) return
+            countryCursor.current = turn.cursor
           }}
         >
           <span>Teleport</span>

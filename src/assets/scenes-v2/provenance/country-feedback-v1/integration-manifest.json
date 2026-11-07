@@ -1,0 +1,89 @@
+{
+  "pack": "motion-buddy-country-feedback-v1",
+  "scope": "Two original finite sound cues and revised original Eiffel prop only. No app edits or other asset changes.",
+  "audio": [
+    {
+      "key": "egypt_wonder_once",
+      "app": "audio/app/egypt_wonder_once_app_pcm16_48k.wav",
+      "master": "audio/masters/egypt_wonder_once_master_f32_48k.wav",
+      "duration_seconds": 1.6,
+      "peak_dbfs": -18.99886102545673,
+      "rms_dbfs": -25.851223056854288,
+      "loop": false
+    },
+    {
+      "key": "uk_soft_march_once",
+      "app": "audio/app/uk_soft_march_once_app_pcm16_48k.wav",
+      "master": "audio/masters/uk_soft_march_once_master_f32_48k.wav",
+      "duration_seconds": 8.0,
+      "peak_dbfs": -18.99886102545673,
+      "rms_dbfs": -36.9449466256105,
+      "loop": false
+    }
+  ],
+  "uk_beat_onsets_seconds": [
+    1.25,
+    1.75,
+    2.25,
+    2.75,
+    3.25,
+    3.75,
+    4.25,
+    4.75,
+    5.25,
+    5.75,
+    6.25,
+    6.75
+  ],
+  "egypt_cue": {
+    "scene_start_seconds": 3.0,
+    "play_count": 1,
+    "intent": "Above pyramids looking down: 1.6s rounded synthetic oo-OO-oo."
+  },
+  "uk_cue": {
+    "scene_start_seconds": 0,
+    "play_count": 1,
+    "intent": "March left/right to listed beat times; stop by 7 seconds. Existing 8-second scene unchanged."
+  },
+  "mix": "Keep existing country music. Cues peak -19dBFS; duck music by 3dB during audible cue; preserve limiter/headroom, immediate mute, cleanup. Never loop/retrigger or add duplicate cue.",
+  "eiffel": {
+    "path": "svg/props/france_eiffel_tower.svg",
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "alpha_bounds": [
+      255,
+      26,
+      353,
+      320
+    ],
+    "layer": "world-space backdrop below Buddy, not costume-local",
+    "reference_limitation": "No user attachment exposed to Studio; original general-knowledge daylight redraw only, not a reference match.",
+    "provenance": "Original SVG geometry; no image, trace, samples or external downloads."
+  },
+  "integration": "Use current coding workstream. Attach beret/ascot to face transformation. Egypt face+hat shrink/rise above pyramids; USA eagle and tiny Buddy travel together. Preserve durations, scene locks, reduced motion, exact return. Mike authorised changes without additional design approval.",
+  "qa": {
+    "wav_headers_sample_counts_quantization": "pass",
+    "finite_no_clipping_zero_endpoints": "pass",
+    "svg_xml_bounds": "pass",
+    "not_performed": [
+      "human listening",
+      "runtime integration",
+      "phone test",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "b4054c14497bbf655f77e96fccf3e29512a629e0196bb3306858ceaac21db30c",
+    "audio/app/egypt_wonder_once_app_pcm16_48k.wav": "f9aa04a607e519af7e1b8644eb375866b67ebf15ac75f94f37bdef3b71ebe3a2",
+    "audio/app/uk_soft_march_once_app_pcm16_48k.wav": "a6f1e98d53edd38042a696308c7f26798ea832cfc631a98cd9ec816860fa1b68",
+    "audio/masters/egypt_wonder_once_master_f32_48k.wav": "b4653195678f556e592be38e73254c9657412415a2ef44c7faa3918e74f4bfa7",
+    "audio/masters/uk_soft_march_once_master_f32_48k.wav": "0f8e40a92ded9f0dff0dd188c52388ab12509368c7521450290bce99bcab7255",
+    "board/Eiffel-original-before-after.png": "51f619fc904b3e2cbbeff2e0a2fe13c2cf02ac255fe074541f2814772d7ccf9b",
+    "src/create_patch.py": "d7c06a7b187483b720eaf1c536ba4b308a84fe119c0ab04d17f7c83a5a6902bf",
+    "svg/props/france_eiffel_tower.svg": "57e13c7996127d6ca10d9ffcc61500b79446b75200437ff8ea7f9ded143ad631"
+  }
+}
