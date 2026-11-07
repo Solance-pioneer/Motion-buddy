@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
-import type { PoseId } from './logic/library.ts'
+import type { PoseId, Profile } from './logic/library.ts'
 import { applyPose, type FaceHandles, type FaceStyle } from './view/applyPose.ts'
 import { FaceBlend } from './view/features.ts'
 import { glanceOffset } from './view/glance.ts'
@@ -8,13 +8,16 @@ import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
 import { Face } from './view/Face.tsx'
 import { CountryBackdrop, CountryEagle } from './view/country-art.tsx'
+import flagsRaw from './assets/drive-audio-v1/svg/race_flags.svg?raw'
+import confettiRaw from './assets/drive-audio-v1/svg/race_confetti.svg?raw'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt, type MotionUiStatus } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCountrySting, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
-import { carTiltLive, smoothCarTilt, type CarTilt } from './logic/car-tilt.ts'
+import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
+import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -69,12 +72,6 @@ type TestApi = {
   showCountry: (key: CountryKey, ms: number) => boolean
   nudgeCountry: () => boolean
   sceneAudio: () => { active: boolean }
-}
-
-function leanWord(throttle: number): 'accel' | 'brake' | 'neutral' {
-  if (throttle > 0.08) return 'accel'
-  if (throttle < -0.08) return 'brake'
-  return 'neutral'
 }
 
 function prefersReducedMotion(): boolean {
@@ -146,7 +143,7 @@ export function App() {
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
   const tapTimer = useRef(0)
-  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, onFace: false, mode: 'chase' as PetMode, dragging: false })
+  const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, wide: 1, onFace: false, mode: 'chase' as PetMode, dragging: false, downAt: 0, sounded: false, tucked: false, boopUntil: 0 })
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
   const sceneRef = useRef<
     | { kind: 'costume'; key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean }
@@ -161,6 +158,10 @@ export function App() {
   const countryCursor = useRef(0)
   const carTarget = useRef<CarTilt>({ throttle: 0, bank: 0 })
   const carShown = useRef<CarTilt>({ throttle: 0, bank: 0 })
+  const driveLook = useRef<CarLook>('neutral')
+  const driveClock = useRef<DriveSoundClock>(initialDriveSoundClock())
+  const raceWas = useRef<Profile>('desk')
+  const raceTimer = useRef(0)
   const tiltStatusRef = useRef<MotionUiStatus>('idle')
   const openRef = useRef(false)
   const damp = (current: number, target: number, dt: number, ms: number) => {
@@ -266,7 +267,7 @@ export function App() {
     return { left: left - pad, top: top - pad, right: right + pad, bottom: bottom + pad }
   }
   const drawnHit = (x: number, y: number, was: boolean) => {
-    const enter = drawnCluster(10)
+    const enter = drawnCluster(36)
     const leave = drawnCluster(28)
     const inside = (box: { left: number; top: number; right: number; bottom: number } | null) =>
       Boolean(box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom)
@@ -279,20 +280,27 @@ export function App() {
     if (p.dragging) aimPet(p.nx, p.ny, true)
     const reduced = engine.snapshot().reduced
     const touching = p.dragging && drawnHit(p.px, p.py, p.onFace)
-    if (touching && !p.onFace) playContactVariant()
     if (touching) p.onFace = true
-    const squeezeTarget = reduced || !p.onFace ? 1 : 0.9
-    p.squeeze = damp(p.squeeze, squeezeTarget, dt, reduced ? 0 : 140)
-    const posMs = reduced ? 0 : p.dragging ? 90 : 520
-    const squMs = reduced ? 0 : p.dragging ? 110 : 250
+    const spring = !p.dragging && performance.now() < p.boopUntil
+    const squeezeTarget = reduced || !touching ? (spring ? 1.05 : 1) : 0.84
+    const wideTarget = reduced || !touching ? (spring ? 0.96 : 1) : 1.12
+    const squMs = reduced ? 0 : touching ? 70 : 120
+    p.squeeze = damp(p.squeeze, squeezeTarget, dt, squMs)
+    p.wide = damp(p.wide, wideTarget, dt, squMs)
+    if (!p.dragging && !p.sounded && heldRef.current && performance.now() - p.downAt > 340) {
+      p.tucked = true
+      p.sounded = true
+      playPetNote(cueForGesture('tuck'))
+    }
+    const posMs = reduced ? 0 : p.dragging ? 70 : 280
     p.x = damp(p.x, reduced ? 0 : p.tx, dt, posMs)
     p.y = damp(p.y, reduced ? 0 : p.ty, dt, posMs)
     p.sx = damp(p.sx, reduced ? 1 : p.tsx, dt, squMs)
     p.sy = damp(p.sy, reduced ? 1 : p.tsy, dt, squMs)
     p.ox = damp(p.ox, p.tox, dt, squMs)
     p.oy = damp(p.oy, p.toy, dt, squMs)
-    const showSx = Math.max(0.76, p.sx * p.squeeze)
-    const showSy = Math.max(0.8, p.sy * p.squeeze)
+    const showSx = Math.max(0.76, p.sx * p.wide)
+    const showSy = Math.max(0.72, p.sy * p.squeeze * (p.tucked && !p.dragging && !reduced ? 0.92 : 1))
     const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
     if (svg) {
       svg.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${showSx.toFixed(3)}, ${showSy.toFixed(3)})`
@@ -303,12 +311,11 @@ export function App() {
       root.dataset.pet = `${p.x.toFixed(1)},${p.y.toFixed(1)},${showSx.toFixed(2)},${showSy.toFixed(2)}`
       root.dataset.petMode = p.dragging ? p.mode : 'rest'
       const carOn = engine.snapshot().profile === 'car' && !engine.snapshot().reduced && !sceneRef.current && tiltStatusRef.current === 'active'
+      const lean = carFace(carShown.current)
       if (carOn && !p.dragging && svg) {
-        const lean = carShown.current
-        svg.style.transform = `translate(0px, ${(-lean.throttle * 10).toFixed(1)}px) rotate(${(lean.bank * 8).toFixed(1)}deg) scale(1, ${(1 + lean.throttle * 0.06).toFixed(3)})`
+        svg.style.transform = `translate(${lean.x.toFixed(1)}px, ${lean.y.toFixed(1)}px) rotate(${lean.rotate.toFixed(1)}deg) scale(${lean.sx.toFixed(3)}, ${lean.sy.toFixed(3)})`
       }
-      const label = !carOn ? 'off' : leanWord(carShown.current.throttle)
-      root.dataset.car = label
+      root.dataset.car = carOn ? lean.state : 'off'
       root.dataset.carBank = carShown.current.bank.toFixed(2)
       root.dataset.squeeze = p.squeeze.toFixed(2)
       root.dataset.contact = contactStatus().active ? 'on' : 'off'
@@ -563,6 +570,8 @@ export function App() {
   const accentRef = useRef(accent)
   const blendRef = useRef(new FaceBlend())
   const [promptDone, setPromptDone] = useState(false)
+  const [raceOn, setRaceOn] = useState(false)
+  const [raceMarks, setRaceMarks] = useState(false)
 
   const publish = useCallback((state: BuddyState, dt = 0) => {
     const root = rootRef.current
@@ -593,6 +602,16 @@ export function App() {
     const carVisual = state.profile === 'car' && !state.reduced && !sceneRef.current && tiltStatusRef.current === 'active'
     if (!carVisual) carTarget.current = { throttle: 0, bank: 0 }
     carShown.current = smoothCarTilt(carShown.current, carTarget.current, dt)
+    const look = carFace(carShown.current).state
+    if (carVisual) {
+      const step = driveCueOnEntry(driveLook.current, look, performance.now(), driveClock.current)
+      driveClock.current = step.clock
+      driveLook.current = look
+      if (step.key) playDriveCue(step.key)
+    } else if (driveLook.current !== 'neutral') {
+      driveLook.current = 'neutral'
+      driveClock.current = { ...driveClock.current, neutralSince: performance.now() }
+    }
     const played = state.showcase ? sampleCandidate(state.showcase.id, state.showcase.elapsed, state.reduced, 'soft') : null
     const features = blendRef.current.sample(
       state.expression,
@@ -609,7 +628,7 @@ export function App() {
     if (handlesRef.current) {
       applyPose(handlesRef.current, features, state.blink, colors.face, state.gazeX, state.gazeY)
       if (state.profile === 'car' && !sceneRef.current) {
-        handlesRef.current.speed.setAttribute('opacity', Math.max(0, carShown.current.throttle).toFixed(2))
+        handlesRef.current.speed.setAttribute('opacity', carFace(carShown.current).speed.toFixed(2))
       }
     }
     const cue = stepOriginalCue(
@@ -684,9 +703,13 @@ export function App() {
       return
     }
     if (!state.reduced) engine.requestGreeting()
+    if (!pet.current.sounded) {
+      pet.current.sounded = true
+      playPetNote(cueForGesture('tap'))
+    }
+    pet.current.boopUntil = performance.now() + 420
     publish(engine.snapshot())
-    playChirp()
-  }, [engine, playChirp, publish, soundOn])
+  }, [engine, publish, soundOn])
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
     if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
     engine.feedAcceleration(magnitude, lateral)
@@ -1004,6 +1027,9 @@ export function App() {
           if (sceneRef.current || waitRelease.current) return
           unlockQuiet()
           setMuteLit(true)
+          pet.current.downAt = performance.now()
+          pet.current.sounded = false
+          pet.current.tucked = false
           const step = touchDown(touch.current, event.clientX, event.clientY, performance.now())
           touch.current = step.clock
           window.clearTimeout(tapTimer.current)
@@ -1019,10 +1045,17 @@ export function App() {
           const ny = ((event.clientY - rect.top) / rect.height) * 2 - 1
           pet.current.px = event.clientX
           pet.current.py = event.clientY
-          if (step.chirp) {
-            pet.current.mode = pet.current.mode === 'dodge' ? 'chase' : 'dodge'
-            beginContact()
+          const moved = Math.hypot(event.movementX, event.movementY)
+          const fast = moved > 18
+          if (step.chirp && !pet.current.sounded) {
+            const onFace = drawnHit(event.clientX, event.clientY, false)
+            const gesture = classifyStroke(onFace, fast)
+            pet.current.mode = gesture === 'dodge' ? 'dodge' : 'chase'
+            pet.current.sounded = true
+            playPetNote(cueForGesture(gesture))
           }
+          const dir = pet.current.mode === 'dodge' ? -1 : 1
+          engine.feedLook(Math.max(-1, Math.min(1, nx * dir)), Math.max(-1, Math.min(1, ny * dir * 0.6)))
           aimPet(nx, ny, true)
         }}
         onPointerUp={() => {
@@ -1034,8 +1067,9 @@ export function App() {
           }
           const step = touchUp(touch.current, performance.now())
           touch.current = step.clock
+          if (pet.current.onFace) pet.current.boopUntil = performance.now() + 480
+          pet.current.tucked = false
           releasePet()
-          endContact(130)
           engine.feedLook(0, 0)
           if (step.openMenu) {
             setSeenControls(true)
@@ -1063,6 +1097,12 @@ export function App() {
       </svg>
         <div className="face-stack">
           <CountryBackdrop />
+          {raceMarks ? (
+            <svg className={view.reduced ? 'race-world race-world-still' : 'race-world'} viewBox="0 0 100 100" aria-hidden="true">
+              <g dangerouslySetInnerHTML={{ __html: flagsRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
+              <g className="race-confetti" dangerouslySetInnerHTML={{ __html: confettiRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
+            </svg>
+          ) : null}
           <Face onReady={onReady} />
           <CountryEagle />
         </div>
@@ -1165,8 +1205,36 @@ onClick={() => {
             if (profile !== 'car') {
               carTarget.current = { throttle: 0, bank: 0 }
               carShown.current = { throttle: 0, bank: 0 }
+              setRaceOn(false)
+              setRaceMarks(false)
+              window.clearTimeout(raceTimer.current)
+              stopDriveCue(80)
             }
             engine.setProfile(profile)
+            publish(engine.snapshot())
+          }}
+          raceOn={raceOn}
+          onToggleRace={() => {
+            if (sceneRef.current) return
+            if (raceOn) {
+              setRaceOn(false)
+              setRaceMarks(false)
+              window.clearTimeout(raceTimer.current)
+              stopDriveCue(80)
+              engine.setProfile(raceWas.current)
+              publish(engine.snapshot())
+              return
+            }
+            raceWas.current = engine.snapshot().profile
+            engine.setProfile('car')
+            setRaceOn(true)
+            unlockQuiet()
+            setPromptDone(true)
+            if (tilt.status !== 'active') void tilt.enable()
+            driveClock.current = { ...driveClock.current, lastAny: performance.now() }
+            playDriveCue('race_activate_rev')
+            setRaceMarks(true)
+            raceTimer.current = window.setTimeout(() => setRaceMarks(false), 1_250)
             publish(engine.snapshot())
           }}
           onCarNeutral={() => {

@@ -51,6 +51,8 @@ export function Controls({
   onPresence,
   onProfile,
   onCarNeutral,
+  raceOn,
+  onToggleRace,
   onSelection,
   onToggleAuto,
   onAccent,
@@ -85,6 +87,8 @@ export function Controls({
   onPresence: (presence: Presence) => void
   onProfile: (profile: Profile) => void
   onCarNeutral: () => void
+  raceOn: boolean
+  onToggleRace: () => void
   onSelection: (selection: Selection) => void
   onToggleAuto: (expression: PoseId) => void
   onAccent: (accent: AccentId) => void
@@ -151,6 +155,9 @@ export function Controls({
             <button type="button" aria-pressed={profile === 'car'} onClick={() => onProfile('car')}>
               Car
             </button>
+            <button type="button" aria-pressed={raceOn} onClick={onToggleRace}>
+              Race
+            </button>
             <button type="button" aria-pressed={profile === 'wrist'} onClick={() => onProfile('wrist')}>
               Wrist
             </button>
@@ -174,7 +181,7 @@ export function Controls({
             <button type="button" onClick={() => onPlayScene('racer')}>Little racer</button>
             <button type="button" onClick={() => onPlayScene('sheet_ghost')}>Sheet ghost</button>
           </div>
-          <p className="note">Each scene plays through, then Buddy is plain again. Little racer is that short scene. Car tilt is the phone lean while Car is selected. Mute still silences a scene.</p>
+          <p className="note">Each scene plays through, then Buddy is plain again. Little racer is that short scene. Race turns on Car tilt and is not Little racer. Mute still silences a scene.</p>
         </fieldset>
 
         <fieldset>

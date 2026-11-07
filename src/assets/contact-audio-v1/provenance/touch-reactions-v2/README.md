@@ -1,0 +1,1 @@
+Small touch-reaction patch. Two new finite squish/spring sounds; three existing original squeak/chirp/wobble alternatives reused byte-for-byte. No contact sustain/oooo loop: ONE sound per gesture. reaction-timings.json gives short touch and car-pose targets, not app code or tested sensor behavior. Existing six scene assets listed for reuse. Source and float masters retained.

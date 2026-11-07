@@ -2,6 +2,7 @@ import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
+import { DRIVE_WAV_BASE64 } from './drive-wavs.ts'
 import { COUNTRY_WAV_BASE64 } from './country-wavs.ts'
 import { COUNTRY_GAIN } from './countries.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
@@ -403,6 +404,7 @@ export function setSoundMuted(muted: boolean): void {
   if (muted) {
     endContact(130)
     stopSceneAudio(130)
+    stopDriveCue(80)
   }
   try {
     window.localStorage.setItem(SOUND_KEY, JSON.stringify({ muted, volume: 0.4 }))
@@ -414,6 +416,10 @@ export function setSoundMuted(muted: boolean): void {
 let playingUntil = 0
 
 const CONTACT_VARIANTS = ['pet_soft_squeak', 'pet_round_chirp', 'pet_content_wobble'] as const
+export type PetNote = (typeof CONTACT_VARIANTS)[number] | 'pet_squish_press' | 'pet_spring_release'
+const PET_REPEAT_MS = 900
+let lastPetKey = ''
+let lastPetAt = -1_000_000
 const BED_GAIN = 1
 const VARIANT_GAIN = 0.84
 const DUCK_GAIN = 0.35
@@ -425,7 +431,7 @@ export interface ContactStatus {
   active: boolean
   bedStarts: number
   variantStarts: number
-  variantKeys: ContactVariant[]
+  variantKeys: PetNote[]
   yields: number
   loop: boolean
   loopEnd: number
@@ -441,7 +447,7 @@ let variantGain: GainNode | null = null
 let variantReadyAt = 0
 let variantCursor = 0
 let bedStarts = 0
-let variantKeys: ContactVariant[] = []
+let variantKeys: PetNote[] = []
 let contactYields = 0
 
 export function contactActive(): boolean {
@@ -544,6 +550,35 @@ export function playContactVariant(now = performance.now()): ContactVariant | nu
     if (generation !== contactGen || bedSource !== bed || !bedGain) return
     fadeNode(bedGain, DUCK_GAIN, BED_GAIN, 0.12)
     bedLevel = BED_GAIN
+  }
+  return key
+}
+
+/** One short pet note. The same note waits. A different gesture may play as soon as the last note has ended. */
+export function playPetNote(key: PetNote, now = performance.now()): PetNote | null {
+  if (!context || gate.muted || !gate.unlocked || variantSource) return null
+  if (key === lastPetKey && now - lastPetAt < PET_REPEAT_MS) return null
+  const clip = pcm16(key, CONTACT_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(gain, 0, VARIANT_GAIN, 0.02)
+  source.start()
+  variantSource = source
+  variantGain = gain
+  variantKeys = [...variantKeys, key]
+  lastPetKey = key
+  lastPetAt = now
+  source.onended = () => {
+    if (variantSource === source) {
+      variantSource = null
+      variantGain = null
+    }
   }
   return key
 }
@@ -690,6 +725,54 @@ export function stopSceneAudio(ms = 130): void {
     fadeNode(stingGain, stingFrom, 0, seconds)
     stopLater(sting, seconds)
   }
+  stopDriveCue(ms)
+}
+
+let driveSource: AudioBufferSourceNode | null = null
+let driveGain: GainNode | null = null
+let driveToken = 0
+
+export type DriveCueKey = keyof typeof DRIVE_WAV_BASE64
+
+/** One short synthetic rev or brake. It does not loop and does not use the seven-second racer track. */
+export function playDriveCue(key: DriveCueKey): boolean {
+  if (!context || gate.muted || !gate.unlocked) return false
+  stopDriveCue(40)
+  const clip = pcm16(key, DRIVE_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(gain, 0, 0.8, 0.02)
+  source.start()
+  driveSource = source
+  driveGain = gain
+  const token = driveToken
+  source.onended = () => {
+    if (token !== driveToken) return
+    if (driveSource === source) {
+      driveSource = null
+      driveGain = null
+    }
+  }
+  return true
+}
+
+export function stopDriveCue(ms = 80): void {
+  const seconds = Math.max(0.04, Math.min(0.12, ms / 1000))
+  driveToken += 1
+  const source = driveSource
+  const gain = driveGain
+  driveSource = null
+  driveGain = null
+  if (source && gain) {
+    fadeNode(gain, 0.8, 0, seconds)
+    stopLater(source, seconds)
+  }
 }
 
 /** Fade the bed and any variant. Pending ended callbacks from this contact cannot start audio again. */
@@ -718,7 +801,7 @@ export function endContact(ms = 130): void {
 
 export function playCue(kind: Cue | null): boolean {
   if (!kind || !context || !gate.unlocked || gate.muted) return false
-  if (contactActive() || sceneGuard) {
+  if (contactActive() || variantSource || sceneGuard) {
     contactYields += 1
     return false
   }

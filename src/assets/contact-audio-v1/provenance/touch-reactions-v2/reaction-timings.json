@@ -1,0 +1,84 @@
+{
+  "coordinate_space": "Existing face transform only; no new face or costume. Numbers are small creative targets for Code to adapt to current bounded transforms, not runtime acceptance.",
+  "touch": {
+    "tap_boop": {
+      "seconds": 0.42,
+      "scale_keyframes": [
+        [
+          0,
+          1,
+          1
+        ],
+        [
+          0.1,
+          1.09,
+          0.9
+        ],
+        [
+          0.25,
+          0.97,
+          1.03
+        ],
+        [
+          0.42,
+          1,
+          1
+        ]
+      ],
+      "sound": "Choose ONE existing short squeak/chirp."
+    },
+    "pet_squish": {
+      "while_contact": "Ease towards scaleX1.15/scaleY.83 (bounded), tiny +/-2deg wobble only as finger moves. Preserve rounded white eyes and tiny mouth.",
+      "release_seconds": 0.48,
+      "release_scale_keyframes": [
+        [
+          0,
+          1.15,
+          0.83
+        ],
+        [
+          0.16,
+          0.96,
+          1.06
+        ],
+        [
+          0.3,
+          1.03,
+          0.98
+        ],
+        [
+          0.48,
+          1,
+          1
+        ]
+      ],
+      "sound": "Choose press OR spring-release as the single sound for this gesture, not both."
+    },
+    "finger_follow": {
+      "behavior": "Keep existing gaze tracking for finger on/around Buddy; allow small whole-face lean within existing safe bounds on the follow variant. Do not silently replace petting with follow-only. Give both predictable access (tap vs pet/drag or existing gesture routing).",
+      "sound": "At most ONE short nonrepeating alternative for gesture; visual tracking can stay continuous without audio."
+    }
+  },
+  "car_reaction_ideas": {
+    "acceleration": {
+      "scaleX": 0.94,
+      "scaleY": 1.06,
+      "translateY_face_units": 5
+    },
+    "brake": {
+      "scaleX": 1.1,
+      "scaleY": 0.88,
+      "translateY_face_units": -3
+    },
+    "left_bank": {
+      "rotate_degrees": -8,
+      "translateX_face_units": -4
+    },
+    "right_bank": {
+      "rotate_degrees": 8,
+      "translateX_face_units": 4
+    },
+    "instruction": "Support Mike four tilt mappings in existing prototype, not real-acceleration claims. Reuse canonical face, bounded eased blend .12-.20s and neutral return .30s. No new engine audio/long scene lock required for these continuous reactive poses. Code owns actual sensor calibration and mapping."
+  },
+  "policy": "These are responsive micro-animations, NOT full costume scenes. No seven-second input lock. Release/cancel/hidden restores neutral. Preserve reduced-motion/static reactions and mute. Existing full-scene lock remains unchanged; do not let reactive input interrupt finite costume scenes."
+}

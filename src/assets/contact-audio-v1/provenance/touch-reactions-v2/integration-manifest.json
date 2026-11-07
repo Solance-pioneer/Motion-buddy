@@ -1,0 +1,89 @@
+{
+  "pack": "motion-buddy-touch-reactions-v2",
+  "owner_direction": "Interactive and fun companion; prioritise car mode, squishy petting, squeak/squish feedback and finger-following variety. Build into preview then adjust.",
+  "audio": [
+    {
+      "key": "pet_soft_squeak",
+      "app": "audio/app/pet_soft_squeak_app_pcm16_48k.wav",
+      "provenance": "Original previously delivered contact cue; copied byte-for-byte, not resynthesised."
+    },
+    {
+      "key": "pet_round_chirp",
+      "app": "audio/app/pet_round_chirp_app_pcm16_48k.wav",
+      "provenance": "Original previously delivered contact cue; copied byte-for-byte, not resynthesised."
+    },
+    {
+      "key": "pet_content_wobble",
+      "app": "audio/app/pet_content_wobble_app_pcm16_48k.wav",
+      "provenance": "Original previously delivered contact cue; copied byte-for-byte, not resynthesised."
+    },
+    {
+      "key": "pet_squish_press",
+      "app": "audio/app/pet_squish_press_app_pcm16_48k.wav",
+      "master": "audio/masters/pet_squish_press_master_f32_48k.wav",
+      "seconds": 0.28,
+      "peak_dbfs": -17.00086661723974,
+      "rms_dbfs": -24.476272718850716,
+      "loop": false,
+      "provenance": "New original mathematical/filtered-noise sound, no samples or voice."
+    },
+    {
+      "key": "pet_spring_release",
+      "app": "audio/app/pet_spring_release_app_pcm16_48k.wav",
+      "master": "audio/masters/pet_spring_release_master_f32_48k.wav",
+      "seconds": 0.22,
+      "peak_dbfs": -17.00086661723974,
+      "rms_dbfs": -24.716526177556727,
+      "loop": false,
+      "provenance": "New original mathematical/filtered-noise sound, no samples or voice."
+    }
+  ],
+  "sound_policy": "SUPERSEDES old contact-loop instructions: no sustained curious_contact_loop/oooo loop. At most ONE selected finite sound per gesture; no pointermove retrigger, no stacked press+release, global minimum900ms spacing. Rotate short alternatives without immediate repeat. Sounds never block visual tracking/squish. Stop current sound immediately on mute/hidden/cancel.",
+  "source": "src/create_touch_patch.py; legacy_contact_generator_reference_only.py is provenance for copied cues, DO NOT run its main.",
+  "reaction_timings": "reaction-timings.json",
+  "ready_extra_scene_inventory": [
+    {
+      "name": "Astronaut, magician, bubble diver, disco",
+      "zip": "/workspace/motion-buddy-extra-scenes-v1-2026-11-06-spec-r1.zip",
+      "sha256": "70f16d66da575f6e90a9b4636e6567e9c454debbb1bcf5369da8547db384f23a"
+    },
+    {
+      "name": "Japan",
+      "zip": "/workspace/motion-buddy-japan-scene-v1-2026-11-07-layout-r1.zip",
+      "sha256": "86b39456f222309793694e24dfaf681edada06b7542114910ed287b24b97948c"
+    },
+    {
+      "name": "Australia revised art",
+      "zip": "/workspace/motion-buddy-australia-scene-v2-clean-art-2026-11-07.zip",
+      "sha256": "d497a151630aee674ad64d7a9461e7e3f50cdb63fd7d1908b76ea6ec876aeeed"
+    }
+  ],
+  "inventory_note": "Already delivered assets, not a claim of current app integration. Solance/Code should reuse any not yet surfaced before commissioning duplicates. Existing scene contracts retained.",
+  "qa": {
+    "new_wav_headers_count_quantization_finite_headroom_zero_endpoints": "pass",
+    "three_legacy_cues_copied_byte_identical": "pass",
+    "no_external_downloads_or_repo_changes": true,
+    "not_performed": [
+      "human listening",
+      "app integration/runtime",
+      "sensor/phone testing",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "11a808ac5cc19ab52f354ca8a51878f0077dfaa987b6cacf1041c2cae0b75767",
+    "audio/app/pet_content_wobble_app_pcm16_48k.wav": "507a0837d106d62a77ce7af2cd5784937b9d4cd14d4e4cfb9a1a9f2ed8c51dea",
+    "audio/app/pet_round_chirp_app_pcm16_48k.wav": "bb386e2895847c7ed9ca49cf5711e99b0e9046b67bcce9972ce166724b127edd",
+    "audio/app/pet_soft_squeak_app_pcm16_48k.wav": "3a555a6eeef942f4e634e63336aebac7b57cdabc6fb8efd2bf4b8ebc2969ebad",
+    "audio/app/pet_spring_release_app_pcm16_48k.wav": "0ff5f7beac3b3fc5b6746abecadba03d25eed9bf21f5760e6f1324e0e306aa9a",
+    "audio/app/pet_squish_press_app_pcm16_48k.wav": "34e67700ad85970ea40f1037e915743eff16e0010cbd1981b263434599d75a6f",
+    "audio/masters/pet_content_wobble_master_f32_48k.wav": "73060926f7a92797fdaf907660bb02a19fe7506e2b09fbce5417a23b318c4566",
+    "audio/masters/pet_round_chirp_master_f32_48k.wav": "4471942081f33bcefa69593adeb5177a1d7cc4c1aa5508ea1d2e2cbb9623c9d0",
+    "audio/masters/pet_soft_squeak_master_f32_48k.wav": "8c995f1c886df3a84f4575429d14c4725a1105a9440bda4a63997a4c7ba0c283",
+    "audio/masters/pet_spring_release_master_f32_48k.wav": "dc24dc7bbf36cda6371608460d5c0e4b218d8cbfa498a288467fcc8110ec9256",
+    "audio/masters/pet_squish_press_master_f32_48k.wav": "15aedca79906cb2321a296c6863da0cf26537ee35c43cf4ef08792c789ec06eb",
+    "reaction-timings.json": "ee26311a7cd0380b2677e543c29da5456ef8ab6e7f164bf76e1ceeaeb5c7ca88",
+    "src/create_touch_patch.py": "0705fca5823836fc3a9edc66b6075b5456209ee582fa4221d70c59e7e6b32613",
+    "src/legacy_contact_generator_reference_only.py": "98a4709747f3bfc79a612af7ede92823061027dc0048ac4cda0f84d2b24699bc"
+  }
+}

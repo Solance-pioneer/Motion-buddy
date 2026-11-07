@@ -60,6 +60,8 @@ for (const name of [
   'pet_soft_squeak_app_pcm16_48k.wav',
   'pet_round_chirp_app_pcm16_48k.wav',
   'pet_content_wobble_app_pcm16_48k.wav',
+  'pet_squish_press_app_pcm16_48k.wav',
+  'pet_spring_release_app_pcm16_48k.wav',
 ]) {
   copyFileSync(join('src/assets/contact-audio-v1/audio/app', name), join(contactDir, name))
 }
@@ -133,6 +135,8 @@ writeFileSync(
     'The rope hero plays hero_original_fanfare once from the start for 7 seconds. It replaces the short flourish and does not loop. The float master is not rewritten.',
     'The racer plays racer_accelerate_return_brake once from the start for 7 seconds. It replaces the wind cue and does not loop. The float master is not rewritten.',
     'Car tilt leans Buddy from a neutral you set: top toward you leans ahead, away eases off, left and right bank. It is phone tilt, not vehicle speed or brakes. A missing or denied sensor stays neutral.',
+    'A pet gesture plays one finite note: squish, spring, squeak, chirp, or wobble. It does not loop and a repeated note waits. Masters are not rewritten.',
+    'Race plays race_activate_rev once. Accelerate and brake each play one short synthetic cue when that lean begins, then wait. They are not a recorded engine and not the seven-second racer track. Masters are not rewritten.',
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
     'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, and egypt_cinematic play once at gain 0.68. Masters are not rewritten.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
@@ -165,6 +169,17 @@ for (const name of [
   copyFileSync(join('src/assets/scenes-v2/audio/app', name), join(countryDir, name))
 }
 copyFileSync(join('src/assets/scenes-v2/provenance/NOTICE.md'), join(countryDir, 'NOTICE.md'))
+const driveDir = join(dist, 'drive-audio-v1')
+mkdirSync(driveDir, { recursive: true })
+for (const name of [
+  'race_activate_rev_app_pcm16_48k.wav',
+  'car_accel_rev_a_app_pcm16_48k.wav',
+  'car_accel_rev_b_app_pcm16_48k.wav',
+  'car_brake_soft_a_app_pcm16_48k.wav',
+  'car_brake_soft_b_app_pcm16_48k.wav',
+]) {
+  copyFileSync(join('src/assets/drive-audio-v1/audio/app', name), join(driveDir, name))
+}
 const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.5.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })

@@ -9,6 +9,8 @@ const files = {
   pet_soft_squeak: ['src/assets/contact-audio-v1/audio/app/pet_soft_squeak_app_pcm16_48k.wav', '3a555a6eeef942f4e634e63336aebac7b57cdabc6fb8efd2bf4b8ebc2969ebad', 16320],
   pet_round_chirp: ['src/assets/contact-audio-v1/audio/app/pet_round_chirp_app_pcm16_48k.wav', 'bb386e2895847c7ed9ca49cf5711e99b0e9046b67bcce9972ce166724b127edd', 23040],
   pet_content_wobble: ['src/assets/contact-audio-v1/audio/app/pet_content_wobble_app_pcm16_48k.wav', '507a0837d106d62a77ce7af2cd5784937b9d4cd14d4e4cfb9a1a9f2ed8c51dea', 37440],
+  pet_squish_press: ['src/assets/contact-audio-v1/audio/app/pet_squish_press_app_pcm16_48k.wav', '34e67700ad85970ea40f1037e915743eff16e0010cbd1981b263434599d75a6f', 13440],
+  pet_spring_release: ['src/assets/contact-audio-v1/audio/app/pet_spring_release_app_pcm16_48k.wav', '0ff5f7beac3b3fc5b6746abecadba03d25eed9bf21f5760e6f1324e0e306aa9a', 10560],
 } as const
 
 class Param {

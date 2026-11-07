@@ -1,0 +1,126 @@
+{
+  "pack": "motion-buddy-race-mode-v1",
+  "scope": "One brief original race activation visual and synthetic finite audio variants. No app/button/sensor code, no recorded V8 file.",
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      100,
+      100
+    ],
+    "layer": "WORLD-space backdrop below existing Buddy; not face-local. SVGs contain no eyes/mouth. Preview canonical face is static reference ONLY.",
+    "intro_seconds": 1.25,
+    "fade_times_seconds": [
+      0,
+      0.12,
+      0.9,
+      1.25
+    ],
+    "motion": "Flags fixed, opacity fade only. Confetti may drift down<=5 canonical units and horizontally<=1 over1.25s; no strobe/flashing. Remove by1.25s, no particle system needed.",
+    "reduced_motion": "Static flags+confetti with opacity fade only.",
+    "trigger": "Once on explicit Race-mode activation, not every tilt/update. Never lock car input while art plays. Turning Race off, mute audio, hidden/pagehide or exit cleans sources/timers/art."
+  },
+  "audio": [
+    {
+      "key": "race_activate_rev",
+      "app": "audio/app/race_activate_rev_app_pcm16_48k.wav",
+      "master": "audio/masters/race_activate_rev_master_f32_48k.wav",
+      "seconds": 1.05,
+      "loop": false,
+      "peak_dbfs": -16.000367170932854,
+      "rms_dbfs": -23.821967307727718
+    },
+    {
+      "key": "car_accel_rev_a",
+      "app": "audio/app/car_accel_rev_a_app_pcm16_48k.wav",
+      "master": "audio/masters/car_accel_rev_a_master_f32_48k.wav",
+      "seconds": 0.7,
+      "loop": false,
+      "peak_dbfs": -16.000367170932854,
+      "rms_dbfs": -23.842069537335277
+    },
+    {
+      "key": "car_accel_rev_b",
+      "app": "audio/app/car_accel_rev_b_app_pcm16_48k.wav",
+      "master": "audio/masters/car_accel_rev_b_master_f32_48k.wav",
+      "seconds": 0.62,
+      "loop": false,
+      "peak_dbfs": -16.000367170932854,
+      "rms_dbfs": -23.848929150909125
+    },
+    {
+      "key": "car_brake_soft_a",
+      "app": "audio/app/car_brake_soft_a_app_pcm16_48k.wav",
+      "master": "audio/masters/car_brake_soft_a_master_f32_48k.wav",
+      "seconds": 0.42,
+      "loop": false,
+      "peak_dbfs": -16.000367170932854,
+      "rms_dbfs": -23.68326974324333
+    },
+    {
+      "key": "car_brake_soft_b",
+      "app": "audio/app/car_brake_soft_b_app_pcm16_48k.wav",
+      "master": "audio/masters/car_brake_soft_b_master_f32_48k.wav",
+      "seconds": 0.52,
+      "loop": false,
+      "peak_dbfs": -16.000367170932854,
+      "rms_dbfs": -23.697892693231964
+    }
+  ],
+  "cue_policy": "race_activate_rev plays once at activation0; then nothing loops. Acceleration/braking: choose one of two short variants per distinct CONDITION ENTRY (not every frame).>=1.5s global sound cooldown; require neutral>=.30s before rearming same event. No immediate repeat; do not stack activation rev with reaction sound. Current mute and cleanup apply. Do not reuse full seven-second scripted racer track for live car reactions.",
+  "motion_variants": {
+    "acceleration": [
+      "Small push-back stretch: scaleX.94 scaleY1.06 translateY+5 in face100 units, ease .15s.",
+      "Smaller excited lean: scaleX.97 scaleY1.04 rotate+2deg translateY+3, ease .15s."
+    ],
+    "braking": [
+      "Soft forward squash: scaleX1.10 scaleY.88 translateY-3, ease .12s then neutral .35s.",
+      "Small recoil: scaleX1.07 scaleY.92 translateY-2 then scaleX.98 scaleY1.03 rebound over .40s."
+    ],
+    "instruction": "Creative small targets, Code adapts current bounds/calibration. Rotate variations on event entry; preserve face paths/colours and banking. Reduced motion static expression or minimal scale, no bob."
+  },
+  "v8_limitation": "ALL supplied sounds are original SYNTHETIC placeholders, NOT a V8 recording or acoustically verified V8 model. Scout is researching a real recording separately; do not describe these as the requested recorded V8. External asset still requires Mike review before download under current project rule. Originals need no additional approval wait.",
+  "provenance": "Original handwritten checker flags/confetti geometry and original mathematical engine/brake synthesis; no brand, recording, sample, copied theme, external image or download.",
+  "ui_handoff": "Mike requests a more DISCREET Teleport button (latest direction overrides earlier prominence) and a distinct Race toggle. Code owns UI implementation, preserve discoverability/accessibility.",
+  "qa": {
+    "audio_headers_counts_finite_headroom_quantization_zero_endpoints": "pass",
+    "svg_xml_bounds": "pass",
+    "raster_bounds": {
+      "race_confetti.svg": [
+        6,
+        17,
+        391,
+        376
+      ],
+      "race_flags.svg": [
+        33,
+        22,
+        367,
+        196
+      ]
+    },
+    "not_performed": [
+      "human listening",
+      "app integration/runtime",
+      "phone/sensor testing",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "8f8272cda8e84e2281b0c5a5b2d4a05945598a400ae1346b113cb823958301b1",
+    "audio/app/car_accel_rev_a_app_pcm16_48k.wav": "4c46b666ae8f5d01f0a589f37e778a911cbfac19c7305fddcda27720ab1d95ff",
+    "audio/app/car_accel_rev_b_app_pcm16_48k.wav": "17378a1264ddda2b6220d2fc0910eea0800f9573c2fcca22e1128a873a0cde84",
+    "audio/app/car_brake_soft_a_app_pcm16_48k.wav": "bf89895aa448ce29e1aae32bcf6d0de928374aeb673ab8cbf69cfa630b345012",
+    "audio/app/car_brake_soft_b_app_pcm16_48k.wav": "0d11b7d2c6b5c0fb7f3ba071bbb81abb4495a66a50b3eb796977d59ff7c94669",
+    "audio/app/race_activate_rev_app_pcm16_48k.wav": "2c6e3f804484594c81a53b3e7be5221766663122dd13de2f7400715e5a2f6b79",
+    "audio/masters/car_accel_rev_a_master_f32_48k.wav": "25bcb707cd685c7f9fb32776b0ded12ce01561b908fd1d6a28128b7486f0f4c7",
+    "audio/masters/car_accel_rev_b_master_f32_48k.wav": "c05f2c482fb3e0ad0c1d401722ee939aa9e6701718d61e74e7c751d97aa13cae",
+    "audio/masters/car_brake_soft_a_master_f32_48k.wav": "6b31fda9986645b4e2d26ed0539f5829f3230e20e70bdff5528be225bede82ef",
+    "audio/masters/car_brake_soft_b_master_f32_48k.wav": "216bbe4ae2a0b3528f3071be025112fd349cd752872817aa82326d320e774d6f",
+    "audio/masters/race_activate_rev_master_f32_48k.wav": "3143270693b8f392dcd300e5013eb7e7fc120c04a79770ac7905c43e474217c9",
+    "preview/Race-intro-static-art.png": "9d1b68769bc56e9b8c0bb792258f892919f0110cf020f9a1e0a202922dfc3f62",
+    "src/create_race_patch.py": "372ad2c4601eb87c87b242ec17f73f565e5021574f9e1a08d01dd134705fabe8",
+    "svg/race_confetti.svg": "92c91e68f88017f30630102bc44df0edb2b579711f64bc588b83609750005dcd",
+    "svg/race_flags.svg": "b4677c13953a0d0f9d46c32ba9bada9eec0b8c05479dc2ec1871d254b28d691e"
+  }
+}

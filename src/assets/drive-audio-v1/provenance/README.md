@@ -1,0 +1,1 @@
+One bounded race-mode original asset patch. Flags/confetti+five short finite synthetic cues; NOT recorded V8. Source/float masters/PCM16 app copies. Play once/event, never continuous tilt audio. Code implements Race toggle, discreet Teleport, car reactions using existing app. No listening/app/phone/deployment claim.

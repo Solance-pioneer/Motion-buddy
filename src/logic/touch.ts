@@ -1,5 +1,5 @@
 export const DOUBLE_MS = 280
-export const DRAG_PX = 14
+export const DRAG_PX = 8
 export interface TouchClock {
   down: boolean
   second: boolean
