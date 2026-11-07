@@ -2,6 +2,8 @@ import { APPROVED_WAV_BASE64 } from './approved-wavs.ts'
 import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
+import { COUNTRY_WAV_BASE64 } from './country-wavs.ts'
+import { COUNTRY_GAIN } from './countries.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
@@ -551,6 +553,7 @@ export function playContactVariant(now = performance.now()): ContactVariant | nu
 let sceneGuard = false
 let sceneSource: AudioBufferSourceNode | null = null
 let sceneGain: GainNode | null = null
+let sceneLevel = 0.84
 let sceneToken = 0
 
 export function setSceneGuard(active: boolean): void {
@@ -578,7 +581,37 @@ export function playSceneCue(key: keyof typeof SCENE_WAV_BASE64): boolean {
   source.loop = false
   source.connect(gain)
   gain.connect(context.destination)
-  fadeNode(gain, 0, 0.84, 0.08)
+  sceneLevel = 0.84
+  fadeNode(gain, 0, sceneLevel, 0.08)
+  source.start()
+  sceneSource = source
+  sceneGain = gain
+  const token = sceneToken
+  source.onended = () => {
+    if (token !== sceneToken) return
+    if (sceneSource === source) {
+      sceneSource = null
+      sceneGain = null
+    }
+  }
+  return true
+}
+
+/** Full supplied country cue, once, through the same mute ramp as the other scenes. */
+export function playCountryMusic(key: keyof typeof COUNTRY_WAV_BASE64): boolean {
+  if (!context || gate.muted || !gate.unlocked) return false
+  stopSceneAudio(80)
+  const clip = pcm16(key, COUNTRY_WAV_BASE64[key])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  sceneLevel = COUNTRY_GAIN
+  fadeNode(gain, 0, sceneLevel, 0.04)
   source.start()
   sceneSource = source
   sceneGain = gain
@@ -598,10 +631,11 @@ export function stopSceneAudio(ms = 130): void {
   sceneToken += 1
   const source = sceneSource
   const gain = sceneGain
+  const from = sceneLevel
   sceneSource = null
   sceneGain = null
   if (source && gain) {
-    fadeNode(gain, 0.84, 0, seconds)
+    fadeNode(gain, from, 0, seconds)
     stopLater(source, seconds)
   }
 }

@@ -1,0 +1,891 @@
+{
+  "status": "ORIGINAL_ASSET_HANDOFF_NOT_INTEGRATED",
+  "approval": "Michael approved these country-scene concepts and requested the landmark/taller-hat revisions; exact new assets not yet owner-reviewed.",
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "reference_eye_rects": [
+      [
+        94,
+        140,
+        62,
+        44
+      ],
+      [
+        204,
+        140,
+        62,
+        44
+      ]
+    ],
+    "eye_rx": 23,
+    "reference_mouth": "M171 216 Q180 222 189 216",
+    "transform_origin_face_space": [
+      180,
+      190
+    ]
+  },
+  "input_policy": {
+    "lock_scope": "All face input (tap, double-tap menu gesture on face, drag/dodge/chase, petting, pestering counter), idle scheduler and motion/sensor reactions are locked for the full scene duration.",
+    "ignored_input": "Discarded, NOT queued. No delayed chirp/menu/squish after scene end.",
+    "held_pointer_at_end": "If any pointer is still down at scene end, normal gestures stay gated until that pointer is released/cancelled; only a NEW pointerdown starts a gesture.",
+    "start_gate": "Never start a scene (idle or otherwise) while a drag/pet contact is active or another scene is running; one scene at a time.",
+    "always_available": [
+      "mute (silences scene music immediately via gain ramp ~30-60 ms; visual continues)",
+      "visibilitychange hidden/pagehide: stop and dispose audio, cancel scene timers safely",
+      "browser/OS navigation and exit \u2014 never trapped; no fullscreen/kiosk capture"
+    ],
+    "finish": "Return to exact plain Buddy neutral (identity transform, default eyes/mouth, no overlay/prop, no audio source), then unlock."
+  },
+  "scenes": {
+    "uk_guard": {
+      "duration_seconds": 8.0,
+      "music": "uk_guard_march",
+      "summary": "Guard bearskin hat lowers; Buddy shrinks to fit beneath; marches left/right on each quarter beat to an original arrangement of the God Save the King opening; hat lifts, Buddy regrows.",
+      "beats": [
+        {
+          "from": 0.0,
+          "to": 0.5,
+          "action": "plain Buddy; hat descends from above screen"
+        },
+        {
+          "from": 0.5,
+          "to": 1.0,
+          "action": "hat seats; Buddy squashes/shrinks to 0.82 to fit"
+        },
+        {
+          "from": 1.0,
+          "to": 6.6,
+          "action": "march: step left/right on music quarter beats (period 0.556 s), small bob"
+        },
+        {
+          "from": 6.6,
+          "to": 7.3,
+          "action": "halt on final tonic; proud blink"
+        },
+        {
+          "from": 7.3,
+          "to": 8.0,
+          "action": "hat lifts away; Buddy regrows to exact neutral"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 0.5,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 1.0,
+            "tx": 0,
+            "ty": 12,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t_from": 1.0,
+            "t_to": 6.6,
+            "oscillate": {
+              "tx_amplitude_px": 26,
+              "period_seconds": 1.1111,
+              "ty_bob_px": 3,
+              "phase_locked_to_music_s": 0.5
+            }
+          },
+          {
+            "t": 6.6,
+            "tx": 0,
+            "ty": 12,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t": 7.3,
+            "tx": 0,
+            "ty": 12,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t": 8.0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          }
+        ],
+        "overlay:uk_guard": [
+          {
+            "t": 0,
+            "ty": -260,
+            "opacity": 1
+          },
+          {
+            "t": 0.5,
+            "ty": -60,
+            "opacity": 1
+          },
+          {
+            "t": 1.0,
+            "ty": 0,
+            "opacity": 1
+          },
+          {
+            "t": 7.3,
+            "ty": 0,
+            "opacity": 1
+          },
+          {
+            "t": 7.9,
+            "ty": -260,
+            "opacity": 0
+          }
+        ],
+        "prop:uk_big_ben": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "tx": 0,
+            "ty": 0,
+            "scale": 1,
+            "space": "world; registered 360x360; right-side backdrop; below ALL Buddy, overlay, flag and eagle layers"
+          },
+          {
+            "t": 0.3,
+            "opacity": 0
+          },
+          {
+            "t": 0.8,
+            "opacity": 0.72
+          },
+          {
+            "t": 7.2,
+            "opacity": 0.72
+          },
+          {
+            "t": 7.6,
+            "opacity": 0
+          },
+          {
+            "t": 8.0,
+            "opacity": 0
+          }
+        ]
+      },
+      "reduced_motion": "At 0.3 s crossfade (0.4 s) to static hat with Buddy at 0.82 scale; no marching; hold; crossfade back to neutral 7.2\u20137.6 s; full 8 s lock and music unchanged. Landmark uk_big_ben: static at same world placement; crossfade opacity 0 to .72 from 0.3 to 0.8 s, hold, crossfade out 7.2 to 7.6 s; absent at t=0 and end; no motion. Remove on hidden/pagehide/exit and exact-neutral finish.",
+      "neutral_start_end": {
+        "start": "exact plain Buddy (identity transform, no overlay/prop)",
+        "end": "exact plain Buddy; all tracks end at identity/opacity 0"
+      },
+      "layering": "face-local overlays BEHIND existing app eyes/mouth; props (flag, pyramids) behind face in world space; eagle prop above face; never replace eyes/mouth; uk_big_ben at lowest world-space layer, below ALL scene art, never face-local",
+      "easing": "ease-in-out cubic between keyframes unless noted; no instantaneous visible jumps (the 4.41 s wrap happens fully offscreen)",
+      "music_cue": {
+        "key": "uk_guard_march",
+        "at_seconds": 0.0,
+        "plays_full_scene": true,
+        "length_seconds": 8.0,
+        "loop": false,
+        "music_beats": [
+          {
+            "t": 0.5,
+            "label": "march step L"
+          },
+          {
+            "t": 1.0556,
+            "label": "march step R"
+          },
+          {
+            "t": 1.6111,
+            "label": "march step L"
+          },
+          {
+            "t": 2.1667,
+            "label": "march step R"
+          },
+          {
+            "t": 2.7222,
+            "label": "march step L"
+          },
+          {
+            "t": 3.2778,
+            "label": "march step R"
+          },
+          {
+            "t": 3.8333,
+            "label": "march step L"
+          },
+          {
+            "t": 4.3889,
+            "label": "march step R"
+          },
+          {
+            "t": 4.9444,
+            "label": "march step L"
+          },
+          {
+            "t": 5.5,
+            "label": "march step R"
+          },
+          {
+            "t": 6.0556,
+            "label": "march step L"
+          },
+          {
+            "t": 6.6111,
+            "label": "march step R"
+          },
+          {
+            "t": 7.1667,
+            "label": "march step L"
+          }
+        ]
+      },
+      "background_prop_cleanup": "Clear landmark on finish, cancellation, hidden/pagehide and exit; no timer or node retained. Full scene input lock and immediate mute unchanged.",
+      "overlay_geometry_note": "Taller crown requires overflow-visible inline SVG/group (or equivalent native path), transformed with existing face tracks BEFORE outer 360 viewport clipping. Do not rasterise/crop overlay to 360 first. Seated crown min y~6.8 including ty12; march bob +/-3 safe. Entry/exit offscreen clipping intentional. Crown base132 top-48 =180px vs128px before (+40.625%). Existing face tracks unchanged."
+    },
+    "france_cafe": {
+      "duration_seconds": 8.0,
+      "music": "france_cafe_waltz",
+      "summary": "Beret drops on with a little tilt-free settle, ascot fades in; Buddy sways gently in waltz time to an original caf\u00e9 tune, happy blink, props fade.",
+      "beats": [
+        {
+          "from": 0.0,
+          "to": 0.35,
+          "action": "plain Buddy"
+        },
+        {
+          "from": 0.35,
+          "to": 1.0,
+          "action": "beret drops in with small bounce; ascot fades in"
+        },
+        {
+          "from": 1.0,
+          "to": 6.3,
+          "action": "waltz sway: horizontal tx \u00b114 px on bar period 1.304 s, slight squash on beat 1"
+        },
+        {
+          "from": 6.3,
+          "to": 7.0,
+          "action": "content happy blink on melody final tonic"
+        },
+        {
+          "from": 7.0,
+          "to": 8.0,
+          "action": "beret and ascot fade; exact neutral"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t_from": 1.0,
+            "t_to": 6.3,
+            "oscillate": {
+              "tx_amplitude_px": 14,
+              "period_seconds": 2.6087,
+              "beat1_squash_sy": 0.96,
+              "phase_locked_to_music_s": 0.35
+            }
+          },
+          {
+            "t": 6.3,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 8.0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          }
+        ],
+        "overlay:france_cafe": [
+          {
+            "t": 0,
+            "ty": -200,
+            "opacity": 0
+          },
+          {
+            "t": 0.35,
+            "ty": -200,
+            "opacity": 1
+          },
+          {
+            "t": 0.8,
+            "ty": 6,
+            "opacity": 1
+          },
+          {
+            "t": 1.0,
+            "ty": 0,
+            "opacity": 1
+          },
+          {
+            "t": 7.0,
+            "ty": 0,
+            "opacity": 1
+          },
+          {
+            "t": 7.8,
+            "ty": 0,
+            "opacity": 0
+          }
+        ],
+        "prop:france_eiffel_tower": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "tx": 0,
+            "ty": 0,
+            "scale": 1,
+            "space": "world; registered 360x360; right-side backdrop; below ALL Buddy, overlay, flag and eagle layers"
+          },
+          {
+            "t": 0.35,
+            "opacity": 0
+          },
+          {
+            "t": 0.85,
+            "opacity": 0.72
+          },
+          {
+            "t": 7.0,
+            "opacity": 0.72
+          },
+          {
+            "t": 7.6,
+            "opacity": 0
+          },
+          {
+            "t": 8.0,
+            "opacity": 0
+          }
+        ]
+      },
+      "reduced_motion": "Crossfade static beret+ascot in 0.3\u20130.7 s, no sway; crossfade out 7.0\u20137.6 s; full lock/music unchanged. Landmark france_eiffel_tower: static at same world placement; crossfade opacity 0 to .72 from 0.35 to 0.85 s, hold, crossfade out 7.0 to 7.6 s; absent at t=0 and end; no motion. Remove on hidden/pagehide/exit and exact-neutral finish.",
+      "neutral_start_end": {
+        "start": "exact plain Buddy (identity transform, no overlay/prop)",
+        "end": "exact plain Buddy; all tracks end at identity/opacity 0"
+      },
+      "layering": "face-local overlays BEHIND existing app eyes/mouth; props (flag, pyramids) behind face in world space; eagle prop above face; never replace eyes/mouth; france_eiffel_tower at lowest world-space layer, below ALL scene art, never face-local",
+      "easing": "ease-in-out cubic between keyframes unless noted; no instantaneous visible jumps (the 4.41 s wrap happens fully offscreen)",
+      "music_cue": {
+        "key": "france_cafe_waltz",
+        "at_seconds": 0.0,
+        "plays_full_scene": true,
+        "length_seconds": 8.0,
+        "loop": false,
+        "music_beats": [
+          {
+            "t": 0.35,
+            "label": "waltz bar 1"
+          },
+          {
+            "t": 1.6543,
+            "label": "waltz bar 2"
+          },
+          {
+            "t": 2.9587,
+            "label": "waltz bar 3"
+          },
+          {
+            "t": 4.263,
+            "label": "waltz bar 4"
+          },
+          {
+            "t": 5.5674,
+            "label": "waltz bar 5"
+          },
+          {
+            "t": 6.8717,
+            "label": "waltz bar 6"
+          }
+        ]
+      },
+      "background_prop_cleanup": "Clear landmark on finish, cancellation, hidden/pagehide and exit; no timer or node retained. Full scene input lock and immediate mute unchanged."
+    },
+    "usa_eagle": {
+      "duration_seconds": 9.0,
+      "music": "usa_anthem_eagle",
+      "summary": "Flag unfurls behind Buddy; original eagle swoops in, carries Buddy offscreen, loops back and sets him down; flag fades.",
+      "beats": [
+        {
+          "from": 0.0,
+          "to": 0.45,
+          "action": "plain Buddy"
+        },
+        {
+          "from": 0.45,
+          "to": 1.6,
+          "action": "flag fades/slides up behind Buddy (prop layer behind face)"
+        },
+        {
+          "from": 1.6,
+          "to": 2.6,
+          "action": "eagle swoops in from upper right; grabs Buddy at ~2.6 s (music bar 2 downbeat ~2.48 s)"
+        },
+        {
+          "from": 2.6,
+          "to": 4.4,
+          "action": "eagle carries Buddy up/left offscreen (soft ease, no flash)"
+        },
+        {
+          "from": 4.4,
+          "to": 6.6,
+          "action": "eagle reappears from right carrying Buddy, glides back to centre"
+        },
+        {
+          "from": 6.6,
+          "to": 7.4,
+          "action": "sets Buddy down gently with small settle squash; eagle departs upward"
+        },
+        {
+          "from": 7.4,
+          "to": 9.0,
+          "action": "flag fades during tonic settle; exact neutral"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 2.6,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 2.8,
+            "tx": 0,
+            "ty": -14,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t": 4.4,
+            "tx": -420,
+            "ty": -260,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t": 4.41,
+            "tx": 420,
+            "ty": -200,
+            "sx": 0.82,
+            "sy": 0.82,
+            "note": "offscreen wrap while hidden"
+          },
+          {
+            "t": 6.6,
+            "tx": 0,
+            "ty": -14,
+            "sx": 0.82,
+            "sy": 0.82
+          },
+          {
+            "t": 7.0,
+            "tx": 0,
+            "ty": 4,
+            "sx": 1.04,
+            "sy": 0.94
+          },
+          {
+            "t": 7.4,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          }
+        ],
+        "prop:us_flag": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "ty": 40,
+            "x": 104,
+            "y": 258,
+            "scale": 0.8,
+            "space": "world, lower-centre, behind face"
+          },
+          {
+            "t": 1.6,
+            "opacity": 0.85,
+            "ty": 0
+          },
+          {
+            "t": 7.4,
+            "opacity": 0.85,
+            "ty": 0
+          },
+          {
+            "t": 8.6,
+            "opacity": 0,
+            "ty": 0
+          }
+        ],
+        "prop:us_eagle": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "tx": 420,
+            "ty": -260
+          },
+          {
+            "t": 1.6,
+            "opacity": 1,
+            "tx": 420,
+            "ty": -260
+          },
+          {
+            "t": 2.6,
+            "opacity": 1,
+            "tx": 0,
+            "ty": -110
+          },
+          {
+            "t": 4.4,
+            "opacity": 1,
+            "tx": -420,
+            "ty": -360
+          },
+          {
+            "t": 4.41,
+            "opacity": 1,
+            "tx": 420,
+            "ty": -300
+          },
+          {
+            "t": 6.6,
+            "opacity": 1,
+            "tx": 0,
+            "ty": -110
+          },
+          {
+            "t": 7.4,
+            "opacity": 1,
+            "tx": 120,
+            "ty": -400
+          },
+          {
+            "t": 7.6,
+            "opacity": 0,
+            "tx": 160,
+            "ty": -460
+          }
+        ],
+        "prop:usa_statue_of_liberty": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "tx": 0,
+            "ty": 0,
+            "scale": 1,
+            "space": "world; registered 360x360; right-side backdrop; below ALL Buddy, overlay, flag and eagle layers"
+          },
+          {
+            "t": 0.45,
+            "opacity": 0
+          },
+          {
+            "t": 0.95,
+            "opacity": 0.72
+          },
+          {
+            "t": 7.4,
+            "opacity": 0.72
+          },
+          {
+            "t": 8.6,
+            "opacity": 0
+          },
+          {
+            "t": 9.0,
+            "opacity": 0
+          }
+        ]
+      },
+      "reduced_motion": "No swoop/offscreen travel: crossfade in static flag behind Buddy with eagle perched static above at 0.5\u20131.0 s; hold; crossfade out 7.4\u20138.2 s. Full 9 s lock and music unchanged. Landmark usa_statue_of_liberty: static at same world placement; crossfade opacity 0 to .72 from 0.45 to 0.95 s, hold, crossfade out 7.4 to 8.6 s; absent at t=0 and end; no motion. Remove on hidden/pagehide/exit and exact-neutral finish.",
+      "neutral_start_end": {
+        "start": "exact plain Buddy (identity transform, no overlay/prop)",
+        "end": "exact plain Buddy; all tracks end at identity/opacity 0"
+      },
+      "layering": "face-local overlays BEHIND existing app eyes/mouth; props (flag, pyramids) behind face in world space; eagle prop above face; never replace eyes/mouth; usa_statue_of_liberty at lowest world-space layer, below ALL scene art, never face-local",
+      "easing": "ease-in-out cubic between keyframes unless noted; no instantaneous visible jumps (the 4.41 s wrap happens fully offscreen)",
+      "music_cue": {
+        "key": "usa_anthem_eagle",
+        "at_seconds": 0.0,
+        "plays_full_scene": true,
+        "length_seconds": 9.0,
+        "loop": false,
+        "music_beats": [
+          {
+            "t": 0.9187,
+            "label": "bar 1 downbeat"
+          },
+          {
+            "t": 2.7938,
+            "label": "bar 2 downbeat"
+          },
+          {
+            "t": 4.6688,
+            "label": "bar 3 downbeat"
+          },
+          {
+            "t": 6.5438,
+            "label": "bar 4 downbeat"
+          }
+        ]
+      },
+      "background_prop_cleanup": "Clear landmark on finish, cancellation, hidden/pagehide and exit; no timer or node retained. Full scene input lock and immediate mute unchanged."
+    },
+    "egypt_pharaoh": {
+      "duration_seconds": 9.5,
+      "music": "egypt_cinematic",
+      "summary": "Pharaoh headdress settles on Buddy; pyramids rise behind him with the music arc, Buddy squishes aside to make room, then pyramids sink and he recentres.",
+      "beats": [
+        {
+          "from": 0.0,
+          "to": 0.6,
+          "action": "plain Buddy; drone fades in"
+        },
+        {
+          "from": 0.6,
+          "to": 1.2,
+          "action": "headdress settles (first low drum 0.6 s)"
+        },
+        {
+          "from": 1.2,
+          "to": 5.05,
+          "action": "pyramids grow from ground (scaleY 0\u21921 anchored at y=330) with rising arc; drum hits at 2.85 s and 4.65 s push Buddy aside"
+        },
+        {
+          "from": 2.85,
+          "to": 5.05,
+          "action": "Buddy squishes aside: tx -40, sx .84, sy 1.06"
+        },
+        {
+          "from": 5.05,
+          "to": 7.1,
+          "action": "majestic hold at arc peak; slow proud blink"
+        },
+        {
+          "from": 7.1,
+          "to": 8.6,
+          "action": "pyramids sink; Buddy un-squishes and recentres on resolve"
+        },
+        {
+          "from": 8.6,
+          "to": 9.5,
+          "action": "headdress fades; exact neutral"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 2.85,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 3.3,
+            "tx": -30,
+            "ty": 0,
+            "sx": 0.86,
+            "sy": 1.07
+          },
+          {
+            "t": 4.65,
+            "tx": -40,
+            "ty": 0,
+            "sx": 0.84,
+            "sy": 1.06
+          },
+          {
+            "t": 7.1,
+            "tx": -40,
+            "ty": 0,
+            "sx": 0.84,
+            "sy": 1.06
+          },
+          {
+            "t": 8.4,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 9.5,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          }
+        ],
+        "overlay:egypt_pharaoh": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "ty": -30
+          },
+          {
+            "t": 0.6,
+            "opacity": 0,
+            "ty": -30
+          },
+          {
+            "t": 1.2,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 8.6,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 9.3,
+            "opacity": 0,
+            "ty": 0
+          }
+        ],
+        "prop:egypt_pyramids": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "scaleY": 0,
+            "anchor_y": 330
+          },
+          {
+            "t": 1.2,
+            "opacity": 1,
+            "scaleY": 0
+          },
+          {
+            "t": 5.05,
+            "opacity": 1,
+            "scaleY": 1
+          },
+          {
+            "t": 7.1,
+            "opacity": 1,
+            "scaleY": 1
+          },
+          {
+            "t": 8.6,
+            "opacity": 0,
+            "scaleY": 0
+          }
+        ]
+      },
+      "reduced_motion": "Static headdress and full pyramids crossfade in 0.6\u20131.2 s with Buddy unsquished at centre (pyramids behind); no growth/squish; crossfade out 8.4\u20139.0 s. Full lock/music unchanged.",
+      "neutral_start_end": {
+        "start": "exact plain Buddy (identity transform, no overlay/prop)",
+        "end": "exact plain Buddy; all tracks end at identity/opacity 0"
+      },
+      "layering": "face-local overlays BEHIND existing app eyes/mouth; props (flag, pyramids) behind face in world space; eagle prop above face; never replace eyes/mouth",
+      "easing": "ease-in-out cubic between keyframes unless noted; no instantaneous visible jumps (the 4.41 s wrap happens fully offscreen)",
+      "music_cue": {
+        "key": "egypt_cinematic",
+        "at_seconds": 0.0,
+        "plays_full_scene": true,
+        "length_seconds": 9.5,
+        "loop": false,
+        "music_beats": [
+          {
+            "t": 0.6,
+            "label": "low drum"
+          },
+          {
+            "t": 1.2,
+            "label": "arc begins (pyramids start)"
+          },
+          {
+            "t": 1.5,
+            "label": "low drum"
+          },
+          {
+            "t": 2.4,
+            "label": "low drum"
+          },
+          {
+            "t": 2.85,
+            "label": "low drum"
+          },
+          {
+            "t": 3.3,
+            "label": "low drum"
+          },
+          {
+            "t": 4.2,
+            "label": "low drum"
+          },
+          {
+            "t": 4.65,
+            "label": "low drum"
+          },
+          {
+            "t": 5.05,
+            "label": "arc peak (pyramids full)"
+          },
+          {
+            "t": 5.1,
+            "label": "low drum"
+          },
+          {
+            "t": 6.0,
+            "label": "low drum"
+          },
+          {
+            "t": 7.1,
+            "label": "resolve (settle)"
+          }
+        ]
+      }
+    }
+  },
+  "separate_scope": [
+    "driving mode"
+  ],
+  "extra_scenes_status": "Extra scenes are a separate package, not included here."
+}

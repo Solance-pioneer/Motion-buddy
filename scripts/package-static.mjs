@@ -129,6 +129,7 @@ writeFileSync(
     'Expressions original_sneeze, original_peekaboo, and original_pout_melt use the pose JSON samples.',
     'Sounds sneeze_zip, peek_pop, and pout_boop are the PCM16 48 kHz app copies. Masters are not rewritten.',
     'Contact petting uses curious_contact_loop at gain 1 and three variants at gain 0.84. Masters are not rewritten.',
+    'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, and egypt_cinematic play once at gain 0.68. Masters are not rewritten.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
     '',
   ].join('\n'),
@@ -144,6 +145,17 @@ for (const name of [
   copyFileSync(join('src/assets/scenes-v1/audio/app', name), join(sceneDir, name))
 }
 copyFileSync(join('src/assets/scenes-v1/scene-policy-and-timings.json'), join(sceneDir, 'scene-policy-and-timings.json'))
+const countryDir = join(dist, 'scenes-v2')
+mkdirSync(countryDir, { recursive: true })
+for (const name of [
+  'uk_guard_march_app_pcm16_48k.wav',
+  'france_cafe_waltz_app_pcm16_48k.wav',
+  'usa_anthem_eagle_app_pcm16_48k.wav',
+  'egypt_cinematic_app_pcm16_48k.wav',
+]) {
+  copyFileSync(join('src/assets/scenes-v2/audio/app', name), join(countryDir, name))
+}
+copyFileSync(join('src/assets/scenes-v2/provenance/NOTICE.md'), join(countryDir, 'NOTICE.md'))
 const zipPath = '/opt/cursor/artifacts/motion-buddy-customer-v3.5.zip'
 rmSync(zipPath, { force: true })
 execFileSync('zip', ['-r', zipPath, '.'], { cwd: dist })

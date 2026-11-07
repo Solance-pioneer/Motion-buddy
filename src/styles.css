@@ -64,12 +64,38 @@ body {
   outline-offset: -10px;
 }
 
-.face {
+.face-stack {
+  position: relative;
   width: min(82vmin, 82dvh, 640px);
+  aspect-ratio: 1 / 1;
+}
+
+.face {
+  width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
   display: block;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.country-world,
+.country-eagle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.country-world {
+  z-index: 0;
+}
+
+.country-eagle {
+  z-index: 2;
 }
 
 .scene-cord {
@@ -156,6 +182,63 @@ body {
 .mute-chip[aria-pressed='true'] {
   opacity: 0.95;
   color: #ffffff;
+}
+
+.portal-chip {
+  position: absolute;
+  z-index: 4;
+  top: max(8px, env(safe-area-inset-top));
+  right: calc(max(8px, env(safe-area-inset-right)) + 60px);
+  width: 48px;
+  height: 48px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font: 600 11px/1 system-ui, sans-serif;
+  opacity: 0.55;
+  touch-action: manipulation;
+}
+
+.portal-chip[aria-disabled='true'] {
+  opacity: 0.28;
+}
+
+.portal-chip:focus-visible,
+.mute-chip:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.portal-bolt {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 46%;
+  width: min(42vmin, 220px);
+  height: min(42vmin, 220px);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 420ms linear;
+}
+
+.portal-bolt[data-on='1'][data-reduced='1'] {
+  opacity: 0.22;
+}
+
+.portal-bolt[data-on='1']:not([data-reduced='1']) {
+  transition: none;
+  animation: portal-bolt 280ms linear 1;
+}
+
+@keyframes portal-bolt {
+  0% { opacity: 0; }
+  30% { opacity: 0.4; }
+  100% { opacity: 0; }
 }
 
 .sr-only {

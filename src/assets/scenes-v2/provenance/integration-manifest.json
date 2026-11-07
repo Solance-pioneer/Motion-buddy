@@ -1,0 +1,819 @@
+{
+  "status": "ORIGINAL_ASSET_HANDOFF_NOT_INTEGRATED_NOT_DEPLOYED",
+  "pack": "motion-buddy-country-scenes-v2-landmarks-meta-r1",
+  "approval_scope": "Michael approved these country-scene concepts and requested the landmark/taller-hat revisions; exact new assets not yet owner-reviewed.",
+  "source": {
+    "path": "src/finalize_metadata.py",
+    "sha256": "723badb6238f3cf6baa7018bdf6668e379aeb8c14afbe44067c1eca4c5474fa2",
+    "base_required": "/workspace/motion-buddy-country-scenes-v2-landmarks",
+    "no_generators_executed": true
+  },
+  "scene_spec": {
+    "path": "scene-spec.json",
+    "sha256": "6c57906aff4c9e6773391e6a39f5baae2e96ae3c81c7d1923c9286b9e9c71314"
+  },
+  "readme": {
+    "path": "README.md",
+    "sha256": "4d443079f21e7605bf8706c02e0a599c67c356e63e8d1b5c26359d7ae9c61a50"
+  },
+  "qa_report": {
+    "path": "qa-report.json",
+    "sha256": "d7488019ea7d38e82a6b8239b21307f3c81307afba5c2e32de2add00d4b55914"
+  },
+  "provenance": "Original procedural numpy additive/filtered synthesis and original hand-written SVG geometry. No samples, recordings, voices, downloaded scores/audio/art, or copied modern arrangements. French and Egypt music are newly composed; Egypt cue is Egyptian-inspired film-score style, not a reconstruction of ancient music or imitation of any soundtrack. v2 landmarks and taller bearskin are original geometric SVG paths from general landmark knowledge; no external assets or illuminated Eiffel design.",
+  "music": {
+    "uk_guard_march": {
+      "scene": "uk_guard",
+      "music_key": "uk_guard_march",
+      "scene_duration_seconds": 8.0,
+      "master": {
+        "path": "audio/masters/uk_guard_march_master_f32_48k.wav",
+        "sha256": "e41e9bc358d21b8fa5e788ed1cd20a57942ee6d3c57ac2a672099b1c1b090493",
+        "format": "IEEE float32 mono 48 kHz",
+        "n_samples": 384000,
+        "duration_seconds": 8.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -23.014,
+        "active_rms_dbfs": -22.587,
+        "dc_offset": 2.7692357428380407e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "app_copy": {
+        "path": "audio/app/uk_guard_march_app_pcm16_48k.wav",
+        "sha256": "4aff97692ad6fe8bbbbd7614f4f58f4f8668ec5b3e138b73c71a850fa5959f6c",
+        "format": "PCM16 mono 48 kHz",
+        "n_samples": 384000,
+        "duration_seconds": 8.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -23.014,
+        "active_rms_dbfs": -22.587,
+        "dc_offset": 7.51438820561421e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "music_beats": [
+        {
+          "t": 0.5,
+          "label": "march step L"
+        },
+        {
+          "t": 1.0556,
+          "label": "march step R"
+        },
+        {
+          "t": 1.6111,
+          "label": "march step L"
+        },
+        {
+          "t": 2.1667,
+          "label": "march step R"
+        },
+        {
+          "t": 2.7222,
+          "label": "march step L"
+        },
+        {
+          "t": 3.2778,
+          "label": "march step R"
+        },
+        {
+          "t": 3.8333,
+          "label": "march step L"
+        },
+        {
+          "t": 4.3889,
+          "label": "march step R"
+        },
+        {
+          "t": 4.9444,
+          "label": "march step L"
+        },
+        {
+          "t": 5.5,
+          "label": "march step R"
+        },
+        {
+          "t": 6.0556,
+          "label": "march step L"
+        },
+        {
+          "t": 6.6111,
+          "label": "march step R"
+        },
+        {
+          "t": 7.1667,
+          "label": "march step L"
+        }
+      ],
+      "arrangement": {
+        "tempo_bpm": 108,
+        "meter": "3/4",
+        "melody_start_s": 0.5,
+        "melody_end_s": 7.1667,
+        "resolution": "final G tonic chord held then faded"
+      }
+    },
+    "france_cafe_waltz": {
+      "scene": "france_cafe",
+      "music_key": "france_cafe_waltz",
+      "scene_duration_seconds": 8.0,
+      "master": {
+        "path": "audio/masters/france_cafe_waltz_master_f32_48k.wav",
+        "sha256": "da81481df56179a07b44c4278341259a6b0d170abb308cc179ecc2df0d71c47d",
+        "format": "IEEE float32 mono 48 kHz",
+        "n_samples": 384000,
+        "duration_seconds": 8.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -24.68,
+        "active_rms_dbfs": -24.341,
+        "dc_offset": -3.140889839951348e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "app_copy": {
+        "path": "audio/app/france_cafe_waltz_app_pcm16_48k.wav",
+        "sha256": "1d9615a9ffee8b87e91f2c26f17d357edb470a2166077da4c3e49b7127a5d59d",
+        "format": "PCM16 mono 48 kHz",
+        "n_samples": 384000,
+        "duration_seconds": 8.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -24.68,
+        "active_rms_dbfs": -24.341,
+        "dc_offset": -6.06634851120508e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "music_beats": [
+        {
+          "t": 0.35,
+          "label": "waltz bar 1"
+        },
+        {
+          "t": 1.6543,
+          "label": "waltz bar 2"
+        },
+        {
+          "t": 2.9587,
+          "label": "waltz bar 3"
+        },
+        {
+          "t": 4.263,
+          "label": "waltz bar 4"
+        },
+        {
+          "t": 5.5674,
+          "label": "waltz bar 5"
+        },
+        {
+          "t": 6.8717,
+          "label": "waltz bar 6"
+        }
+      ],
+      "arrangement": {
+        "tempo_bpm": 138,
+        "meter": "3/4",
+        "style": "original cafe waltz, accordion-like detuned additive lead, oom-pah-pah",
+        "resolution": "melody lands on tonic F, gentle fade"
+      }
+    },
+    "usa_anthem_eagle": {
+      "scene": "usa_eagle",
+      "music_key": "usa_anthem_eagle",
+      "scene_duration_seconds": 9.0,
+      "master": {
+        "path": "audio/masters/usa_anthem_eagle_master_f32_48k.wav",
+        "sha256": "81ec340ca5e5b593a7fa4d532424bd309f460376b7ca81157e6783066a519ddd",
+        "format": "IEEE float32 mono 48 kHz",
+        "n_samples": 432000,
+        "duration_seconds": 9.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -22.915,
+        "active_rms_dbfs": -22.537,
+        "dc_offset": -2.032036913803404e-08,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "app_copy": {
+        "path": "audio/app/usa_anthem_eagle_app_pcm16_48k.wav",
+        "sha256": "43b4f60ed0336f380123bc0ce64adbee69c45410bbbbe4257682b666adc25429",
+        "format": "PCM16 mono 48 kHz",
+        "n_samples": 432000,
+        "duration_seconds": 9.0,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -22.915,
+        "active_rms_dbfs": -22.537,
+        "dc_offset": -3.737104516849244e-08,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "music_beats": [
+        {
+          "t": 0.9187,
+          "label": "bar 1 downbeat"
+        },
+        {
+          "t": 2.7938,
+          "label": "bar 2 downbeat"
+        },
+        {
+          "t": 4.6688,
+          "label": "bar 3 downbeat"
+        },
+        {
+          "t": 6.5438,
+          "label": "bar 4 downbeat"
+        }
+      ],
+      "arrangement": {
+        "tempo_bpm": 96,
+        "meter": "3/4",
+        "melody_start_s": 0.45,
+        "melody_end_s": 7.95,
+        "resolution": "phrase ends on sol over F, then soft Bb tonic settle"
+      }
+    },
+    "egypt_cinematic": {
+      "scene": "egypt_pharaoh",
+      "music_key": "egypt_cinematic",
+      "scene_duration_seconds": 9.5,
+      "master": {
+        "path": "audio/masters/egypt_cinematic_master_f32_48k.wav",
+        "sha256": "72515b4228e067f6159069989224f42005699671b195d3c9d98de18bab4a7260",
+        "format": "IEEE float32 mono 48 kHz",
+        "n_samples": 456000,
+        "duration_seconds": 9.5,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -22.679,
+        "active_rms_dbfs": -22.247,
+        "dc_offset": 1.6064937078635584e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "app_copy": {
+        "path": "audio/app/egypt_cinematic_app_pcm16_48k.wav",
+        "sha256": "64c464fa653df9f08b141f717d56cf4f6d7ade02829f22054d48504d911ad3c2",
+        "format": "PCM16 mono 48 kHz",
+        "n_samples": 456000,
+        "duration_seconds": 9.5,
+        "sample_peak_dbfs": -11.0,
+        "full_rms_dbfs": -22.679,
+        "active_rms_dbfs": -22.247,
+        "dc_offset": 1.5553731583817621e-07,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "finite": true,
+        "clipped_samples": 0
+      },
+      "music_beats": [
+        {
+          "t": 0.6,
+          "label": "low drum"
+        },
+        {
+          "t": 1.2,
+          "label": "arc begins (pyramids start)"
+        },
+        {
+          "t": 1.5,
+          "label": "low drum"
+        },
+        {
+          "t": 2.4,
+          "label": "low drum"
+        },
+        {
+          "t": 2.85,
+          "label": "low drum"
+        },
+        {
+          "t": 3.3,
+          "label": "low drum"
+        },
+        {
+          "t": 4.2,
+          "label": "low drum"
+        },
+        {
+          "t": 4.65,
+          "label": "low drum"
+        },
+        {
+          "t": 5.05,
+          "label": "arc peak (pyramids full)"
+        },
+        {
+          "t": 5.1,
+          "label": "low drum"
+        },
+        {
+          "t": 6.0,
+          "label": "low drum"
+        },
+        {
+          "t": 7.1,
+          "label": "resolve (settle)"
+        }
+      ],
+      "arrangement": {
+        "style": "original cinematic cue; drone, low drum, rising phrygian-dominant arc on D",
+        "resolution": "open fifth D, long fade",
+        "not_claimed": "not authentic ancient Egyptian music; no imitation of any soundtrack"
+      }
+    }
+  },
+  "audition": {
+    "path": "audio/audition/Motion-Buddy-country-music-audition.wav",
+    "sha256": "b9ab40101805a2dd5546a96e84dd7133ab7da22da978cdbe42c7bc1c9eed78a3",
+    "n_samples": 1800000,
+    "duration_seconds": 37.5,
+    "sample_peak_dbfs": -11.0,
+    "full_rms_dbfs": -23.58,
+    "active_rms_dbfs": -22.823,
+    "dc_offset": 2.7892331267664637e-08,
+    "first_sample": 0.0,
+    "last_sample": 0.0,
+    "finite": true,
+    "clipped_samples": 0,
+    "cue_order": {
+      "path": "audio/audition/cue-order.txt",
+      "sha256": "927928b2ef7a9db3dbe668ae118797540ff0167f7c841dcee90da87901cd45f3"
+    }
+  },
+  "visuals": {
+    "overlay:uk_guard": {
+      "path": "svg/overlays/uk_guard_overlay.svg",
+      "sha256": "320dde96befefe65cddf9cc3406795ac4d10c4cf6acf9d0a2473d1af452a8a57",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "behind existing eyes/mouth; no replacement features",
+      "render_requirement": "Taller crown requires overflow-visible inline SVG/group (or equivalent native path), transformed with existing face tracks BEFORE outer 360 viewport clipping. Do not rasterise/crop overlay to 360 first. Seated crown min y~6.8 including ty12; march bob +/-3 safe. Entry/exit offscreen clipping intentional. Crown base132 top-48 =180px vs128px before (+40.625%). Existing face tracks unchanged."
+    },
+    "overlay:france_cafe": {
+      "path": "svg/overlays/france_cafe_overlay.svg",
+      "sha256": "71649779b00f0d8d718d82037470cb23e513920d3563ebc96f3e91b6980c8856",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "behind existing eyes/mouth; no replacement features"
+    },
+    "overlay:egypt_pharaoh": {
+      "path": "svg/overlays/egypt_pharaoh_overlay.svg",
+      "sha256": "16b1739dc95a150052f85441f72b251d23f67b56353657d310c3249b7bace2c6",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "behind existing eyes/mouth; no replacement features"
+    },
+    "prop:us_flag": {
+      "path": "svg/props/us_flag.svg",
+      "sha256": "8b6c720efaa3e317a7c323d406cd1399df7a4acccd46492f5a75cb368146a3fe"
+    },
+    "prop:us_eagle": {
+      "path": "svg/props/us_eagle.svg",
+      "sha256": "4cf91d66e1c5de24f22277c1d9932c50e5a704eaf0c488a63a435287dbf69924"
+    },
+    "prop:egypt_pyramids": {
+      "path": "svg/props/egypt_pyramids.svg",
+      "sha256": "509000b743482d300d5f8f1bce9c63211c41b509f13e95e5e75202009e9b3531"
+    },
+    "prop:uk_big_ben": {
+      "path": "svg/props/uk_big_ben.svg",
+      "sha256": "823e22f54e3c2c12e09de39e16e902a333008127f32c49cab1c4baaf3f20501f",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "lowest world-space background; below all art"
+    },
+    "prop:france_eiffel_tower": {
+      "path": "svg/props/france_eiffel_tower.svg",
+      "sha256": "ecd06cde3c9d0078e3d207c79afa13680c40380cb0089a6bf7a2ffab3c33e257",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "lowest world-space background; below all art"
+    },
+    "prop:usa_statue_of_liberty": {
+      "path": "svg/props/usa_statue_of_liberty.svg",
+      "sha256": "31a23a026f3a494a3f7703627b3caa3258056f0ec543b8a7932256948a8f027e",
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "layer": "lowest world-space background; below all art"
+    }
+  },
+  "board": {
+    "path": "board/Motion-Buddy-country-scenes-board.png",
+    "sha256": "7cfe50da6361b094f8fe2026dac9d149e5c05e21f4b32c01864d7184c365fcb9"
+  },
+  "levels_policy": "Peak normalised to -11.0 dBFS; full-scene RMS -23.014, -24.68, -22.915, -22.679 dBFS, below reaction chirps active RMS (~-17.5). Not a perceived-loudness claim.",
+  "rights_evidence": {
+    "uk_god_save_the_king": {
+      "excerpt": "opening 12 notes G G A F# G A B B C B A G (key G, 3/4), freshly synthesised with original harmony/percussion",
+      "sources": [
+        {
+          "url": "https://www.canada.ca/en/canadian-heritage/services/royal-symbols-titles/royal-anthem.html",
+          "supports": "Government of Canada: traditional 18th-century English song, author and composer unknown; states \"God Save The King\" is in the public domain and may be used without permission from the Government of Canada.",
+          "read": "WebFetch 2026-11-06"
+        },
+        {
+          "url": "https://waltzmn.brainout.net/Neumes.html",
+          "supports": "Text gives opening pitches in G: G G A F# G A, B B C B A G.",
+          "read": "WebSearch result text 2026-11-06"
+        }
+      ],
+      "caveats": "Pitches checked against public text sources; the customary 3/4 rhythm is a new conventional arrangement, NOT a transcription of the 1814 LoC score (inaccessible: timeout/Cloudflare 403). No full historical-score verification and no modern-arrangement clearance claimed; not worldwide legal clearance. Canada.ca public-domain statement is jurisdiction-specific."
+    },
+    "usa_star_spangled_banner": {
+      "excerpt": "opening phrase s m d m s d' | m' r' d' m fi s (key Bb, 3/4, pickup), freshly synthesised with original harmony and a soft tonic settle",
+      "sources": [
+        {
+          "url": "https://www.loc.gov/item/2014563896/",
+          "supports": "Scout lead: 1814 published score; John Stafford Smith (composer of the tune, d. 1836).",
+          "read": "NOT verified by me: WebFetch timed out twice and curl got a Cloudflare 403 challenge. Not bypassed."
+        },
+        {
+          "url": "https://michaelphils.com/solfa-notation-of-united-states-of/",
+          "supports": "Tonic sol-fa: s m d m s d / m r d m fe s for the opening two phrases.",
+          "read": "WebSearch result text 2026-11-06"
+        },
+        {
+          "url": "https://www.thepianonotes.com/star-spangled-banner-traditional-easy-letter-notes/",
+          "supports": "Independent letter/solfege notes agreeing: Sol-Mi Do Mi Sol ^Do / ^Mi ^Re ^Do Mi Fa# Sol.",
+          "read": "WebSearch result text 2026-11-06"
+        },
+        {
+          "url": "https://www.musicyoucanread.com/?p=20515",
+          "supports": "Context: music John Stafford Smith (To Anacreon in Heaven), words Francis Scott Key 1814; 3/4; pickup.",
+          "read": "WebSearch result text 2026-11-06"
+        }
+      ],
+      "caveats": "Pitches checked against public text sources; the customary 3/4 rhythm is a new conventional arrangement, NOT a transcription of the 1814 LoC score (inaccessible: timeout/Cloudflare 403). No full historical-score verification and no modern-arrangement clearance claimed; not worldwide legal clearance."
+    },
+    "flag": "US flag drawn from published 4 U.S.C. proportions (1.9:1, 13 stripes, canton 7 stripes x 0.76, 50 stars 9 rows 6/5); colours approximate.",
+    "scout_legal_research": "Not duplicated; retain Scout's research alongside this."
+  },
+  "qa": {
+    "status": "PASS_OBJECTIVE_VISUAL_REVISION_CHECKS",
+    "audio_files_byte_identical": 10,
+    "existing_visuals_byte_identical_except_uk_overlay": 5,
+    "registration_input_policy_unchanged": true,
+    "all_existing_tracks_beats_music_durations_unchanged": true,
+    "egypt_spec_byte_semantically_unchanged": true,
+    "svg_xml_parse": "pass",
+    "landmark_and_seated_hat_raster_alpha_bounds": {
+      "uk_big_ben": [
+        284,
+        16,
+        337,
+        335
+      ],
+      "france_eiffel_tower": [
+        266,
+        28,
+        342,
+        321
+      ],
+      "usa_statue_of_liberty": [
+        276,
+        71,
+        342,
+        333
+      ],
+      "hat_bob_-3": [
+        100,
+        2,
+        260,
+        251
+      ],
+      "hat_bob_0": [
+        100,
+        5,
+        260,
+        254
+      ],
+      "hat_bob_3": [
+        100,
+        8,
+        260,
+        257
+      ]
+    },
+    "hat_crown_height_increase_percent": 40.625,
+    "new_prop_opacity_start_end": 0,
+    "reduced_motion": "static/crossfade only; same duration/lock/music",
+    "not_performed": [
+      "human listening",
+      "phone/device test",
+      "runtime animation/app integration",
+      "deployment",
+      "worldwide legal clearance"
+    ],
+    "bounds_caveat": "Tall hat uses negative face-space y; inline overflow-visible rendering required before final viewport clipping; entry/exit clipping intentional.",
+    "final_metadata_revision": "meta-r1",
+    "country_art_audio_byte_identical_to_v2": true
+  },
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "reference_eye_rects": [
+      [
+        94,
+        140,
+        62,
+        44
+      ],
+      [
+        204,
+        140,
+        62,
+        44
+      ]
+    ],
+    "eye_rx": 23,
+    "reference_mouth": "M171 216 Q180 222 189 216",
+    "transform_origin_face_space": [
+      180,
+      190
+    ]
+  },
+  "revision": {
+    "id": "v2-landmarks-meta-r1",
+    "supersedes": "v2-landmarks metadata only; all previous roots and ZIPs unchanged",
+    "scope": "approval metadata and separate-package status only"
+  },
+  "prior_r1_qa": {
+    "performed": [
+      "finite/DC/peak/clip/edge-zero/exact-duration assertions on masters and PCM16 copies",
+      "ffmpeg full decode with zero errors for all 8 WAVs and audition",
+      "strict JSON parse",
+      "SVG rasterisation via cairosvg to the registered board; board visually inspected"
+    ],
+    "results": {
+      "ffmpeg_decode": {
+        "audio/masters/uk_guard_march_master_f32_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/app/uk_guard_march_app_pcm16_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/masters/france_cafe_waltz_master_f32_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/app/france_cafe_waltz_app_pcm16_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/masters/usa_anthem_eagle_master_f32_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/app/usa_anthem_eagle_app_pcm16_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/masters/egypt_cinematic_master_f32_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/app/egypt_cinematic_app_pcm16_48k.wav": {
+          "returncode": 0,
+          "errors": ""
+        },
+        "audio/audition/Motion-Buddy-country-music-audition.wav": {
+          "returncode": 0,
+          "errors": ""
+        }
+      },
+      "checks": {
+        "audio/masters/uk_guard_march_master_f32_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/app/uk_guard_march_app_pcm16_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/masters/france_cafe_waltz_master_f32_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/app/france_cafe_waltz_app_pcm16_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/masters/usa_anthem_eagle_master_f32_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/app/usa_anthem_eagle_app_pcm16_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/masters/egypt_cinematic_master_f32_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        },
+        "audio/app/egypt_cinematic_app_pcm16_48k.wav": {
+          "finite": true,
+          "peak<=-10": true,
+          "full_rms<-17.5": true,
+          "abs_dc<1e-4": true,
+          "edges_zero": true,
+          "no_clip": true,
+          "exact_duration": true,
+          "decode_clean": true
+        }
+      },
+      "onset_rise_before_after": {
+        "uk_guard_march": {
+          "before_v1": {
+            "50ms": 10.58,
+            "10ms": 8.6
+          },
+          "after_r1": {
+            "50ms": {
+              "db": 12.59,
+              "at_s": 2.2
+            },
+            "10ms": {
+              "db": 9.01,
+              "at_s": 0.52
+            }
+          }
+        },
+        "france_cafe_waltz": {
+          "before_v1": {
+            "50ms": 16.14,
+            "10ms": 18.03
+          },
+          "after_r1": {
+            "50ms": {
+              "db": 17.78,
+              "at_s": 2.55
+            },
+            "10ms": {
+              "db": 9.58,
+              "at_s": 1.24
+            }
+          }
+        },
+        "usa_anthem_eagle": {
+          "before_v1": {
+            "50ms": 8.75,
+            "10ms": 8.27
+          },
+          "after_r1": {
+            "50ms": {
+              "db": 14.71,
+              "at_s": 0.95
+            },
+            "10ms": {
+              "db": 7.81,
+              "at_s": 4.69
+            }
+          }
+        },
+        "egypt_cinematic": {
+          "before_v1": {
+            "50ms": 18.57,
+            "10ms": 17.84
+          },
+          "after_r1": {
+            "50ms": {
+              "db": 4.07,
+              "at_s": 0.65
+            },
+            "10ms": {
+              "db": 7.35,
+              "at_s": 4.15
+            }
+          }
+        }
+      },
+      "onset_metric_note": "Max dB increase between consecutive RMS windows both above -40 dBFS. The 10 ms figure tracks attack steepness. Remaining 50 ms maxima in UK/France/USA come from brief (~20-30 ms) interference dips between overlapping legato notes that recover over ~50-60 ms, not from new transients. These numbers are not proof of perceived startle or its absence; no listening done.",
+      "fails": []
+    },
+    "not_performed": [
+      "human listening",
+      "phone/device audition",
+      "app/runtime animation testing",
+      "deployment",
+      "worldwide legal clearance"
+    ],
+    "notes": [
+      "Max dB increase between consecutive RMS windows both above -40 dBFS. The 10 ms figure tracks attack steepness. Remaining 50 ms maxima in UK/France/USA come from brief (~20-30 ms) interference dips between overlapping legato notes that recover over ~50-60 ms, not from new transients. These numbers are not proof of perceived startle or its absence; no listening done.",
+      "Board shows one representative pose per scene; visuals unchanged from v1."
+    ]
+  },
+  "file_hashes": {
+    "README.md": "4d443079f21e7605bf8706c02e0a599c67c356e63e8d1b5c26359d7ae9c61a50",
+    "audio/app/egypt_cinematic_app_pcm16_48k.wav": "64c464fa653df9f08b141f717d56cf4f6d7ade02829f22054d48504d911ad3c2",
+    "audio/app/france_cafe_waltz_app_pcm16_48k.wav": "1d9615a9ffee8b87e91f2c26f17d357edb470a2166077da4c3e49b7127a5d59d",
+    "audio/app/uk_guard_march_app_pcm16_48k.wav": "4aff97692ad6fe8bbbbd7614f4f58f4f8668ec5b3e138b73c71a850fa5959f6c",
+    "audio/app/usa_anthem_eagle_app_pcm16_48k.wav": "43b4f60ed0336f380123bc0ce64adbee69c45410bbbbe4257682b666adc25429",
+    "audio/audition/Motion-Buddy-country-music-audition.wav": "b9ab40101805a2dd5546a96e84dd7133ab7da22da978cdbe42c7bc1c9eed78a3",
+    "audio/audition/cue-order.txt": "927928b2ef7a9db3dbe668ae118797540ff0167f7c841dcee90da87901cd45f3",
+    "audio/masters/egypt_cinematic_master_f32_48k.wav": "72515b4228e067f6159069989224f42005699671b195d3c9d98de18bab4a7260",
+    "audio/masters/france_cafe_waltz_master_f32_48k.wav": "da81481df56179a07b44c4278341259a6b0d170abb308cc179ecc2df0d71c47d",
+    "audio/masters/uk_guard_march_master_f32_48k.wav": "e41e9bc358d21b8fa5e788ed1cd20a57942ee6d3c57ac2a672099b1c1b090493",
+    "audio/masters/usa_anthem_eagle_master_f32_48k.wav": "81ec340ca5e5b593a7fa4d532424bd309f460376b7ca81157e6783066a519ddd",
+    "board/Motion-Buddy-country-scenes-board.png": "7cfe50da6361b094f8fe2026dac9d149e5c05e21f4b32c01864d7184c365fcb9",
+    "qa-report.json": "d7488019ea7d38e82a6b8239b21307f3c81307afba5c2e32de2add00d4b55914",
+    "scene-spec.json": "6c57906aff4c9e6773391e6a39f5baae2e96ae3c81c7d1923c9286b9e9c71314",
+    "src/create_country_scenes.py": "310e2478223ebcd78d74a1b5df53ccab7243725075a7fd8c5ddd2521bc8689ee",
+    "src/finalize_metadata.py": "723badb6238f3cf6baa7018bdf6668e379aeb8c14afbe44067c1eca4c5474fa2",
+    "src/revise_landmarks.py": "0bf68d4eaea84c4269c299bbbbf08c7450a31f6ce87d7bdbef0e341f28a39579",
+    "svg/overlays/egypt_pharaoh_overlay.svg": "16b1739dc95a150052f85441f72b251d23f67b56353657d310c3249b7bace2c6",
+    "svg/overlays/france_cafe_overlay.svg": "71649779b00f0d8d718d82037470cb23e513920d3563ebc96f3e91b6980c8856",
+    "svg/overlays/uk_guard_overlay.svg": "320dde96befefe65cddf9cc3406795ac4d10c4cf6acf9d0a2473d1af452a8a57",
+    "svg/props/egypt_pyramids.svg": "509000b743482d300d5f8f1bce9c63211c41b509f13e95e5e75202009e9b3531",
+    "svg/props/france_eiffel_tower.svg": "ecd06cde3c9d0078e3d207c79afa13680c40380cb0089a6bf7a2ffab3c33e257",
+    "svg/props/uk_big_ben.svg": "823e22f54e3c2c12e09de39e16e902a333008127f32c49cab1c4baaf3f20501f",
+    "svg/props/us_eagle.svg": "4cf91d66e1c5de24f22277c1d9932c50e5a704eaf0c488a63a435287dbf69924",
+    "svg/props/us_flag.svg": "8b6c720efaa3e317a7c323d406cd1399df7a4acccd46492f5a75cb368146a3fe",
+    "svg/props/usa_statue_of_liberty.svg": "31a23a026f3a494a3f7703627b3caa3258056f0ec543b8a7932256948a8f027e"
+  }
+}

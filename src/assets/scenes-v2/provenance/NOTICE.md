@@ -1,0 +1,12 @@
+Country scenes v2 landmarks meta-r1. Original supplied art and audio. Not a claim of worldwide public-domain clearance.
+
+UK and USA cues are original customary-rhythm arrangements of the opening pitches. They are not transcriptions of the 1814 scores, and no modern recording was copied. France is an original café waltz. The Egypt cue is original cinematic music in an Egyptian-inspired film style, not a reconstruction of ancient music and not a copy of a soundtrack.
+
+App playback uses the PCM16 48 kHz copies at gain 0.68. The float32 masters in audio/masters are kept unchanged and are not rewritten. Archived SVG overlays and props are the supplied files. The live face openings in the app are adapted copies so Buddy's own eyes and mouth fit; those archived files are not overwritten.
+
+The UK bearskin crown is 40.625% taller than the previous hat and is drawn to y=-48 in the 360-space. A control point at y=-57 is not the drawn edge. Render the vectors with overflow visible and clip only at the viewport.
+
+Timing choices used by the app:
+- USA eagle meets Buddy at the precise music marker 2.7938 s. The prose times 2.6 s and about 2.48 s are not used for that hit.
+- The UK march stops at 6.6 s. Listed beats at 6.6111 s and 7.1667 s do not add steps.
+- Note attacks are softened by about 40–70 ms. Playback is not claimed to be listening-perfect.

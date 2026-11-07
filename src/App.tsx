@@ -7,13 +7,15 @@ import { glanceOffset } from './view/glance.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
 import { Face } from './view/Face.tsx'
+import { CountryBackdrop, CountryEagle } from './view/country-art.tsx'
 import { useScreenWakeLock } from './view/useWakeLock.ts'
 import { motionNeedsGesture, useTilt } from './view/useTilt.ts'
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
+import { COUNTRY_MUSIC, pickCountry, sampleCountry, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
@@ -62,6 +64,9 @@ type TestApi = {
   contact: () => ReturnType<typeof contactStatus>
   tryCue: (kind: 'chirp' | 'dizzy' | 'scan') => boolean
   playScene: (key: SceneKey) => boolean
+  playCountry: (key: CountryKey) => boolean
+  showCountry: (key: CountryKey, ms: number) => boolean
+  nudgeCountry: () => boolean
   sceneAudio: () => { active: boolean }
 }
 
@@ -136,7 +141,12 @@ export function App() {
   const tapTimer = useRef(0)
   const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, onFace: false, mode: 'chase' as PetMode, dragging: false })
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
-  const sceneRef = useRef<{ key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean } | null>(null)
+  const sceneRef = useRef<
+    | { kind: 'costume'; key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean }
+    | { kind: 'country'; key: CountryKey; started: number; banked: number; paused: boolean; cueFired: boolean; leadUntil: number; reduced: boolean }
+    | null
+  >(null)
+  const cancelCountryRef = useRef<() => void>(() => {})
   const heldRef = useRef(false)
   const waitRelease = useRef(false)
   const calmRef = useRef(0)
@@ -195,12 +205,22 @@ export function App() {
     const desired = desiredTravel(nx, ny, measured.room, p.mode)
     const raw: FacePlace = placeFace(desired.x, desired.y, measured.room, anchor)
     const mute = document.querySelector('.mute-chip')?.getBoundingClientRect() ?? null
-    const placed = clearControl(
+    const portal = document.querySelector('.portal-chip')?.getBoundingClientRect() ?? null
+    const cleared = clearControl(
       raw,
       measured.left,
       measured.top,
       measured.size,
       mute ? { left: mute.left, top: mute.top, right: mute.right, bottom: mute.bottom } : null,
+      measured.room,
+      measured.inset,
+    )
+    const placed = clearControl(
+      cleared,
+      measured.left,
+      measured.top,
+      measured.size,
+      portal ? { left: portal.left, top: portal.top, right: portal.right, bottom: portal.bottom } : null,
       measured.room,
       measured.inset,
     )
@@ -299,9 +319,17 @@ export function App() {
     if (cord) cord.style.opacity = '0'
     const root = rootRef.current
     if (root) {
+      for (const node of root.querySelectorAll<HTMLElement>('[data-country-layer]')) {
+        node.style.opacity = '0'
+        node.setAttribute('opacity', '0')
+      }
+      root.querySelector('[data-part="portal-bolt"]')?.setAttribute('data-on', '0')
       root.dataset.scene = ''
       root.dataset.sceneMs = '0'
       root.dataset.sceneHold = '0'
+      root.dataset.country = ''
+      root.dataset.transition = '0'
+      root.dataset.portal = 'ready'
     }
   }
   const finishScene = () => {
@@ -312,15 +340,67 @@ export function App() {
     releasePet()
     setSceneOn(false)
   }
+  cancelCountryRef.current = () => {
+    if (sceneRef.current?.kind === 'country') finishScene()
+  }
+  const applyCountry = (pose: CountryPose) => {
+    const root = rootRef.current
+    const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
+    if (!root || !svg) return
+    const px = (svg.offsetWidth || 1) / 360
+    svg.style.overflow = 'visible'
+    svg.style.transformOrigin = '50% 52.78%'
+    svg.style.transform = `translate(${(pose.tx * px).toFixed(2)}px, ${(pose.ty * px).toFixed(2)}px) scale(${pose.sx.toFixed(4)}, ${pose.sy.toFixed(4)})`
+    for (const [name, layer] of Object.entries(pose.layers)) {
+      const node = root.querySelector(`[data-country-layer="${name}"]`) as SVGGElement | null
+      if (!node) continue
+      node.style.opacity = String(layer.opacity)
+      node.setAttribute('opacity', String(layer.opacity))
+      if (name === 'prop:us_flag') node.setAttribute('transform', `translate(${layer.tx} ${layer.ty}) scale(${layer.sx})`)
+      else if (name === 'prop:us_eagle') node.setAttribute('transform', `translate(${180 + layer.tx - 120} ${190 + layer.ty - 70})`)
+      else if (name === 'prop:egypt_pyramids') node.setAttribute('transform', `translate(0 330) scale(1 ${layer.scaleY.toFixed(4)}) translate(0 -330)`)
+      else if (name.startsWith('overlay:')) node.setAttribute('transform', `translate(0 ${layer.ty.toFixed(2)})`)
+      else node.removeAttribute('transform')
+    }
+  }
   const beginScene = (key: SceneKey) => {
     if (sceneRef.current || contactStatus().active || waitRelease.current) return false
-    sceneRef.current = { key, started: performance.now(), banked: 0, paused: false, cueFired: false }
+    sceneRef.current = { kind: 'costume', key, started: performance.now(), banked: 0, paused: false, cueFired: false }
     setSceneGuard(true)
     endContact(100)
     releasePet()
     lastScene.current = key
     calmRef.current = 0
     setSceneOn(true)
+    return true
+  }
+  const beginCountry = (key: CountryKey) => {
+    if (sceneRef.current || contactStatus().active || waitRelease.current) return false
+    const reduced = engine.snapshot().reduced
+    clearSceneMotion()
+    sceneRef.current = {
+      kind: 'country',
+      key,
+      started: 0,
+      banked: 0,
+      paused: false,
+      cueFired: false,
+      leadUntil: performance.now() + (reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal),
+      reduced,
+    }
+    setSceneGuard(true)
+    endContact(100)
+    releasePet()
+    calmRef.current = 0
+    setSceneOn(true)
+    const root = rootRef.current
+    if (root) {
+      root.dataset.lead = String(reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal)
+      root.dataset.portal = 'locked'
+      root.dataset.country = key
+      root.dataset.transition = '1'
+      root.dataset.transitionReduced = reduced ? '1' : '0'
+    }
     return true
   }
   sceneTickRef.current = (dt: number) => {
@@ -331,6 +411,44 @@ export function App() {
         calmRef.current += dt
         if (calmRef.current >= SCENE_GAP_MS) beginScene(nextAmbientScene(lastScene.current))
       }
+      return
+    }
+    if (current.kind === 'country') {
+      if (!root) return
+      const now = performance.now()
+      root.dataset.portal = 'locked'
+      root.dataset.country = current.key
+      const bolt = root.querySelector('[data-part="portal-bolt"]')
+      if (now < current.leadUntil) {
+        root.dataset.transition = '1'
+        root.dataset.transitionReduced = current.reduced ? '1' : '0'
+        root.dataset.scene = ''
+        root.dataset.sceneMs = '0'
+        root.dataset.sceneHold = '0'
+        bolt?.setAttribute('data-on', '1')
+        bolt?.setAttribute('data-reduced', current.reduced ? '1' : '0')
+        return
+      }
+      if (!current.cueFired) {
+        current.cueFired = true
+        current.started = now
+        current.banked = 0
+        const status = soundStatus()
+        if (!status.muted && status.unlocked) playCountryMusic(COUNTRY_MUSIC[current.key])
+      }
+      bolt?.setAttribute('data-on', '0')
+      const elapsed = current.banked + (current.paused ? 0 : now - current.started)
+      const countryPose = sampleCountry(current.key, elapsed, current.reduced)
+      if (countryPose.done) {
+        finishScene()
+        if (heldRef.current) waitRelease.current = true
+        return
+      }
+      applyCountry(countryPose)
+      root.dataset.transition = '0'
+      root.dataset.scene = current.key
+      root.dataset.sceneMs = String(Math.round(elapsed))
+      root.dataset.sceneHold = countryPose.hold ? '1' : '0'
       return
     }
     const elapsed = current.banked + (current.paused ? 0 : performance.now() - current.started)
@@ -383,6 +501,7 @@ export function App() {
       root.dataset.scene = current.key
       root.dataset.sceneMs = String(Math.round(elapsed))
       root.dataset.sceneHold = pose.hold ? '1' : '0'
+      root.dataset.portal = 'locked'
       root.dataset.sceneX = pose.x.toFixed(1)
       root.dataset.sceneY = pose.y.toFixed(1)
       root.dataset.pet = '0.0,0.0,1.00,1.00'
@@ -559,7 +678,9 @@ export function App() {
     }
     const start = () => {
       if (loop.running || document.hidden) return
-      if (sceneRef.current) {
+      if (sceneRef.current?.kind === 'country') {
+        cancelCountryRef.current()
+      } else if (sceneRef.current) {
         sceneRef.current.started = performance.now()
         sceneRef.current.paused = false
       }
@@ -575,6 +696,14 @@ export function App() {
       engine.feedLook(0, 0)
     }
     const stop = () => {
+      if (sceneRef.current?.kind === 'country') {
+        cancelCountryRef.current()
+        loop.running = false
+        engine.setHidden(true)
+        abandonGesture()
+        cancelAnimationFrame(loop.raf)
+        return
+      }
       const current = sceneRef.current
       if (current && !current.paused) {
         current.banked += performance.now() - current.started
@@ -588,11 +717,19 @@ export function App() {
       cancelAnimationFrame(loop.raf)
     }
     const onBlur = () => {
+      if (sceneRef.current?.kind === 'country') {
+        cancelCountryRef.current()
+        abandonGesture()
+        return
+      }
       if (sceneRef.current) sceneRef.current.cueFired = true
       stopSceneAudio(130)
       abandonGesture()
     }
-    const onLeave = () => abandonGesture()
+    const onLeave = () => {
+      if (sceneRef.current?.kind === 'country') cancelCountryRef.current()
+      abandonGesture()
+    }
     window.addEventListener('blur', onBlur)
     window.addEventListener('pagehide', onLeave)
     const onVisibility = () => {
@@ -717,6 +854,32 @@ export function App() {
       contact: () => contactStatus(),
       tryCue: (kind) => playCue(kind),
       playScene: (key: SceneKey) => beginScene(key),
+      playCountry: (key: CountryKey) => beginCountry(key),
+      nudgeCountry: () => {
+        const current = sceneRef.current
+        if (current?.kind !== 'country') return false
+        current.paused = false
+        current.started = performance.now()
+        current.leadUntil = 0
+        return true
+      },
+      showCountry: (key: CountryKey, ms: number) => {
+        const reduced = engine.snapshot().reduced
+        sceneRef.current = {
+          kind: 'country',
+          key,
+          started: performance.now(),
+          banked: ms,
+          paused: true,
+          cueFired: true,
+          leadUntil: 0,
+          reduced,
+        }
+        setSceneGuard(true)
+        setSceneOn(true)
+        sceneTickRef.current(0)
+        return true
+      },
       sceneAudio: () => sceneAudioStatus(),
     }
     return () => {
@@ -830,13 +993,41 @@ export function App() {
         <svg className="scene-cord" data-part="costume-cord" aria-hidden="true">
         <line x1="0" y1="0" x2="0" y2="0" stroke="#9b78c5" strokeWidth="3" />
       </svg>
-        <Face onReady={onReady} />
+        <div className="face-stack">
+          <CountryBackdrop />
+          <Face onReady={onReady} />
+          <CountryEagle />
+        </div>
         {showHint ? (
           <span className={askForMotion ? 'hint hint-raised' : 'hint'} data-testid="hint">
             {coarse ? 'Double-tap for controls' : 'Double-tap or press Enter for controls'}
           </span>
         ) : null}
       </button>
+      {!open ? (
+        <button
+          type="button"
+          className="portal-chip"
+          aria-label="Teleport"
+          aria-disabled={sceneOn}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => {
+            if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion) return
+            unlockQuiet()
+            beginCountry(pickCountry())
+          }}
+        >
+          <span>Portal</span>
+        </button>
+      ) : null}
+      {!open ? (
+        <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
+          <svg viewBox="0 0 100 100">
+            <path d="M58 8 L42 46 H54 L40 92 L70 42 H56 Z" fill="#7eb6ff" />
+            <path d="M24 30 L16 50 H22 L14 72 L36 46 H28 Z" fill="#9cc7ff" opacity="0.75" />
+          </svg>
+        </div>
+      ) : null}
       {(muteLit || !soundOn || sceneOn) && !open ? (
         <button
           type="button"
