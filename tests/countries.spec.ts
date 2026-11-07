@@ -42,26 +42,75 @@ test.describe('country scenes', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openApp(page)
     const portal = page.getByRole('button', { name: 'Teleport' })
+    const read = () => page.evaluate(() => {
+      const main = document.querySelector('main')
+      const chip = document.querySelector('.portal-chip')
+      const box = chip?.getBoundingClientRect()
+      const hook = (window as unknown as { __motionBuddyTest?: { contact: () => { bedStarts: number }; tryCue: (kind: string) => boolean; sceneAudio: () => { active: boolean } } }).__motionBuddyTest
+      return {
+        scene: main?.getAttribute('data-scene') ?? '',
+        country: main?.getAttribute('data-country') ?? '',
+        transition: main?.getAttribute('data-transition') ?? '',
+        ms: Number(main?.getAttribute('data-scene-ms') ?? '0'),
+        lead: main?.getAttribute('data-lead') ?? '',
+        disabled: chip?.getAttribute('aria-disabled') ?? '',
+        controls: main?.getAttribute('data-controls') ?? '',
+        x: box?.x ?? 0,
+        y: box?.y ?? 0,
+        width: box?.width ?? 0,
+        height: box?.height ?? 0,
+        beds: hook?.contact().bedStarts ?? -1,
+        audio: hook?.sceneAudio().active ?? false,
+      }
+    })
+    // Role click is only the first press, while Teleport is enabled. Later presses are pointer
+    // hits. A role click waits until aria-disabled clears and would start the next country.
     const started = Date.now()
     await portal.click()
-    await expect(page.locator('main')).toHaveAttribute('data-transition', '1')
-    await expect(page.locator('main')).toHaveAttribute('data-lead', '280')
-    await expect(portal).toHaveAttribute('aria-disabled', 'true')
-    await expect(page.locator('[data-part="portal-bolt"]')).toHaveAttribute('data-on', '1')
+    await page.waitForFunction(() => document.querySelector('main')?.getAttribute('data-transition') === '1')
+    const lead = await read()
+    expect(lead.lead).toBe('280')
+    expect(lead.disabled).toBe('true')
+    expect(lead.width).toBeGreaterThanOrEqual(44)
+    expect(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh']).toContain(lead.country)
+    await page.mouse.click(lead.x + lead.width / 2, lead.y + lead.height / 2)
+    const duringLead = await read()
+    expect(duringLead.country).toBe(lead.country)
+    expect(duringLead.scene === '' || duringLead.scene === lead.country).toBe(true)
     await page.mouse.click(200, 500)
     await expect(page.locator('main')).toHaveAttribute('data-controls', 'closed')
-    await expect(page.locator('main')).toHaveAttribute('data-scene', /uk_guard|france_cafe|usa_eagle|egypt_pharaoh/, { timeout: 1_000 })
+    await expect(page.locator('main')).toHaveAttribute('data-scene', lead.country, { timeout: 1_000 })
     const elapsed = Date.now() - started
     expect(elapsed).toBeGreaterThan(180)
     expect(elapsed).toBeLessThan(900)
-    await expect(page.locator('main')).toHaveAttribute('data-transition', '0')
-    const key = await page.locator('main').getAttribute('data-scene')
-    expect(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh']).toContain(key)
+    const active = await read()
+    expect(active.transition).toBe('0')
+    expect(active.disabled).toBe('true')
+    expect(active.audio).toBe(true)
+    await page.mouse.click(active.x + active.width / 2, active.y + active.height / 2)
+    await page.mouse.dblclick(200, 520)
+    await page.waitForTimeout(300)
+    const held = await read()
+    expect(held.scene).toBe(lead.country)
+    expect(held.country).toBe(lead.country)
+    expect(held.transition).toBe('0')
+    expect(held.ms).toBeGreaterThan(active.ms)
+    expect(held.controls).toBe('closed')
+    expect(held.beds).toBe(active.beds)
+    expect(held.audio).toBe(true)
+    const cue = await page.evaluate(() => (window as unknown as { __motionBuddyTest: { tryCue: (kind: string) => boolean } }).__motionBuddyTest.tryCue('scan'))
+    expect(cue).toBe(false)
     await expect(page.getByRole('button', { name: 'Mute' })).toBeEnabled()
     await page.getByRole('button', { name: 'Mute' }).click()
     await expect(page.getByRole('button', { name: 'Unmute' })).toBeVisible()
-    await page.getByRole('button', { name: 'Teleport' }).click()
-    await expect(page.locator('main')).toHaveAttribute('data-scene', key!)
+    const muted = await read()
+    await page.mouse.click(muted.x + muted.width / 2, muted.y + muted.height / 2)
+    await page.waitForTimeout(200)
+    const afterMute = await read()
+    expect(afterMute.scene).toBe(lead.country)
+    expect(afterMute.transition).toBe('0')
+    expect(afterMute.ms).toBeGreaterThan(muted.ms)
+    expect(afterMute.audio).toBe(false)
   })
 
   test('reduced motion fades blue and does not move a bolt', async ({ page }) => {
@@ -130,9 +179,25 @@ test.describe('country scenes', () => {
             const rect = node.getBoundingClientRect()
             return { x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
           }
-          const eyes = [...document.querySelectorAll('[data-part="eye-l-path"], [data-part="eye-r-path"]')].map((node) => box(node))
+          const pathExtent = (d: string) => {
+            const nums = d.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? []
+            const xs = nums.filter((_, index) => index % 2 === 0)
+            const ys = nums.filter((_, index) => index % 2 === 1)
+            if (!xs.length || !ys.length) return null
+            const x = Math.min(...xs)
+            const y = Math.min(...ys)
+            const right = Math.max(...xs)
+            const bottom = Math.max(...ys)
+            return { x, y, right, bottom, width: right - x, height: bottom - y }
+          }
+          const eyes = [...document.querySelectorAll('[data-part="eye-l-path"], [data-part="eye-r-path"]')].map((node) => {
+            const path = node.getAttribute('d') ?? ''
+            return { part: node.getAttribute('data-part'), path, authored: pathExtent(path), rendered: box(node) }
+          })
           const mouthNode = document.querySelector('[data-part="mouth"]')
+          const mouthPath = mouthNode?.getAttribute('d') ?? ''
           const mouth = box(mouthNode)
+          const mouthAuthored = pathExtent(mouthPath)
           const face = box(document.querySelector('svg.face'))
           const landmark = document.querySelector(`[data-country-layer="${layer}"]`)
           const costume = overlay ? document.querySelector(`[data-country-layer="${overlay}"]`) : null
@@ -145,36 +210,47 @@ test.describe('country scenes', () => {
           }
           const overlaps = (a: { x: number; y: number; right: number; bottom: number } | null, b: { x: number; y: number; right: number; bottom: number } | null) =>
             Boolean(a && b && Math.min(a.right, b.right) - Math.max(a.x, b.x) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y) > 1)
-          const inside = (target: { x: number; y: number; right: number; bottom: number } | null) =>
-            Boolean(target && target.x >= -2 && target.y >= -2 && target.right <= width + 2 && target.bottom <= height + 2 && target.width > 8 && target.height > 8)
+          const finitePositive = (target: { x: number; y: number; right: number; bottom: number; width: number; height: number } | null) =>
+            Boolean(target && target.width > 0 && target.height > 0 && [target.x, target.y, target.right, target.bottom, target.width, target.height].every((value) => Number.isFinite(value)))
+          const inViewport = (target: { x: number; y: number; right: number; bottom: number } | null) =>
+            Boolean(target && target.x >= -2 && target.y >= -2 && target.right <= width + 2 && target.bottom <= height + 2)
+          const substantial = (target: { width: number; height: number } | null) => Boolean(target && target.width > 8 && target.height > 8)
           return {
             eyes,
             mouth,
-            mouthPath: mouthNode?.getAttribute('d') ?? '',
-            eyePath: document.querySelector('[data-part="eye-l-path"]')?.getAttribute('d') ?? '',
+            mouthAuthored,
+            mouthPath,
+            eyePath: eyes[0]?.path ?? '',
+            blink: document.querySelector('main')?.getAttribute('data-blink') ?? '',
+            eyeH: document.querySelector('main')?.getAttribute('data-eye-h') ?? '',
+            scene: document.querySelector('main')?.getAttribute('data-scene') ?? '',
             face,
             landmark: box(landmark),
             landmarkOpacity: Number(landmark?.getAttribute('opacity') ?? '0'),
             costume: box(costume),
             costumeOpacity: overlay ? Number(costume?.getAttribute('opacity') ?? '0') : 1,
-            eyeHit: hit(eyes[0]),
+            eyeHit: hit(eyes[0]?.rendered ?? null),
             mouthHit: hit(mouth),
             portal,
             mute,
-            landmarkInside: inside(box(landmark)),
-            costumeInside: overlay ? inside(box(costume)) : true,
-            eyesInside: eyes.every((eye) => inside(eye)),
-            mouthInside: inside(mouth),
+            landmarkInside: Boolean(substantial(box(landmark)) && inViewport(box(landmark))),
+            costumeInside: overlay ? Boolean(substantial(box(costume)) && inViewport(box(costume))) : true,
+            eyesAuthored: eyes.every((eye) => (eye.path.match(/C/g) ?? []).length >= 4 && eye.path.trim().endsWith('Z') && finitePositive(eye.authored)),
+            eyesInside: eyes.every((eye) => finitePositive(eye.rendered) && inViewport(eye.rendered)),
+            mouthAuthoredOk: mouthPath.includes('Q') && mouthPath.trim().endsWith('Z') && finitePositive(mouthAuthored),
+            mouthInside: Boolean(finitePositive(mouth) && inViewport(mouth)),
             portalClear: !overlaps(box(landmark), portal) && !overlaps(box(costume), portal) && !overlaps(face, portal),
             muteClear: !mute || (!overlaps(box(landmark), mute) && !overlaps(box(costume), mute) && !overlaps(face, mute)),
             hatAboveFace: overlay === 'overlay:uk_guard' ? Boolean(box(costume) && face && box(costume)!.y < face.y - 4) : true,
           }
         }, { ...scene, width: orient.width, height: orient.height })
-        expect(fit.eyePath.includes('C'), JSON.stringify(fit)).toBe(true)
-        expect(fit.mouthPath.includes('Q')).toBe(true)
-        expect(fit.eyesInside).toBe(true)
-        expect(fit.mouthInside).toBe(true)
-        expect(fit.eyes[0]!.height).toBeGreaterThan(fit.eyes[0]!.width)
+        const evidence = `${scene.key} blink=${fit.blink} eyeH=${fit.eyeH} ${JSON.stringify(fit.eyes)} mouth=${JSON.stringify(fit.mouth)}`
+        writeFileSync(`/opt/cursor/artifacts/country-${scene.key}-${orient.name}.json`, JSON.stringify(fit, null, 2))
+        await page.screenshot({ path: `/opt/cursor/artifacts/country-${scene.key}-${orient.name}.png` })
+        expect(fit.eyesAuthored, evidence).toBe(true)
+        expect(fit.eyesInside, evidence).toBe(true)
+        expect(fit.mouthAuthoredOk, evidence).toBe(true)
+        expect(fit.mouthInside, evidence).toBe(true)
         expect(fit.landmarkOpacity).toBeGreaterThan(0.5)
         expect(fit.landmarkInside).toBe(true)
         expect(fit.costumeOpacity).toBeGreaterThan(0.8)
@@ -183,11 +259,8 @@ test.describe('country scenes', () => {
         expect(fit.mouthHit).toBe('mouth')
         expect(fit.portalClear).toBe(true)
         expect(fit.muteClear).toBe(true)
-        expect(fit.hatAboveFace).toBe(true)
-        const file = `/opt/cursor/artifacts/country-${scene.key}-${orient.name}.png`
-        await page.screenshot({ path: file })
-        shots.push(file)
-        writeFileSync(`/opt/cursor/artifacts/country-${scene.key}-${orient.name}.json`, JSON.stringify(fit, null, 2))
+        expect(fit.hatAboveFace, evidence).toBe(true)
+        shots.push(`/opt/cursor/artifacts/country-${scene.key}-${orient.name}.png`)
       }
       expect(shots).toHaveLength(4)
     })
