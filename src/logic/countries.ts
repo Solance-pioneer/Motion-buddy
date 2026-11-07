@@ -107,7 +107,7 @@ function blank(): Record<string, LayerPose> {
     'prop:uk_big_ben': layer(),
     'overlay:france_cafe': layer(),
     'prop:france_eiffel_tower': layer(),
-    'prop:us_flag': layer({ tx: 104, ty: 258, sx: 0.8, sy: 0.8 }),
+    'prop:us_flag': layer({ tx: 104, ty: 316, sx: 0.8, sy: 0.8 }),
     'prop:us_eagle': layer(),
     'prop:usa_statue_of_liberty': layer(),
     'overlay:egypt_pharaoh': layer(),
@@ -320,7 +320,7 @@ function usa(time: number, reduced: boolean, layers: Record<string, LayerPose>):
         time,
         { t: 0, opacity: 0, ty: 0 },
       )
-  layers['prop:us_flag'] = layer({ opacity: flag.opacity, tx: 104, ty: 258 + (flag.ty ?? 0), sx: 0.8, sy: 0.8 })
+  layers['prop:us_flag'] = layer({ opacity: flag.opacity, tx: 104, ty: 316 + (flag.ty ?? 0), sx: 0.8, sy: 0.8 })
   const eagle = reduced
     ? mix(
         [

@@ -54,6 +54,8 @@ test.describe('country scenes', () => {
         ms: Number(main?.getAttribute('data-scene-ms') ?? '0'),
         lead: main?.getAttribute('data-lead') ?? '',
         disabled: chip?.getAttribute('aria-disabled') ?? '',
+        bolt: document.querySelector('[data-part="portal-bolt"]')?.getAttribute('data-on') ?? '',
+        boltReduced: document.querySelector('[data-part="portal-bolt"]')?.getAttribute('data-reduced') ?? '',
         controls: main?.getAttribute('data-controls') ?? '',
         x: box?.x ?? 0,
         y: box?.y ?? 0,
@@ -70,6 +72,8 @@ test.describe('country scenes', () => {
     await page.waitForFunction(() => document.querySelector('main')?.getAttribute('data-transition') === '1')
     const lead = await read()
     expect(lead.lead).toBe('280')
+    expect(lead.bolt).toBe('1')
+    expect(lead.boltReduced).toBe('0')
     expect(lead.disabled).toBe('true')
     expect(lead.width).toBeGreaterThanOrEqual(44)
     expect(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh']).toContain(lead.country)
@@ -235,13 +239,92 @@ test.describe('country scenes', () => {
             mute,
             landmarkInside: Boolean(substantial(box(landmark)) && inViewport(box(landmark))),
             costumeInside: overlay ? Boolean(substantial(box(costume)) && inViewport(box(costume))) : true,
-            eyesAuthored: eyes.every((eye) => (eye.path.match(/C/g) ?? []).length >= 4 && eye.path.trim().endsWith('Z') && finitePositive(eye.authored)),
+            eyesAuthored: eyes.every((eye) => {
+              const nums = eye.path.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? []
+              const cubics = eye.path.match(/C/g)?.length ?? 0
+              if (cubics !== 4 || !eye.path.trim().endsWith('Z') || nums.length < 26 || !finitePositive(eye.authored)) return false
+              const cx = nums[0]
+              const rx = nums[6] - cx
+              const kx = nums[2] - cx
+              const left = nums[18]
+              const kappa = rx === 0 ? 0 : kx / rx
+              return rx > 0 && Math.abs(kappa - 0.5522847498) < 0.03 && Math.abs(cx - left - rx) < 0.35 && eye.authored.height >= 1.6 && eye.authored.width >= 2.2
+            }),
             eyesInside: eyes.every((eye) => finitePositive(eye.rendered) && inViewport(eye.rendered)),
             mouthAuthoredOk: mouthPath.includes('Q') && mouthPath.trim().endsWith('Z') && finitePositive(mouthAuthored),
             mouthInside: Boolean(finitePositive(mouth) && inViewport(mouth)),
             portalClear: !overlaps(box(landmark), portal) && !overlaps(box(costume), portal) && !overlaps(face, portal),
             muteClear: !mute || (!overlaps(box(landmark), mute) && !overlaps(box(costume), mute) && !overlaps(face, mute)),
             hatAboveFace: overlay === 'overlay:uk_guard' ? Boolean(box(costume) && face && box(costume)!.y < face.y - 4) : true,
+            registration: (() => {
+              const svg = document.querySelector('svg.face') as SVGSVGElement | null
+              const glance = document.querySelector('[data-part="glance"]')
+              const match = /translate\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/.exec(glance?.getAttribute('transform') || '')
+              const gx = match ? Number(match[1]) : 0
+              const gy = match ? Number(match[2]) : 0
+              let dx = 0
+              let dy = 0
+              if (svg) {
+                const origin = svg.createSVGPoint()
+                const shifted = svg.createSVGPoint()
+                shifted.x = gx
+                shifted.y = gy
+                const ctm = svg.getScreenCTM()
+                if (ctm) {
+                  const a = origin.matrixTransform(ctm)
+                  const b = shifted.matrixTransform(ctm)
+                  dx = b.x - a.x
+                  dy = b.y - a.y
+                }
+              }
+              const unglance = (target: { x: number; y: number; right: number; bottom: number; width: number; height: number } | null) =>
+                target ? { ...target, x: target.x - dx, right: target.right - dx, y: target.y - dy, bottom: target.bottom - dy } : null
+              const screenPts = (node: SVGGeometryElement | null) => {
+                if (!node?.getTotalLength) return []
+                const len = node.getTotalLength()
+                const ctm = node.getScreenCTM()
+                if (!ctm || len <= 0) return []
+                const pts = []
+                for (let i = 0; i <= 72; i += 1) {
+                  const point = node.getPointAtLength((len * i) / 72).matrixTransform(ctm)
+                  pts.push({ x: point.x, y: point.y })
+                }
+                return pts
+              }
+              const hits = (target: { x: number; y: number; right: number; bottom: number } | null, pts: { x: number; y: number }[]) =>
+                Boolean(target && pts.some((point) => point.x >= target.x && point.x <= target.right && point.y >= target.y && point.y <= target.bottom))
+              const spanAt = (y: number, pts: { x: number; y: number }[]) => {
+                const band = pts.filter((point) => Math.abs(point.y - y) < 16)
+                if (band.length < 2) return null
+                return { left: Math.min(...band.map((point) => point.x)), right: Math.max(...band.map((point) => point.x)) }
+              }
+              const outline = screenPts(document.querySelector('[data-part="uk-outline"]'))
+              const eyesU = eyes.map((eye) => unglance(eye.rendered))
+              const mouthU = unglance(mouth)
+              const framed = (target: { x: number; y: number; right: number; bottom: number } | null) => {
+                if (!target) return false
+                const span = spanAt((target.y + target.bottom) / 2, outline)
+                return Boolean(span && target.x > span.left + 1 && target.right < span.right - 1 && !hits(target, outline))
+              }
+              const crown = document.querySelector('[data-part="uk-crown"]') as SVGGraphicsElement | null
+              const crownBox = crown?.getBBox()
+              const flag = box(document.querySelector('[data-country-layer="prop:us_flag"]'))
+              const beret = box(document.querySelector('[data-part="france-beret"]'))
+              const ascot = box(document.querySelector('[data-part="france-ascot"]'))
+              const opening = box(document.querySelector('[data-part="egypt-opening"]'))
+              const inside = (inner: { x: number; y: number; right: number; bottom: number } | null, outer: { x: number; y: number; right: number; bottom: number } | null) =>
+                Boolean(inner && outer && inner.x >= outer.x - 1 && inner.y >= outer.y - 1 && inner.right <= outer.right + 1 && inner.bottom <= outer.bottom + 1)
+              return {
+                glance: { x: gx, y: gy },
+                crownTop: crownBox?.y ?? null,
+                ukEyesFramed: eyesU.every((eye) => framed(eye)),
+                ukMouthFramed: framed(mouthU) && Boolean(mouthU && outline.length && mouthU.bottom < Math.max(...outline.map((point) => point.y)) - 2),
+                mouthAboveFlag: Boolean(mouth && flag && flag.height > 8 && mouth.bottom + 4 < flag.y),
+                beretAboveEyes: Boolean(beret && eyesU.every((eye) => eye && eye.y > beret.bottom - 1)),
+                ascotBelowMouth: Boolean(ascot && mouth && ascot.y > mouth.bottom - 1),
+                egyptFaceInside: Boolean(opening && eyesU.every((eye) => inside(eye, opening)) && inside(mouthU, opening)),
+              }
+            })(),
           }
         }, { ...scene, width: orient.width, height: orient.height })
         const evidence = `${scene.key} blink=${fit.blink} eyeH=${fit.eyeH} ${JSON.stringify(fit.eyes)} mouth=${JSON.stringify(fit.mouth)}`
@@ -260,6 +343,18 @@ test.describe('country scenes', () => {
         expect(fit.portalClear).toBe(true)
         expect(fit.muteClear).toBe(true)
         expect(fit.hatAboveFace, evidence).toBe(true)
+        if (scene.key === 'uk_guard') {
+          expect(fit.registration.ukEyesFramed, evidence).toBe(true)
+          expect(fit.registration.ukMouthFramed, evidence).toBe(true)
+          expect(fit.registration.crownTop).toBeLessThan(-40)
+          expect(fit.registration.crownTop).toBeGreaterThan(-60)
+        }
+        if (scene.key === 'usa_eagle') expect(fit.registration.mouthAboveFlag, evidence).toBe(true)
+        if (scene.key === 'france_cafe') {
+          expect(fit.registration.beretAboveEyes, evidence).toBe(true)
+          expect(fit.registration.ascotBelowMouth, evidence).toBe(true)
+        }
+        if (scene.key === 'egypt_pharaoh') expect(fit.registration.egyptFaceInside, evidence).toBe(true)
         shots.push(`/opt/cursor/artifacts/country-${scene.key}-${orient.name}.png`)
       }
       expect(shots).toHaveLength(4)
