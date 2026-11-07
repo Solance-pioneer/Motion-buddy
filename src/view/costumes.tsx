@@ -15,9 +15,9 @@ export function Costumes() {
         <path data-part="costume-chin" d="M22 58 Q50 54 78 58 L74 86 Q50 92 26 86 Z" fill="#303440" />
       </g>
       <g data-costume="cord_hero" data-part="costume-mask" opacity="0">
-        <path data-part="costume-aperture" data-chin="yes" d="M12 20 Q50 8 88 20 L84 84 Q50 94 16 84 Z" fill="#62458b" />
-        <path data-part="costume-brow" d="M40 10 Q50 6 60 10 L57 15 Q50 12 43 15 Z" fill="#eed28d" />
-        <path d="M82 28 L96 26 L92 40 L84 38 Z" fill="#9b78c5" />
+        <path data-part="hero-cape" d="M25 59C43 70 61 69 75 59C86 80 101 98 115 117C87 111 74 131 54 126C30 120 18 128 5 121C18 105 22 82 25 59Z" fill="#bd3d47" stroke="#ee7470" strokeWidth="1.4" strokeLinejoin="round" />
+        <circle cx="50" cy="45" r="43" fill="#124868" stroke="#387d9a" strokeWidth="1.2" />
+        <path d="M13 28Q32 10 50 23Q68 10 87 28L83 53Q68 64 50 51Q32 64 17 53Z" fill="#182333" stroke="#f0c56a" strokeWidth="1.5" strokeLinejoin="round" />
       </g>
       <g data-costume="racer" data-part="costume-mask" opacity="0">
         <rect x="8" y="2" width="84" height="90" rx="30" fill="#e7e3d6" />

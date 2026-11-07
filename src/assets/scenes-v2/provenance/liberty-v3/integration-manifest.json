@@ -1,0 +1,38 @@
+{
+  "pack": "motion-buddy-liberty-v3",
+  "scope": "ONLY replace USA world-space landmark prop; no Buddy, eagle, flag, timing, sound or scene logic change.",
+  "prop": {
+    "path": "svg/props/usa_statue_of_liberty.svg",
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "alpha_bounds": [
+      271,
+      66,
+      344,
+      331
+    ],
+    "placement": "Retain existing world-space360 placement, below all Buddy/eagle/flag/costume layers. Do not parent landmark to moving Buddy.",
+    "opacity": "Retain existing fade/opacity/cleanup policy, no new animation or timer."
+  },
+  "provenance": "Original SVG geometry. Owner sent Unicode U+1F5FD as visual guidance. Refined readable crown/head/face/raised torch/robe/tablet; not traced or copied from any vendor emoji asset. No external downloads, image, font or emoji outlines embedded.",
+  "source": "src/create_liberty.py",
+  "qa": {
+    "xml_parse_raster_bounds": "pass",
+    "audio_other_assets": "untouched",
+    "not_performed": [
+      "app runtime/integration",
+      "phone testing",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "28fa6e30d75aa7fd5d4c701d6813ac62448fa78126bcf1283e761219bdeccd38",
+    "board/Liberty-original-before-after.png": "159677c876e636c77be81805be45b349abce827ccc5b9543a96a5a279f224f5a",
+    "src/create_liberty.py": "81f9fefae2b330e59242b1e6f8984b6f8842cb02fc2d7b0cb108eac1a0185e28",
+    "svg/props/usa_statue_of_liberty.svg": "4f71ab5d51eb50fe10b00dca8b848ca955cacb4dd31acb04f5c8ef70494b2844"
+  }
+}

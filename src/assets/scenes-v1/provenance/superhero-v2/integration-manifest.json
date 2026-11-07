@@ -1,0 +1,170 @@
+{
+  "pack": "motion-buddy-superhero-v2",
+  "replaces": "ONLY costume and music of existing cord_hero scene; other scenes/base Buddy untouched",
+  "duration_seconds": 7,
+  "registration": {
+    "coordinate_space": "existing canonical 100x100 face coordinates; art SVG viewBox -20 -5 150 145 includes cape overflow, not a new face coordinate system",
+    "render": "Inline SVG/group paths use original coordinates. If image elements are required set x=-20 y=-5 width=150 height=145, NOT x=0/y=0/100x100. Parent cape/head/mask and canonical face in ONE existing scene transform; mask follows gaze/face exactly. Fit full x=-20..130 y=-5..140 art within stage before viewport clipping.",
+    "layering": [
+      "cape",
+      "round_head",
+      "eye_mask",
+      "existing live eyes/mouth"
+    ],
+    "face": "No production eyes/mouth included. Board uses exact canonical curious-rest source for STATIC illustration only. No base-feature changes."
+  },
+  "cape": {
+    "path_frames": [
+      "M25 59C43 70 61 69 75 59C86 80 101 98 115 117C87 111 74 131 54 126C30 120 18 128 5 121C18 105 22 82 25 59Z",
+      "M25 59C43 70 61 69 75 59C91 75 110 82 123 103C97 101 85 125 64 127C38 131 25 118 9 124C19 104 22 82 25 59Z",
+      "M25 59C43 70 61 69 75 59C83 84 91 105 108 125C87 117 74 119 53 124C31 130 20 123 2 115C17 101 22 82 25 59Z"
+    ],
+    "files": [
+      "svg/cape_0.svg",
+      "svg/cape_1.svg",
+      "svg/cape_2.svg"
+    ],
+    "interpolation": "Same path topology: interpolate 0 -> 1 -> 0 -> 2 -> 0 across 1.3s, repeat ONLY while existing scene is active; flutter is visual, never restarts music or extends scene.",
+    "animation_window_seconds": [
+      0.65,
+      6.3
+    ],
+    "amplitude": "Full original path geometry; no strobe/fast shaking.",
+    "reduced_motion": "Hold cape_0 still; static round head/mask; crossfade on/off, same seven seconds."
+  },
+  "music": {
+    "app": "audio/app/hero_original_fanfare_app_pcm16_48k.wav",
+    "master": "audio/masters/hero_original_fanfare_master_f32_48k.wav",
+    "seconds": 7,
+    "loop": false,
+    "cue_seconds": 0,
+    "peak_dbfs": -12.999547169594685,
+    "rms_dbfs": -20.91594804424613,
+    "score_midi": [
+      [
+        0.08,
+        0.7,
+        62
+      ],
+      [
+        0.82,
+        0.66,
+        67
+      ],
+      [
+        1.52,
+        0.5,
+        66
+      ],
+      [
+        2.1,
+        0.82,
+        71
+      ],
+      [
+        3.04,
+        0.72,
+        69
+      ],
+      [
+        3.82,
+        0.52,
+        66
+      ],
+      [
+        4.42,
+        0.74,
+        74
+      ],
+      [
+        5.3,
+        1.52,
+        69
+      ]
+    ],
+    "chords": [
+      [
+        50,
+        57,
+        62,
+        66
+      ],
+      [
+        47,
+        54,
+        59,
+        62
+      ],
+      [
+        45,
+        52,
+        57,
+        61
+      ],
+      [
+        50,
+        57,
+        62,
+        66
+      ]
+    ],
+    "instruction": "Replace previous 1.3s hero flourish, do not layer/double-trigger. One finite source, immediate mute, remove on hidden/pagehide/scene end.",
+    "provenance": "Original newly composed synthetic fanfare from score in generator; no copied melody, samples, voices or theme request."
+  },
+  "policy": "Existing fixed seven-second scene lock, cleanup and exact plain Buddy restoration unchanged. No design approval wait; Mike requested implementation first. Preserve existing entrance/exit where practical, keep mask/cape readable.",
+  "qa": {
+    "wav_headers_count_quantization_zero_endpoints": "pass",
+    "finite_headroom": "pass",
+    "svg_xml_bounds": "pass",
+    "raster_bounds": {
+      "cape_0.svg": [
+        72,
+        189,
+        408,
+        398
+      ],
+      "cape_1.svg": [
+        84,
+        189,
+        432,
+        401
+      ],
+      "cape_2.svg": [
+        63,
+        189,
+        387,
+        396
+      ],
+      "eye_mask.svg": [
+        96,
+        65,
+        324,
+        192
+      ],
+      "round_head.svg": [
+        79,
+        19,
+        341,
+        281
+      ]
+    },
+    "not_performed": [
+      "human listening",
+      "runtime integration",
+      "phone testing",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "bc706031f306c4029fd445e5bcbdcf472b569c37b5bc95dfce3133aa43ba7292",
+    "audio/app/hero_original_fanfare_app_pcm16_48k.wav": "c2b04eba0b553fc17bffad732da7323f06c7b57885f98ccd7b75119c76cb2f14",
+    "audio/masters/hero_original_fanfare_master_f32_48k.wav": "d6a744cb9c5d7d183a415df39a740ead7dc1d0f1ca1d66eb60f8b17a473c05be",
+    "board/Superhero-round-mask-cape-static.png": "f5f1a15cffc39ee70f432cc01c1a4e44341cdf3469c4bef07d119641e6a3812a",
+    "src/create_hero.py": "4cda451d2aec48db7589f6ecbf1f525c7594fde29325b80e60f803c9c1b1a3b9",
+    "svg/cape_0.svg": "7a8efae471b0a720cf9c7a6161f4a3c51c60706f15aae6f5aae6b2ab5af8b0c2",
+    "svg/cape_1.svg": "361b127b48fb5511d0e4a8f73cceaa195638eada22ff3b748a578fe106e0b7b1",
+    "svg/cape_2.svg": "d193ebcaff7517e0eed0f99b3db0cf90cb8d9fcb9623538d4e4e48dd1b5ef248",
+    "svg/eye_mask.svg": "23327891f95cd8b3a902c145eed4504ed48ecadb972f8ccbd34963fa9665a669",
+    "svg/round_head.svg": "09ba285ea2b1f33e7fc45bc782ee222f2b50bd77d6ce4e02278aa286544a8781"
+  }
+}

@@ -1,0 +1,1 @@
+One visual-only original Statue of Liberty refinement using owner emoji as general visual guidance, not a copied vendor glyph. Replace only svg/props/usa_statue_of_liberty.svg in current app workstream. Retain world placement, fades and cleanup. No runtime/phone/deployment claim.

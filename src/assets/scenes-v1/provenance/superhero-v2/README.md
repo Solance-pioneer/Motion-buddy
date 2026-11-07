@@ -1,0 +1,1 @@
+One bounded superhero revision. Original round head accessory, eye mask, three same-topology cape paths and seven-second original fanfare. No production face replacement. Source/float master/PCM16 app file retained. See integration-manifest.json. No human listening, app, phone or deployment claims.

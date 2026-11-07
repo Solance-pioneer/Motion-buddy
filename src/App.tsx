@@ -14,7 +14,7 @@ import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playContactVariant, playCountryMusic, playCountrySting, playCue, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
-import { nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
+import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
@@ -504,6 +504,8 @@ export function App() {
       }
       const wind = costume.querySelector('[data-part="costume-wind"]') as HTMLElement | null
       if (wind) wind.style.opacity = String(pose.wind)
+      const cape = costume.querySelector('[data-part="hero-cape"]')
+      if (cape && current.key === 'cord_hero') cape.setAttribute('d', heroCapePath(elapsed, engine.snapshot().reduced))
     }
     if (glance) {
       glance.style.opacity = String(pose.face)

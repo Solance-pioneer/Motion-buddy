@@ -89,6 +89,9 @@ describe('country scenes', () => {
     expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/props/france_eiffel_tower.svg')).digest('hex')).toBe(
       '57e13c7996127d6ca10d9ffcc61500b79446b75200437ff8ea7f9ded143ad631',
     )
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/props/usa_statue_of_liberty.svg')).digest('hex')).toBe(
+      '4f71ab5d51eb50fe10b00dca8b848ca955cacb4dd31acb04f5c8ef70494b2844',
+    )
     expect(sampleCountry('france_cafe', 3_000, true).tx).toBe(0)
     const egypt = sampleCountry('egypt_pharaoh', 5_500)
     expect(EGYPT_WONDER_S).toBe(3)

@@ -3,11 +3,11 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { featuresFor } from '../view/features.ts'
-import { SCENE_CUE, SCENE_GAP_MS, SCENE_MS, nextAmbientScene, sampleScene } from './scenes.ts'
+import { HERO_CAPE, SCENE_CUE, SCENE_GAP_MS, SCENE_MS, heroCapePath, nextAmbientScene, sampleScene } from './scenes.ts'
 
 const files = {
   ninja_soft_swish: ['src/assets/scenes-v1/audio/app/ninja_soft_swish_app_pcm16_48k.wav', 'b3336913388017bb6d3ecc33c9680d9a9c8c7e5f662611254396074b59f114d5'],
-  hero_original_flourish: ['src/assets/scenes-v1/audio/app/hero_original_flourish_app_pcm16_48k.wav', '2efecd43e981f14c1b5725dce881ea5e08e87cbb1515325b80448ca8b2d1b9b5'],
+  hero_original_fanfare: ['src/assets/scenes-v1/audio/app/hero_original_fanfare_app_pcm16_48k.wav', 'c2b04eba0b553fc17bffad732da7323f06c7b57885f98ccd7b75119c76cb2f14'],
   racer_soft_wind: ['src/assets/scenes-v1/audio/app/racer_soft_wind_app_pcm16_48k.wav', 'dc909f08ab12611441ad645e2f0f54bdc3c3df8a36f34c7a1dc5628655d4b4d8'],
   ghost_cute_boo: ['src/assets/scenes-v1/audio/app/ghost_cute_boo_app_pcm16_48k.wav', '4a050c11536c1b59057400f8c163da04769f9fa6171ca7e66e4916df21481e46'],
 } as const
@@ -66,7 +66,12 @@ describe('costume scenes', () => {
     expect(new Set(round).size).toBe(4)
     expect(round.filter((key) => key === 'sheet_ghost')).toHaveLength(1)
     expect(SCENE_CUE.ninja.at).toBe(650)
-    expect(SCENE_CUE.cord_hero.at).toBe(2_800)
+    expect(SCENE_CUE.cord_hero.at).toBe(0)
+    expect(heroCapePath(0, false)).toBe(HERO_CAPE[0])
+    expect(heroCapePath(2_000, true)).toBe(HERO_CAPE[0])
+    expect(heroCapePath(650 + 325, false)).toBe(HERO_CAPE[1])
+    expect(heroCapePath(6_300, false)).toBe(HERO_CAPE[0])
+    expect(heroCapePath(1_000, false)).not.toBe(HERO_CAPE[0])
     expect(SCENE_CUE.racer.at).toBe(2_000)
     expect(SCENE_CUE.sheet_ghost.at).toBe(2_200)
   })
