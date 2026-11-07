@@ -282,7 +282,7 @@ export function App() {
     const cord = rootRef.current?.querySelector('[data-part="costume-cord"]') as HTMLElement | null
     if (costume) {
       costume.style.opacity = '0'
-      for (const node of costume.querySelectorAll<HTMLElement>('[data-costume]')) {
+      for (const node of (svg ?? costume).querySelectorAll<HTMLElement>('[data-costume]')) {
         node.style.opacity = '0'
         node.setAttribute('opacity', '0')
       }
@@ -348,9 +348,9 @@ export function App() {
     const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
     const costume = svg?.querySelector('[data-part="costume"]') as HTMLElement | null
     const glance = svg?.querySelector('[data-part="glance"]') as HTMLElement | null
-    if (costume) {
+    if (svg && costume) {
       costume.style.opacity = '1'
-      for (const node of costume.querySelectorAll<HTMLElement>('[data-costume]')) {
+      for (const node of svg.querySelectorAll<HTMLElement>('[data-costume]')) {
         const shown = node.dataset.costume === current.key ? String(pose.opacity) : '0'
         node.style.opacity = shown
         node.setAttribute('opacity', shown)

@@ -84,6 +84,20 @@ function judged(raw: Awaited<ReturnType<Page['evaluate']>>) {
   }
 }
 
+async function occlusionOf(page: Page, key: string) {
+  return page.evaluate((name) => {
+    const cover = document.querySelector(`[data-part="costume-occlude"][data-costume="${name}"]`)
+    const opacity = cover ? Number(cover.getAttribute('opacity') ?? getComputedStyle(cover).opacity) : 0
+    const box = cover?.getBoundingClientRect()
+    const mouth = document.querySelector('[data-part="mouth"]')?.getBoundingClientRect()
+    const eyes = [...document.querySelectorAll('[data-part="eye-l-path"], [data-part="eye-r-path"]')].map((node) => node.getBoundingClientRect())
+    const contains = (outer: DOMRect | undefined, inner: DOMRect | undefined) =>
+      Boolean(outer && inner && inner.x >= outer.x - 1 && inner.y >= outer.y - 1 && inner.right <= outer.right + 1 && inner.bottom <= outer.bottom + 1)
+    const eyeHit = eyes.some((eye) => contains(box, eye))
+    return { opacity, coversMouth: opacity > 0.5 && contains(box, mouth), coversEyes: opacity > 0.5 && eyeHit }
+  }, key)
+}
+
 async function maskBox(page: Page, key: string) {
   return page.evaluate((name) => {
     const node = document.querySelector(`[data-costume="${name}"]`)
@@ -138,7 +152,11 @@ test.describe('costume scenes', () => {
       expect(fit.mouthInside, JSON.stringify(fit)).toBe(true)
       expect(fit.browClear, JSON.stringify(fit)).toBe(true)
       expect(fit.viewport.maskInside).toBe(true)
-      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-portrait.json`, JSON.stringify({ scene: scene.key, orient: 'portrait', ...fit }, null, 2))
+      const cover = await occlusionOf(page, scene.key)
+      const shouldCover = scene.key === 'ninja' || scene.key === 'racer'
+      expect(cover.coversMouth).toBe(shouldCover)
+      expect(cover.coversEyes).toBe(false)
+      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-portrait.json`, JSON.stringify({ scene: scene.key, orient: 'portrait', cover, ...fit }, null, 2))
       await expect(page.locator('[data-part="eye-l-path"]')).toBeVisible()
       await expect(page.locator('[data-part="mouth"]')).toBeVisible()
       await page.screenshot({ path: `/opt/cursor/artifacts/scene-${scene.key}-portrait.png` })
@@ -154,7 +172,9 @@ test.describe('costume scenes', () => {
       await expect(page.locator('main')).toHaveAttribute('data-scene', scene.key)
       await page.waitForTimeout(scene.total - scene.hold + 400)
       await expect(page.locator('main')).toHaveAttribute('data-scene', '')
-      await expect(page.locator(`[data-costume="${scene.key}"]`)).toHaveAttribute('opacity', '0')
+      await expect(page.locator(`[data-part="costume-mask"][data-costume="${scene.key}"]`)).toHaveAttribute('opacity', '0')
+      await expect(page.locator('[data-part="costume-occlude"][data-costume="ninja"]')).toHaveAttribute('opacity', '0')
+      await expect(page.locator('[data-part="costume-occlude"][data-costume="racer"]')).toHaveAttribute('opacity', '0')
     })
   }
 
@@ -238,7 +258,11 @@ test.describe('costume scenes', () => {
       expect(fit.browClear, JSON.stringify(fit)).toBe(true)
       expect(fit.viewport.maskInside).toBe(true)
       expect(fit.muteOverlap).toBe(false)
-      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-landscape.json`, JSON.stringify({ scene: scene.key, orient: 'landscape', ...fit }, null, 2))
+      const cover = await occlusionOf(page, scene.key)
+      const shouldCover = scene.key === 'ninja' || scene.key === 'racer'
+      expect(cover.coversMouth).toBe(shouldCover)
+      expect(cover.coversEyes).toBe(false)
+      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-landscape.json`, JSON.stringify({ scene: scene.key, orient: 'landscape', cover, ...fit }, null, 2))
       await page.screenshot({ path: `/opt/cursor/artifacts/scene-${scene.key}-landscape.png` })
       await page.waitForTimeout(scene.rest)
       await expect(page.locator('main')).toHaveAttribute('data-scene', '')

@@ -47,6 +47,12 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
           <path d="M84 32 h8 M86 40 h6 M84 48 h8" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" />
         </g>
       </g>
+      <g data-part="costume-occlude" data-costume="ninja" opacity="0">
+        <path d="M14 62 L86 62 L80 88 Q50 94 20 88 Z" fill="#303440" />
+      </g>
+      <g data-part="costume-occlude" data-costume="racer" opacity="0">
+        <path d="M8 60 L92 60 L92 72 Q92 92 68 92 L32 92 Q8 92 8 72 Z" fill="#e7e3d6" />
+      </g>
     </svg>
   )
 }

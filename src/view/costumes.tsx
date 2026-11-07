@@ -31,9 +31,9 @@ export function Costumes() {
         </g>
       </g>
       <g data-costume="sheet_ghost" data-part="costume-mask" opacity="0">
-        <path d="M10 78 L12 34 Q14 2 50 1 Q86 2 88 34 L90 78 Q84 72 78 86 Q70 76 62 90 L38 90 Q30 76 22 86 Q16 72 10 78 Z" fill="#edece5" />
+        <path d="M10 78 C 2 22 8 4 50 3 C 92 4 98 22 90 78 Q84 72 78 86 Q70 76 62 90 L38 90 Q30 76 22 86 Q16 72 10 78 Z" fill="#edece5" />
         <rect data-part="costume-aperture" x="16" y="16" width="68" height="44" rx="18" fill="#08090a" />
-        <path data-part="costume-brow" d="M18 2 Q50 0 82 2 L80 12 Q50 8 20 12 Z" fill="#edece5" />
+        <path data-part="costume-brow" d="M22 15 Q50 6 78 15 L76 18 Q50 11 24 18 Z" fill="#edece5" />
         <path data-part="costume-chin" d="M28 62 L72 62 L72 90 L28 90 Z" fill="none" />
         <path d="M26 70 Q28 74 30 78 M74 70 Q72 74 70 78" fill="none" stroke="#c3c5c2" strokeWidth="1" strokeLinecap="round" />
       </g>
