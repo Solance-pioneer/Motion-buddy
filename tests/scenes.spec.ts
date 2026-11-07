@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
+import { mouthContained, mouthPathExtent, positiveBox } from './mouth-fit.ts'
 
 async function openApp(page: Page) {
   await page.goto('/?e2e=1&hintMs=0')
@@ -52,7 +53,6 @@ async function fitOf(page: Page, key: string) {
     const muteOverlap = Boolean(mask && mute && hits(mask, mute))
     return {
       eyesInside: inside(aperture, eyes),
-      mouthInside: inside(chin, mouth),
       browClear: Boolean(eyes && brows.every((brow) => brow && !hits(eyes, brow))),
       viewport: {
         width: window.innerWidth,
@@ -61,7 +61,6 @@ async function fitOf(page: Page, key: string) {
       },
       muteOverlap,
       expression: document.querySelector('main')?.dataset.expression ?? '',
-      mouthDrawn: mouthPath.includes('M') && mouthPath.includes('Q'),
       mouthPath,
       eyes,
       mouth,
@@ -69,6 +68,20 @@ async function fitOf(page: Page, key: string) {
       chin,
     }
   }, key)
+}
+
+function judged(raw: Awaited<ReturnType<Page['evaluate']>>) {
+  const fit = raw as {
+    mouthPath: string
+    mouth: { x: number; y: number; right: number; bottom: number; width: number; height: number } | null
+    chin: { x: number; y: number; right: number; bottom: number; width: number; height: number } | null
+  }
+  const extent = mouthPathExtent(fit.mouthPath)
+  return {
+    ...fit,
+    mouthDrawn: extent.valid && positiveBox(fit.mouth),
+    mouthInside: mouthContained({ path: fit.mouthPath, box: fit.mouth, chin: fit.chin }),
+  }
 }
 
 async function maskBox(page: Page, key: string) {
@@ -119,7 +132,7 @@ test.describe('costume scenes', () => {
       expect(box!.right).toBeLessThanOrEqual(392)
       expect(box!.bottom).toBeLessThanOrEqual(846)
       expect(box!.muteOverlap).toBe(false)
-      const fit = await fitOf(page, scene.key)
+      const fit = judged(await fitOf(page, scene.key))
       expect(fit.eyesInside, JSON.stringify(fit)).toBe(true)
       expect(fit.mouthDrawn, JSON.stringify(fit)).toBe(true)
       expect(fit.mouthInside, JSON.stringify(fit)).toBe(true)
@@ -218,7 +231,7 @@ test.describe('costume scenes', () => {
       expect(box!.y).toBeGreaterThanOrEqual(-2)
       expect(box!.right).toBeLessThanOrEqual(846)
       expect(box!.bottom).toBeLessThanOrEqual(392)
-      const fit = await fitOf(page, scene.key)
+      const fit = judged(await fitOf(page, scene.key))
       expect(fit.eyesInside, JSON.stringify(fit)).toBe(true)
       expect(fit.mouthDrawn, JSON.stringify(fit)).toBe(true)
       expect(fit.mouthInside, JSON.stringify(fit)).toBe(true)
