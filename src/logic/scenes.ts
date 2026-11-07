@@ -9,10 +9,10 @@ export const SCENE_MS: Record<SceneKey, number> = {
   sheet_ghost: 7_500,
 }
 
-export const SCENE_CUE: Record<SceneKey, { key: 'ninja_soft_swish' | 'hero_original_fanfare' | 'racer_soft_wind' | 'ghost_cute_boo'; at: number }> = {
+export const SCENE_CUE: Record<SceneKey, { key: 'ninja_soft_swish' | 'hero_original_fanfare' | 'racer_accelerate_return_brake' | 'ghost_cute_boo'; at: number }> = {
   ninja: { key: 'ninja_soft_swish', at: 650 },
   cord_hero: { key: 'hero_original_fanfare', at: 0 },
-  racer: { key: 'racer_soft_wind', at: 2_000 },
+  racer: { key: 'racer_accelerate_return_brake', at: 0 },
   sheet_ghost: { key: 'ghost_cute_boo', at: 2_200 },
 }
 
@@ -145,27 +145,23 @@ function hero(ms: number, reduced: boolean): ScenePose {
 
 function racer(ms: number, reduced: boolean): ScenePose {
   const pose = rest()
-  if (ms < 900) {
-    pose.opacity = span(ms, 0, 900)
-    pose.y = reduced ? 0 : -28 * (1 - pose.opacity)
-  } else if (ms < 1_700) {
+  const away = 480
+  if (ms < 650) pose.opacity = span(ms, 0, 650)
+  else if (ms < 6_450) {
     pose.opacity = 1
-    pose.sy = reduced ? 1 : 0.92
     pose.hold = true
-  } else if (ms < 4_200) {
-    pose.opacity = 1
-    pose.wind = reduced ? 0 : 0.85
-    pose.x = reduced ? 0 : Math.sin((ms - 1_700) / 180) * 12
-    pose.hold = true
-  } else if (ms < 5_200) {
-    pose.opacity = 1
-    pose.sy = reduced ? 1 : 0.9
-    pose.hold = true
-  } else if (ms < 6_200) {
-    const u = span(ms, 5_200, 6_200)
-    pose.opacity = 1 - u
-    pose.y = reduced ? 0 : -18 * u
-  }
+  } else pose.opacity = 1 - span(ms, 6_450, 7_000)
+  if (reduced) return pose
+  if (ms >= 650 && ms < 2_500) {
+    const accel = span(ms, 650, 2_500) ** 2
+    pose.x = away * accel
+    pose.wind = 0.85
+  } else if (ms >= 2_500 && ms < 3_500) pose.x = away
+  else if (ms >= 3_500 && ms < 5_500) {
+    const u = span(ms, 3_500, 5_500)
+    pose.x = away * (1 - u) + 24 * u
+    pose.wind = 0.55
+  } else if (ms >= 5_500 && ms < 6_450) pose.x = 24 * (1 - span(ms, 5_500, 6_450))
   return pose
 }
 

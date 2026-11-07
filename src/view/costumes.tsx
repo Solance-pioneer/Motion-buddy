@@ -14,8 +14,10 @@ export function Costumes() {
         <path data-part="costume-aperture" d="M14 22 Q14 15 24 15 L76 15 Q86 15 86 22 L86 56 Q86 62 76 62 L24 62 Q14 62 14 56 Z" fill="#050608" />
         <path data-part="costume-chin" d="M22 58 Q50 54 78 58 L74 86 Q50 92 26 86 Z" fill="#303440" />
       </g>
-      <g data-costume="cord_hero" data-part="costume-mask" opacity="0">
+      <g data-costume="cord_hero" data-part="hero-cape-layer" opacity="0">
         <path data-part="hero-cape" d="M25 59C43 70 61 69 75 59C86 80 101 98 115 117C87 111 74 131 54 126C30 120 18 128 5 121C18 105 22 82 25 59Z" fill="#bd3d47" stroke="#ee7470" strokeWidth="1.4" strokeLinejoin="round" />
+      </g>
+      <g data-costume="cord_hero" data-part="costume-mask" opacity="0">
         <circle cx="50" cy="45" r="43" fill="#124868" stroke="#387d9a" strokeWidth="1.2" />
         <path d="M13 28Q32 10 50 23Q68 10 87 28L83 53Q68 64 50 51Q32 64 17 53Z" fill="#182333" stroke="#f0c56a" strokeWidth="1.5" strokeLinejoin="round" />
       </g>

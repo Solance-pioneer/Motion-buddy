@@ -52,10 +52,13 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
         </g>
       </g>
       <g data-part="costume-occlude" data-costume="ninja" opacity="0" pointerEvents="none">
-        <path d="M14 62 L86 62 L80 88 Q50 94 20 88 Z" fill="#303440" />
+        <path d="M14 58 L86 58 L80 88 Q50 94 20 88 Z" fill="#303440" />
       </g>
       <g data-part="costume-occlude" data-costume="racer" opacity="0" pointerEvents="none">
-        <path d="M8 60 L92 60 L92 72 Q92 92 68 92 L32 92 Q8 92 8 72 Z" fill="#e7e3d6" />
+        <path d="M10 58 L90 58 L90 74 Q90 94 68 94 L32 94 Q10 94 10 74 Z" fill="#e7e3d6" />
+      </g>
+      <g data-part="costume-occlude" data-costume="sheet_ghost" opacity="0" pointerEvents="none">
+        <path d="M16 58 L84 58 L86 78 Q78 72 70 86 Q62 76 50 90 Q38 76 30 86 Q22 72 14 78 Z" fill="#edece5" />
       </g>
     </svg>
   )

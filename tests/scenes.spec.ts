@@ -100,7 +100,7 @@ async function occlusionOf(page: Page, key: string) {
 
 async function maskBox(page: Page, key: string) {
   return page.evaluate((name) => {
-    const node = document.querySelector(`[data-costume="${name}"]`)
+    const node = document.querySelector(`[data-part="costume-mask"][data-costume="${name}"]`)
     const mute = document.querySelector('.mute-chip')?.getBoundingClientRect()
     const box = node?.getBoundingClientRect()
     if (!box) return null
@@ -126,7 +126,7 @@ test.describe('costume scenes', () => {
   for (const scene of [
     { key: 'ninja', label: 'Ninja peek', hold: 2_400, total: 6_000 },
     { key: 'cord_hero', label: 'Rope hero', hold: 3_200, total: 7_000 },
-    { key: 'racer', label: 'Little racer', hold: 3_000, total: 7_000 },
+    { key: 'racer', label: 'Little racer', hold: 5_600, total: 7_000 },
     { key: 'sheet_ghost', label: 'Sheet ghost', hold: 3_200, total: 7_500 },
   ]) {
     test(`${scene.label} plays through and returns to plain Buddy`, async ({ page }) => {
@@ -135,6 +135,16 @@ test.describe('costume scenes', () => {
       await page.getByRole('button', { name: /Motion Buddy/ }).dblclick()
       await page.getByRole('button', { name: scene.label }).click()
       await page.keyboard.press('Escape')
+      await expect(page.locator('main')).toHaveAttribute('data-scene', scene.key)
+      const beds = await page.evaluate(() => (window as unknown as { __motionBuddyTest: { contact: () => { bedStarts: number } } }).__motionBuddyTest.contact())
+      await page.mouse.click(200, 500)
+      await page.mouse.move(40, 500)
+      await page.mouse.down()
+      await page.mouse.move(180, 520)
+      await page.mouse.up()
+      const after = await page.evaluate(() => (window as unknown as { __motionBuddyTest: { contact: () => { bedStarts: number }; tryCue: (kind: string) => boolean } }).__motionBuddyTest.contact())
+      expect(after.bedStarts).toBe(beds.bedStarts)
+      expect(await page.evaluate(() => (window as unknown as { __motionBuddyTest: { tryCue: (kind: string) => boolean } }).__motionBuddyTest.tryCue('scan'))).toBe(false)
       await expect(page.locator('main')).toHaveAttribute('data-scene', scene.key)
       await page.waitForTimeout(scene.hold)
       await expect(page.locator('main')).toHaveAttribute('data-scene-hold', '1')
@@ -153,28 +163,20 @@ test.describe('costume scenes', () => {
       expect(fit.browClear, JSON.stringify(fit)).toBe(true)
       expect(fit.viewport.maskInside).toBe(true)
       const cover = await occlusionOf(page, scene.key)
-      const shouldCover = scene.key === 'ninja' || scene.key === 'racer'
+      const shouldCover = scene.key === 'ninja' || scene.key === 'racer' || scene.key === 'sheet_ghost'
       expect(cover.coversMouth).toBe(shouldCover)
       expect(cover.coversEyes).toBe(false)
       writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-portrait.json`, JSON.stringify({ scene: scene.key, orient: 'portrait', cover, ...fit }, null, 2))
       await expect(page.locator('[data-part="eye-l-path"]')).toBeVisible()
       await expect(page.locator('[data-part="mouth"]')).toBeVisible()
       await page.screenshot({ path: `/opt/cursor/artifacts/scene-${scene.key}-portrait.png` })
-      const beds = await page.evaluate(() => (window as unknown as { __motionBuddyTest: { contact: () => { bedStarts: number } } }).__motionBuddyTest.contact())
-      await page.mouse.click(200, 500)
-      await page.mouse.move(40, 500)
-      await page.mouse.down()
-      await page.mouse.move(180, 520)
-      await page.mouse.up()
-      const after = await page.evaluate(() => (window as unknown as { __motionBuddyTest: { contact: () => { bedStarts: number }; tryCue: (kind: string) => boolean } }).__motionBuddyTest.contact())
-      expect(after.bedStarts).toBe(beds.bedStarts)
-      expect(await page.evaluate(() => (window as unknown as { __motionBuddyTest: { tryCue: (kind: string) => boolean } }).__motionBuddyTest.tryCue('scan'))).toBe(false)
-      await expect(page.locator('main')).toHaveAttribute('data-scene', scene.key)
       await page.waitForTimeout(scene.total - scene.hold + 400)
       await expect(page.locator('main')).toHaveAttribute('data-scene', '')
       await expect(page.locator(`[data-part="costume-mask"][data-costume="${scene.key}"]`)).toHaveAttribute('opacity', '0')
       await expect(page.locator('[data-part="costume-occlude"][data-costume="ninja"]')).toHaveAttribute('opacity', '0')
       await expect(page.locator('[data-part="costume-occlude"][data-costume="racer"]')).toHaveAttribute('opacity', '0')
+      await expect(page.locator('[data-part="costume-occlude"][data-costume="sheet_ghost"]')).toHaveAttribute('opacity', '0')
+      await expect(page.locator('[data-part="costume-occlude"][data-costume="cord_hero"]')).toHaveCount(0)
     })
   }
 
@@ -241,7 +243,7 @@ test.describe('costume scenes', () => {
     for (const scene of [
       { key: 'ninja', hold: 2_400, rest: 4_000 },
       { key: 'cord_hero', hold: 3_200, rest: 4_200 },
-      { key: 'racer', hold: 3_000, rest: 4_400 },
+      { key: 'racer', hold: 6_200, rest: 1_600 },
       { key: 'sheet_ghost', hold: 3_200, rest: 4_800 },
     ]) {
       await play(page, scene.key)
@@ -259,7 +261,7 @@ test.describe('costume scenes', () => {
       expect(fit.viewport.maskInside).toBe(true)
       expect(fit.muteOverlap).toBe(false)
       const cover = await occlusionOf(page, scene.key)
-      const shouldCover = scene.key === 'ninja' || scene.key === 'racer'
+      const shouldCover = scene.key === 'ninja' || scene.key === 'racer' || scene.key === 'sheet_ghost'
       expect(cover.coversMouth).toBe(shouldCover)
       expect(cover.coversEyes).toBe(false)
       writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-landscape.json`, JSON.stringify({ scene: scene.key, orient: 'landscape', cover, ...fit }, null, 2))

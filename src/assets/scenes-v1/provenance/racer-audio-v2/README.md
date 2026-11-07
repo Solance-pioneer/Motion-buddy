@@ -1,0 +1,1 @@
+Original seven-second racer cue: acceleration, distant turnaround, returning engine and one bounded tyre squeal. Replace old wind sound, not additive. See integration-manifest.json for motion cue timings and scene-specific mouth occlusion note. Source/float master/app PCM16 retained. No human listening, app, phone or deployment claim.

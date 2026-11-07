@@ -1,0 +1,65 @@
+{
+  "pack": "motion-buddy-racer-audio-v2",
+  "scope": "ONLY one replacement racer sound cue; no app/art/other scene changes",
+  "duration_seconds": 7,
+  "app": "audio/app/racer_accelerate_return_brake_app_pcm16_48k.wav",
+  "master": "audio/masters/racer_accelerate_return_brake_master_f32_48k.wav",
+  "format": "PCM16 mono48k app, float32 mono48k master",
+  "samples": 336000,
+  "loop": false,
+  "cue_start_seconds": 0,
+  "timeline": [
+    {
+      "start": 0,
+      "end": 0.65,
+      "action": "Helmet appears; low engine wakes up."
+    },
+    {
+      "start": 0.65,
+      "end": 2.5,
+      "action": "Accelerate and move Buddy+helmet together away/offscreen."
+    },
+    {
+      "start": 2.5,
+      "end": 3.5,
+      "action": "Quiet distant engine; travel turnaround."
+    },
+    {
+      "start": 3.5,
+      "end": 5.5,
+      "action": "Return pass, engine grows and slows."
+    },
+    {
+      "start": 5.5,
+      "end": 6.45,
+      "action": "One bounded stylised tyre screech while braking back to centre."
+    },
+    {
+      "start": 6.45,
+      "end": 7,
+      "action": "Settle; costume clears and exact plain Buddy returns."
+    }
+  ],
+  "playback": "One finite source at racer scene0, replacing old racer_soft_wind. Do NOT layer old wind, duplicate screeches, loop or retrigger from sensor/touch. Preserve immediate mute, hidden/pagehide cleanup, fixed scene lock and seven-second deadline. Reduced motion keeps helmet static/crossfades with same single sound cue if unmuted.",
+  "mouth_occlusion": "Code should hide/occlude live mouth ONLY when costume region physically covers it (e.g.racing full helmet), not globally alter Buddy or hide mouth on open-face costumes. Parent helmet/mask and face under same scene motion.",
+  "provenance": "Original deterministic additive engine and band-limited synthetic tyre sound created by this source. No recordings/samples/voices/brands/copied themes/external downloads.",
+  "qa": {
+    "headers_sample_count_quantization_zero_endpoints": "pass",
+    "finite_no_clipping": "pass",
+    "peak_dbfs": -14.999833261030977,
+    "rms_dbfs": -25.462542499203565,
+    "max_adjacent_sample_step": 0.008911404766991178,
+    "not_performed": [
+      "human listening",
+      "app integration/runtime",
+      "phone testing",
+      "deployment"
+    ]
+  },
+  "files": {
+    "README.md": "9614c8095f695fa1cf633df6cf8ad12f8480aad9666fc46b2e2e0b5830c646e9",
+    "audio/app/racer_accelerate_return_brake_app_pcm16_48k.wav": "7a5178a1246f6c1a8b49849ab39fb6a3ebd23dbf2a26989bf1f5623fc21534e0",
+    "audio/masters/racer_accelerate_return_brake_master_f32_48k.wav": "aae5614e9cb05276ce9545593da8013318921ecc8e09513394d0a784ed2b222a",
+    "src/create_racer_audio.py": "8bc73266a4090d596768da7342a03131f7a9c65bb2858828108097b10bd3c99b"
+  }
+}

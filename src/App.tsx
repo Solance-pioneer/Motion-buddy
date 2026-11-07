@@ -611,7 +611,7 @@ export function App() {
 
   const onSample = useCallback(
     (sample: { x: number; y: number; level: number }) => {
-      if (sceneRef.current?.kind === 'country') return
+      if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
       engine.feedLook(sample.x, sample.y)
       engine.feedMotion(sample.level)
     },
@@ -655,7 +655,7 @@ export function App() {
     playChirp()
   }, [engine, playChirp, publish, soundOn])
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
-    if (sceneRef.current?.kind === 'country') return
+    if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
     engine.feedAcceleration(magnitude, lateral)
     const status = soundStatus()
     const state = engine.snapshot()
