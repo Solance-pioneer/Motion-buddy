@@ -147,6 +147,7 @@ for (const name of [
 ]) {
   copyFileSync(join('src/assets/scenes-v1/audio/app', name), join(sceneDir, name))
 }
+rmSync(join(sceneDir, 'hero_original_flourish_app_pcm16_48k.wav'), { force: true })
 copyFileSync(join('src/assets/scenes-v1/scene-policy-and-timings.json'), join(sceneDir, 'scene-policy-and-timings.json'))
 const countryDir = join(dist, 'scenes-v2')
 mkdirSync(countryDir, { recursive: true })
