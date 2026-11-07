@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CLAP_AT_MS, DEFAULT_AUTO, POSE_IDS, SHOWCASE_INTRO_MS, VOICE_PERIOD_MS, deskLoopMs, fallbackPose, gazeCount, placeApproved, resolvePose, sampleIdle, type PoseId } from './library.ts'
+import { CLAP_AT_MS, DEFAULT_AUTO, POSE_IDS, RARE_GRUMPY_AT_MS, RARE_GRUMPY_EVERY_MS, RARE_GRUMPY_MS, SHOWCASE_INTRO_MS, VOICE_PERIOD_MS, deskLoopMs, fallbackPose, gazeCount, placeApproved, rareGrumpy, resolvePose, sampleIdle, type PoseId } from './library.ts'
 
 const all = new Set<PoseId>(POSE_IDS)
 
@@ -36,9 +36,10 @@ describe('sampleIdle', () => {
     const allowed = new Set<PoseId>(DEFAULT_AUTO)
     const frames = []
     for (let t = 0; t < 23_200; t += 200) frames.push(sampleIdle(t, 'desk', allowed, false).pose)
-    for (const pose of ['curious', 'shy', 'happy', 'startled', 'grumpy', 'sleepy', 'yawn', 'wink', 'content']) {
+    for (const pose of ['curious', 'shy', 'happy', 'sleepy', 'yawn', 'wink', 'content', 'laugh']) {
       expect(frames, pose).toContain(pose)
     }
+    expect(frames.filter((pose) => pose === 'grumpy' || pose === 'startled')).toHaveLength(0)
     expect(frames.filter((pose) => pose === 'laugh').length / frames.length).toBeLessThan(0.12)
     expect(frames.filter((pose) => pose === 'wink').length / frames.length).toBeLessThan(0.12)
   })
@@ -55,14 +56,17 @@ describe('sampleIdle', () => {
   it('visits each approved action once per cycle, then the existing yawn and wink', () => {
     const allow = { dizzy: true, startled: true }
     const seen = new Set<string>()
-    const cycle = deskLoopMs() + 2100 + 1600 + 1800 + 2300 + 2400
+    const cycle = deskLoopMs() + 2100 + 1600
     for (let t = 0; t < cycle; t += 100) {
       const placed = placeApproved(t, allow)
       if (placed.showcase) seen.add(placed.showcase.id)
       else if (sampleIdle(placed.idleMs, 'desk', all, false).pose === 'yawn') seen.add('yawn')
       else if (sampleIdle(placed.idleMs, 'desk', all, false).pose === 'wink') seen.add('wink')
     }
-    expect([...seen]).toEqual(expect.arrayContaining(['scan', 'giggle', 'take-left', 'dizzy', 'spiral-dizzy', 'yawn', 'wink']))
+    expect([...seen]).toEqual(expect.arrayContaining(['scan', 'giggle', 'yawn', 'wink']))
+    expect(seen.has('dizzy')).toBe(false)
+    expect(seen.has('spiral-dizzy')).toBe(false)
+    expect(seen.has('take-left')).toBe(false)
     expect(placeApproved(1_000, allow).showcase).toBeNull()
     expect(placeApproved(SHOWCASE_INTRO_MS + 100, allow).showcase?.id).toBe('scan')
     const quiet = { dizzy: false, startled: false }
@@ -86,7 +90,7 @@ describe('sampleIdle', () => {
       if (id === previous) continue
       previous = id
       if (id === 'clap' || id === 'level-up') voices += 1
-      if (id === 'scan' || id === 'giggle' || id === 'take-left' || id === 'dizzy' || id === 'spiral-dizzy') beeps += 1
+      if (id === 'scan' || id === 'giggle') beeps += 1
     }
     expect(beeps).toBeGreaterThan(voices * 3)
     expect(voices).toBeGreaterThan(0)
@@ -94,6 +98,11 @@ describe('sampleIdle', () => {
     expect(placeApproved(36_100, allow).showcase?.id).toBe('eye-pop')
     expect(placeApproved(38_200, allow).showcase?.id).toBe('eye-bounce')
     expect(placeApproved(40_200, allow).showcase?.id).toBe('eye-sleepy')
+    expect(rareGrumpy(1_000)).toBe(false)
+    expect(rareGrumpy(RARE_GRUMPY_AT_MS)).toBe(true)
+    expect(rareGrumpy(RARE_GRUMPY_AT_MS + RARE_GRUMPY_MS - 1)).toBe(true)
+    expect(rareGrumpy(RARE_GRUMPY_AT_MS + RARE_GRUMPY_MS)).toBe(false)
+    expect(rareGrumpy(RARE_GRUMPY_AT_MS + RARE_GRUMPY_EVERY_MS)).toBe(true)
   })
 
   it('drops travel and blinks when reduced motion is on', () => {

@@ -23,6 +23,7 @@ test.describe('country scenes', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await openApp(page)
     const portal = page.getByRole('button', { name: 'Teleport' })
+    await expect(portal).toHaveText('Teleport')
     await portal.focus()
     await expect(portal).toBeFocused()
     const box = await portal.boundingBox()

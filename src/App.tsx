@@ -1026,7 +1026,7 @@ export function App() {
             beginCountry(pickCountry())
           }}
         >
-          <span>Portal</span>
+          <span>Teleport</span>
         </button>
       ) : null}
       {!open ? (

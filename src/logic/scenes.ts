@@ -16,8 +16,8 @@ export const SCENE_CUE: Record<SceneKey, { key: 'ninja_soft_swish' | 'hero_origi
   sheet_ghost: { key: 'ghost_cute_boo', at: 2_200 },
 }
 
-/** Ordinary Buddy time between ambient scenes. A scene never follows another immediately. */
-export const SCENE_GAP_MS = 70_000
+/** Plain Buddy time between ambient scenes. A scene never starts during a gesture or another scene. */
+export const SCENE_GAP_MS = 7_000
 
 export interface ScenePose {
   opacity: number

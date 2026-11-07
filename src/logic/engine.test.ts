@@ -207,6 +207,18 @@ describe('BuddyEngine', () => {
     expect(still.gazeX).toBe(0)
   })
 
+  it('stays friendly in idle and frowns only in the rare window', () => {
+    const early = advance(new BuddyEngine({ random: () => 0 }), 12_000)
+    expect(early.expression).not.toBe('grumpy')
+    expect(early.expression).not.toBe('startled')
+    const rare = advance(new BuddyEngine({ random: () => 0 }), 64_200)
+    expect(rare.showcase).toBeNull()
+    expect(rare.expression).toBe('grumpy')
+    const blocked = new BuddyEngine({ random: () => 0 })
+    blocked.toggleAutoExpression('grumpy')
+    expect(advance(blocked, 64_200).expression).not.toBe('grumpy')
+  })
+
   it('frowns briefly when scolded and stays off that face when grumpy is excluded', () => {
     const engine = new BuddyEngine({ random: () => 0 })
     expect(engine.requestScold()).toBe(true)

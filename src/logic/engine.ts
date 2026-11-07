@@ -10,7 +10,7 @@ import {
   type ExpressionPhase,
   type FacePose,
 } from './expressions.ts'
-import { DEFAULT_AUTO, placeApproved, POSE_IDS, resolvePose, sampleIdle, type PoseId, type Profile, type ShowcaseFrame } from './library.ts'
+import { DEFAULT_AUTO, placeApproved, POSE_IDS, rareGrumpy, resolvePose, sampleIdle, type PoseId, type Profile, type ShowcaseFrame } from './library.ts'
 import { sampleCandidate } from './catalog.ts'
 import { MAX_FRAME_DT_MS, REST_HOLD_MS, smoothToward, WAKE_DEBOUNCE_MS, WAKE_LEVEL } from './motion.ts'
 import {
@@ -318,6 +318,17 @@ export class BuddyEngine {
       && this.reaction.name === 'none'
       && this.uiElapsed >= this.settleUntil
       && !(this.presence === 'rest' && this.resting)
+    const rare =
+      !showApproved
+      && !scolding
+      && !greeting
+      && this.profile === 'desk'
+      && this.selection === 'auto'
+      && this.reaction.name === 'none'
+      && this.autoSet.includes('grumpy')
+      && !(this.presence === 'rest' && this.resting)
+      && rareGrumpy(this.idleElapsed)
+    if (rare) frame = { ...frame, pose: 'grumpy', gazeX: 0, gazeY: 0.08, blink: 0, speed: false }
     if (showApproved && idleShowcase) {
       showcase = idleShowcase
       const played = sampleCandidate(idleShowcase.id, idleShowcase.elapsed, this.reduced, 'soft')

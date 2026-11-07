@@ -54,8 +54,8 @@ const DESK: Beat[] = [
   { until: 5600, pose: 'shy', gazeX: -0.55, gazeY: 0.4 },
   { until: 7600, pose: 'happy', gazeX: 0.1, gazeY: -0.12 },
   { until: 9200, pose: 'curious', gazeX: 0, gazeY: 0 },
-  { until: 10000, pose: 'startled', gazeX: 0.75, gazeY: -0.08 },
-  { until: 11800, pose: 'grumpy', gazeX: 0, gazeY: 0.08 },
+  { until: 10000, pose: 'happy', gazeX: 0.2, gazeY: -0.08 },
+  { until: 11800, pose: 'content', gazeX: 0, gazeY: -0.04 },
   { until: 13600, pose: 'sleepy', gazeX: 0, gazeY: 0.12 },
   { until: 15400, pose: 'yawn', gazeX: 0, gazeY: 0.05 },
   { until: 17000, pose: 'wink', gazeX: 0.3, gazeY: 0 },
@@ -69,7 +69,7 @@ const CAR: Beat[] = [
   { until: 2760, pose: 'determined', gazeX: 0.35, gazeY: 0, blink: true, speed: true },
   { until: 5200, pose: 'smug', gazeX: 0.7, gazeY: -0.08, speed: true },
   { until: 7400, pose: 'curious', gazeX: -0.75, gazeY: 0.05 },
-  { until: 8400, pose: 'startled', gazeX: 0.85, gazeY: -0.1 },
+  { until: 8400, pose: 'curious', gazeX: 0.35, gazeY: 0.05 },
   { until: 11200, pose: 'determined', gazeX: 0.15, gazeY: 0, speed: true },
   { until: 14000, pose: 'smug', gazeX: -0.2, gazeY: -0.05 },
 ]
@@ -133,9 +133,6 @@ export const SHOWCASE_INTRO_MS = 10_800
 const SHOWCASE_BEATS: { id: string; ms: number; gate?: 'dizzy' | 'startled' }[] = [
   { id: 'scan', ms: 2100 },
   { id: 'giggle', ms: 1600 },
-  { id: 'take-left', ms: 1800, gate: 'startled' },
-  { id: 'dizzy', ms: 2300, gate: 'dizzy' },
-  { id: 'spiral-dizzy', ms: 2400, gate: 'dizzy' },
 ]
 
 export interface ShowcaseFrame {
@@ -145,6 +142,16 @@ export interface ShowcaseFrame {
 
 export function deskLoopMs(): number {
   return DESK[DESK.length - 1]?.until ?? 1
+}
+
+/** One short grumpy visit late in each quiet minute and a half. The repeating idle loop stays friendly. */
+export const RARE_GRUMPY_EVERY_MS = 90_000
+export const RARE_GRUMPY_AT_MS = 64_000
+export const RARE_GRUMPY_MS = 1_200
+
+export function rareGrumpy(idleMs: number): boolean {
+  const phase = ((idleMs % RARE_GRUMPY_EVERY_MS) + RARE_GRUMPY_EVERY_MS) % RARE_GRUMPY_EVERY_MS
+  return phase >= RARE_GRUMPY_AT_MS && phase < RARE_GRUMPY_AT_MS + RARE_GRUMPY_MS
 }
 
 /** Spoken lines appear once per this stretch. Beeps keep cycling underneath. */

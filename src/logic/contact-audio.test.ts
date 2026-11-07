@@ -87,13 +87,11 @@ describe('contact audio', () => {
     }
   })
 
-  it('keeps one looping bed across the loop point and yields other cues', () => {
+  it('plays the drag clip once and yields other cues while it is sounding', () => {
     expect(beginContact()).toBe(true)
     expect(beginContact()).toBe(false)
     const bed = sources[0]
-    expect(bed.loop).toBe(true)
-    expect(bed.loopStart).toBe(0)
-    expect(bed.loopEnd).toBeCloseTo(2.8, 5)
+    expect(bed.loop).toBe(false)
     expect(bed.started).toBe(1)
     expect(playCue('scan')).toBe(false)
     expect(playCue('chirp')).toBe(false)

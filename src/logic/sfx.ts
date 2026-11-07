@@ -483,7 +483,7 @@ function stopLater(source: AudioBufferSourceNode, seconds: number): void {
   source.stop(context.currentTime + seconds + 0.02)
 }
 
-/** One native looping bed for this contact. A second call while it is running does not start another source. */
+/** One play of the drag clip. A second call while it is still sounding does not start another. */
 export function beginContact(): boolean {
   if (!context || gate.muted || !gate.unlocked || bedSource) return false
   const clip = pcm16('curious_contact_loop', CONTACT_WAV_BASE64.curious_contact_loop)
@@ -492,9 +492,7 @@ export function beginContact(): boolean {
   const source = context.createBufferSource()
   const gain = context.createGain()
   source.buffer = buffer
-  source.loop = true
-  source.loopStart = 0
-  source.loopEnd = clip.samples.length / clip.rate
+  source.loop = false
   source.connect(gain)
   gain.connect(context.destination)
   fadeNode(gain, 0, BED_GAIN, 0.12)

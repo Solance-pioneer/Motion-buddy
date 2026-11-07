@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { featuresFor } from '../view/features.ts'
-import { SCENE_CUE, SCENE_MS, nextAmbientScene, sampleScene } from './scenes.ts'
+import { SCENE_CUE, SCENE_GAP_MS, SCENE_MS, nextAmbientScene, sampleScene } from './scenes.ts'
 
 const files = {
   ninja_soft_swish: ['src/assets/scenes-v1/audio/app/ninja_soft_swish_app_pcm16_48k.wav', 'b3336913388017bb6d3ecc33c9680d9a9c8c7e5f662611254396074b59f114d5'],
@@ -57,9 +57,14 @@ describe('costume scenes', () => {
   })
 
   it('does not schedule two scenes back to back', () => {
+    expect(SCENE_GAP_MS).toBe(7_000)
     expect(nextAmbientScene(null)).toBe('ninja')
     expect(nextAmbientScene('ninja')).toBe('cord_hero')
     expect(nextAmbientScene('sheet_ghost')).toBe('ninja')
+    const round = [nextAmbientScene(null)]
+    for (let i = 0; i < 3; i += 1) round.push(nextAmbientScene(round[i] ?? null))
+    expect(new Set(round).size).toBe(4)
+    expect(round.filter((key) => key === 'sheet_ghost')).toHaveLength(1)
     expect(SCENE_CUE.ninja.at).toBe(650)
     expect(SCENE_CUE.cord_hero.at).toBe(2_800)
     expect(SCENE_CUE.racer.at).toBe(2_000)
