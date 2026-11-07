@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
+import { featuresFor } from '../view/features.ts'
 import { SCENE_CUE, SCENE_MS, nextAmbientScene, sampleScene } from './scenes.ts'
 
 const files = {
@@ -46,6 +47,13 @@ describe('costume scenes', () => {
     expect(sampleScene('racer', 3_000, true).x).toBe(0)
     expect(sampleScene('sheet_ghost', 3_000, true).y).toBe(0)
     expect(sampleScene('ninja', 6_000, true).done).toBe(true)
+  })
+
+  it('does not change the resting curious eyes or mouth', () => {
+    const face = featuresFor('curious', 'soft')
+    expect(face.left).toMatchObject({ cx: 32, cy: 38, w: 20, h: 28 })
+    expect(face.right).toMatchObject({ cx: 68, cy: 38, w: 20, h: 28 })
+    expect(face.mouth).toMatchObject({ y: 67, width: 20, curve: 10 })
   })
 
   it('does not schedule two scenes back to back', () => {

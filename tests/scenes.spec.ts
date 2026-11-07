@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 
 async function openApp(page: Page) {
@@ -12,6 +13,62 @@ async function play(page: Page, key: string) {
     return (window as unknown as { __motionBuddyTest: { playScene: (key: string) => boolean } }).__motionBuddyTest.playScene(name)
   }, key)
   expect(started).toBe(true)
+}
+
+async function fitOf(page: Page, key: string) {
+  return page.evaluate((name) => {
+    // A blended grumpy mouth is a real crescent that can be under 1px tall.
+      // That is still a mouth, so a short box is measured rather than discarded.
+      const rect = (node: Element | null) => {
+      if (!node) return null
+      const box = node.getBoundingClientRect()
+      if (!Number.isFinite(box.x) || !Number.isFinite(box.y) || !Number.isFinite(box.width) || !Number.isFinite(box.height)) return null
+      return { x: box.x, y: box.y, right: box.right, bottom: box.bottom, width: box.width, height: box.height }
+    }
+    const union = (nodes: Element[]) => {
+      const boxes = nodes.map((node) => node.getBoundingClientRect()).filter((box) => box.width > 0.5 && box.height > 0.5)
+      if (!boxes.length) return null
+      return {
+        x: Math.min(...boxes.map((box) => box.x)),
+        y: Math.min(...boxes.map((box) => box.y)),
+        right: Math.max(...boxes.map((box) => box.right)),
+        bottom: Math.max(...boxes.map((box) => box.bottom)),
+      }
+    }
+    const root = document.querySelector(`[data-costume="${name}"]`)
+    const eyes = union([...document.querySelectorAll('[data-part="eye-l-path"], [data-part="eye-r-path"]')])
+    const mouthNode = document.querySelector('[data-part="mouth"]')
+    const mouth = rect(mouthNode)
+    const mouthPath = mouthNode?.getAttribute('d') ?? ''
+    const aperture = rect(root?.querySelector('[data-part="costume-aperture"]') ?? null)
+    const chin = rect(root?.querySelector('[data-part="costume-chin"], [data-chin]') ?? null)
+    const brows = [...(root?.querySelectorAll('[data-part="costume-brow"]') ?? [])].map((node) => rect(node)).filter(Boolean)
+    const inside = (outer: { x: number; y: number; right: number; bottom: number } | null, inner: { x: number; y: number; right: number; bottom: number } | null) =>
+      Boolean(outer && inner && inner.x >= outer.x - 1 && inner.y >= outer.y - 1 && inner.right <= outer.right + 1 && inner.bottom <= outer.bottom + 1)
+    const hits = (a: { x: number; y: number; right: number; bottom: number }, b: { x: number; y: number; right: number; bottom: number }) =>
+      Math.min(a.right, b.right) - Math.max(a.x, b.x) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y) > 1
+    const mask = rect(root ?? null)
+    const mute = document.querySelector('.mute-chip')?.getBoundingClientRect()
+    const muteOverlap = Boolean(mask && mute && hits(mask, mute))
+    return {
+      eyesInside: inside(aperture, eyes),
+      mouthInside: inside(chin, mouth),
+      browClear: Boolean(eyes && brows.every((brow) => brow && !hits(eyes, brow))),
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        maskInside: Boolean(mask && mask.x >= -2 && mask.y >= -2 && mask.right <= window.innerWidth + 2 && mask.bottom <= window.innerHeight + 2),
+      },
+      muteOverlap,
+      expression: document.querySelector('main')?.dataset.expression ?? '',
+      mouthDrawn: mouthPath.includes('M') && mouthPath.includes('Q'),
+      mouthPath,
+      eyes,
+      mouth,
+      aperture,
+      chin,
+    }
+  }, key)
 }
 
 async function maskBox(page: Page, key: string) {
@@ -62,6 +119,13 @@ test.describe('costume scenes', () => {
       expect(box!.right).toBeLessThanOrEqual(392)
       expect(box!.bottom).toBeLessThanOrEqual(846)
       expect(box!.muteOverlap).toBe(false)
+      const fit = await fitOf(page, scene.key)
+      expect(fit.eyesInside, JSON.stringify(fit)).toBe(true)
+      expect(fit.mouthDrawn, JSON.stringify(fit)).toBe(true)
+      expect(fit.mouthInside, JSON.stringify(fit)).toBe(true)
+      expect(fit.browClear, JSON.stringify(fit)).toBe(true)
+      expect(fit.viewport.maskInside).toBe(true)
+      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-portrait.json`, JSON.stringify({ scene: scene.key, orient: 'portrait', ...fit }, null, 2))
       await expect(page.locator('[data-part="eye-l-path"]')).toBeVisible()
       await expect(page.locator('[data-part="mouth"]')).toBeVisible()
       await page.screenshot({ path: `/opt/cursor/artifacts/scene-${scene.key}-portrait.png` })
@@ -138,11 +202,14 @@ test.describe('costume scenes', () => {
   })
 
   test('landscape keeps the revealed costumes inside the short screen', async ({ page }) => {
+    test.setTimeout(90_000)
     await page.setViewportSize({ width: 844, height: 390 })
     await openApp(page)
     for (const scene of [
-      { key: 'ninja', hold: 2_400 },
-      { key: 'sheet_ghost', hold: 3_200 },
+      { key: 'ninja', hold: 2_400, rest: 4_000 },
+      { key: 'cord_hero', hold: 3_200, rest: 4_200 },
+      { key: 'racer', hold: 3_000, rest: 4_400 },
+      { key: 'sheet_ghost', hold: 3_200, rest: 4_800 },
     ]) {
       await play(page, scene.key)
       await page.waitForTimeout(scene.hold)
@@ -151,8 +218,16 @@ test.describe('costume scenes', () => {
       expect(box!.y).toBeGreaterThanOrEqual(-2)
       expect(box!.right).toBeLessThanOrEqual(846)
       expect(box!.bottom).toBeLessThanOrEqual(392)
+      const fit = await fitOf(page, scene.key)
+      expect(fit.eyesInside, JSON.stringify(fit)).toBe(true)
+      expect(fit.mouthDrawn, JSON.stringify(fit)).toBe(true)
+      expect(fit.mouthInside, JSON.stringify(fit)).toBe(true)
+      expect(fit.browClear, JSON.stringify(fit)).toBe(true)
+      expect(fit.viewport.maskInside).toBe(true)
+      expect(fit.muteOverlap).toBe(false)
+      writeFileSync(`/opt/cursor/artifacts/fit-${scene.key}-landscape.json`, JSON.stringify({ scene: scene.key, orient: 'landscape', ...fit }, null, 2))
       await page.screenshot({ path: `/opt/cursor/artifacts/scene-${scene.key}-landscape.png` })
-      await page.waitForTimeout(scene.key === 'ninja' ? 4_000 : 5_000)
+      await page.waitForTimeout(scene.rest)
       await expect(page.locator('main')).toHaveAttribute('data-scene', '')
     }
   })
