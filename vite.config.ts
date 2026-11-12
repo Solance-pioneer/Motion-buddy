@@ -2,7 +2,9 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Dev stays at '/'. Production and preview use the Pages project path.
+  base: mode === 'production' ? '/Motion-buddy/' : '/',
   plugins: [react()],
   build: {
     rollupOptions: {
@@ -19,4 +21,4 @@ export default defineConfig({
     port: 43123,
     strictPort: true,
   },
-})
+}))
