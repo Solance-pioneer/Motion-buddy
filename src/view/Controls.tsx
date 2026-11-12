@@ -68,6 +68,8 @@ export function Controls({
   onPreviewGlance,
   onPreviewReaction,
   onToggleWakeLock,
+  weatherOn,
+  onToggleWeather,
 }: {
   presence: Presence
   selection: Selection
@@ -104,6 +106,8 @@ export function Controls({
   onPreviewGlance: () => void
   onPreviewReaction: (kind: ReactionKind) => void
   onToggleWakeLock: () => void
+  weatherOn: boolean
+  onToggleWeather: () => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -270,6 +274,12 @@ export function Controls({
           <p className="note">
             Orientation tilts the face. A gentle held movement, from the phone’s movement sensor, plays worried then startled. A quicker move plays dizzy, then a calm recovery. Low sensitivity still notices a gentle deliberate move. Do not shake hard.
           </p>
+          <div className="choice-row">
+            <button type="button" aria-pressed={weatherOn} onClick={onToggleWeather}>
+              Weather moods
+            </button>
+          </div>
+          <p className="note">Off until you turn it on. Location is rounded and used only for the weather reading.</p>
         </fieldset>
 
         <fieldset>

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 const dist = 'dist'
@@ -140,6 +140,7 @@ writeFileSync(
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
     'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, egypt_cinematic, japan_gentle_bow, and australia_hop_duet play once at gain 0.68. Masters are not rewritten.',
     'Four CoMiGo bleeps (tap, blink, idle, ack) are finite one-shots. They stay silent while muted and wait out their cooldowns. CC0, credit optional.',
+    'Batch 1 films load one at a time. A touch cancels the film that is playing. Idle and random films then wait 4 seconds.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
     '',
   ].join('\n'),
@@ -186,6 +187,11 @@ writeFileSync(
   join(bleepDir, 'CREDIT.txt'),
   'CoMiGo Bleeps n Bloops by Cosmo Myzrail Gorynych. CC0. Credit optional. These four app copies are finite one-shots.\n',
 )
+const batchClipDir = join(dist, 'scene-clips-batch1-v1')
+mkdirSync(batchClipDir, { recursive: true })
+for (const name of readdirSync('src/assets/scene-clips-batch1-v1')) {
+  copyFileSync(join('src/assets/scene-clips-batch1-v1', name), join(batchClipDir, name))
+}
 const clipDir = join(dist, 'scene-clips-v1')
 mkdirSync(clipDir, { recursive: true })
 for (const name of ['buddy-anime-speed-rush-v2.mp4', 'buddy-brake-surprised-v1.mp4', 'PROVENANCE.md']) {

@@ -21,6 +21,31 @@ import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, sceneClipMuted, type SceneClip } from './logic/scene-clip.ts'
+import { readMorningDay, readWeatherMoods, writeMorningDay, writeWeatherMoods } from './logic/clip-memory.ts'
+import {
+  activeWeather,
+  carClipFor,
+  chooseScheduledClip,
+  classifyCarMotion,
+  clipById,
+  CLIP_ROWS,
+  driveWasReal,
+  idleBlocked,
+  jamDue,
+  localYmd,
+  nextIdleClip,
+  noteInteraction,
+  previewDate,
+  tunnelRoll,
+  type ClipGuard,
+  type DateMode,
+} from './logic/clip-table.ts'
+import { isUnlocked } from './logic/entitlements.ts'
+import { loadConditions } from './logic/weather/cache.ts'
+import type { WeatherOverride } from './logic/weather/conditions.ts'
+import { requestRoundedFix } from './logic/weather/locate.ts'
+import type { WeatherConditions } from './logic/weather/types.ts'
+import { loadClipUrl } from './view/clip-urls.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -148,6 +173,26 @@ export function App() {
   const tapTimer = useRef(0)
   const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, wide: 1, onFace: false, mode: 'chase' as PetMode, dragging: false, downAt: 0, sounded: false, tucked: false, boopUntil: 0 })
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
+  const batchHold = useRef({
+    guard: null as ClipGuard,
+    suppressUntil: 0,
+    playedSeason: [] as string[],
+    goodnight: false,
+    readyAt: {} as Record<string, number>,
+    lastIdle: null as string | null,
+    lastCarAt: -100_000,
+    carOnAt: 0,
+    carSawMotion: false,
+    carStillSince: 0,
+    lastSchedule: 0,
+    token: 0,
+    idleTurn: false,
+  })
+  const startBatchRef = useRef<(id: string, gallery?: boolean) => void>(() => {})
+  const dateModeRef = useRef<DateMode>('normal')
+  const weatherModeRef = useRef<WeatherOverride>('none')
+  const weatherRef = useRef<WeatherConditions | null>(null)
+  const weatherOnRef = useRef(false)
   const sceneRef = useRef<
     | { kind: 'costume'; key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean }
     | { kind: 'country'; key: CountryKey; started: number; banked: number; paused: boolean; cueFired: boolean; stingFired: boolean; leadUntil: number; reduced: boolean }
@@ -462,9 +507,52 @@ export function App() {
     const root = rootRef.current
     const current = sceneRef.current
     if (!current) {
-      if (!heldRef.current && !openRef.current && !contactStatus().active) {
+      const quiet = !heldRef.current && !openRef.current && !contactStatus().active
+      const hold = batchHold.current
+      if (quiet && !hold.guard) {
+        const now = performance.now()
+        if (now - hold.lastSchedule >= 1_000) {
+          hold.lastSchedule = now
+          const sky = activeWeather(weatherModeRef.current, weatherRef.current, weatherOnRef.current)
+          const id = chooseScheduledClip({
+            now,
+            date: previewDate(new Date(), dateModeRef.current),
+            reduced: engine.snapshot().reduced,
+            guard: hold.guard,
+            suppressUntil: hold.suppressUntil,
+            playedSeason: hold.playedSeason,
+            goodnightPlayed: hold.goodnight,
+            morningStored: readMorningDay(),
+            readyAt: hold.readyAt,
+            weather: sky.weather,
+            weatherEnabled: sky.enabled,
+          })
+          if (id) startBatchRef.current(id)
+          else if (!engine.snapshot().reduced && engine.snapshot().profile === 'car') {
+            const still = now - hold.carStillSince
+            const jam = jamDue(still) ? carClipFor('jam', hold.readyAt, now, hold.lastCarAt, hold.suppressUntil) : null
+            const tunnel = !jam && tunnelRoll(Math.random(), still) ? carClipFor('tunnel', hold.readyAt, now, hold.lastCarAt, hold.suppressUntil) : null
+            const carId = jam ?? tunnel
+            if (carId) startBatchRef.current(carId)
+          }
+        }
+      }
+      if (quiet) {
         calmRef.current += dt
-        if (calmRef.current >= SCENE_GAP_MS) beginScene(nextAmbientScene(lastScene.current))
+        if (calmRef.current >= SCENE_GAP_MS) {
+          calmRef.current = 0
+          const now = performance.now()
+          const turnClip = hold.idleTurn
+          hold.idleTurn = !turnClip
+          if (turnClip && !engine.snapshot().reduced && !hold.guard && !idleBlocked(hold.suppressUntil, now)) {
+            const idleId = nextIdleClip(hold.lastIdle, Math.random())
+            if (idleId) {
+              startBatchRef.current(idleId)
+              return
+            }
+          }
+          if (!hold.guard) beginScene(nextAmbientScene(lastScene.current))
+        }
       }
       return
     }
@@ -583,13 +671,65 @@ export function App() {
   const [raceOn, setRaceOn] = useState(false)
   const [raceMarks, setRaceMarks] = useState(false)
   const [sceneClip, setSceneClip] = useState<SceneClip | null>(null)
+  const [batchId, setBatchId] = useState<string | null>(null)
+  const [batchUrl, setBatchUrl] = useState<string | null>(null)
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [dateMode, setDateMode] = useState<DateMode>('normal')
+  const [weatherMode, setWeatherMode] = useState<WeatherOverride>('none')
+  const [weatherOn, setWeatherOn] = useState(() => readWeatherMoods())
+  const [weather, setWeather] = useState<WeatherConditions | null>(null)
   const clipClock = useRef(initialClipClock())
   const clipVideo = useRef<HTMLVideoElement | null>(null)
   const endClipRef = useRef(() => {})
+  dateModeRef.current = dateMode
+  weatherModeRef.current = weatherMode
+  weatherRef.current = weather
+  weatherOnRef.current = weatherOn
   endClipRef.current = () => {
-    clipVideo.current?.pause()
+    batchHold.current.token += 1
+    batchHold.current.guard = null
+    const video = clipVideo.current
+    if (video) {
+      video.pause()
+      try {
+        video.currentTime = 0
+      } catch {
+        // A clip that has not loaded yet has nothing to rewind.
+      }
+    }
     clipClock.current = endSceneClip(clipClock.current)
     setSceneClip(null)
+    setBatchId(null)
+    setBatchUrl(null)
+  }
+  startBatchRef.current = (id: string, gallery = false) => {
+    const row = clipById(id)
+    if (!row || !isUnlocked(id)) return
+    if (batchHold.current.guard) return
+    if (engine.snapshot().reduced && !gallery) return
+    const now = performance.now()
+    batchHold.current.guard = 'batch'
+    batchHold.current.token += 1
+    const token = batchHold.current.token
+    if (row.trigger === 'season' && !batchHold.current.playedSeason.includes(id)) {
+      batchHold.current.playedSeason = [...batchHold.current.playedSeason, id]
+    }
+    if (row.trigger === 'goodnight') batchHold.current.goodnight = true
+    if (row.trigger === 'morning') writeMorningDay(localYmd(new Date()))
+    if (row.cooldownMs > 0) batchHold.current.readyAt[id] = now + row.cooldownMs
+    if (row.trigger.startsWith('car-')) batchHold.current.lastCarAt = now
+    if (row.trigger === 'idle') batchHold.current.lastIdle = id
+    setGalleryOpen(false)
+    setBatchId(id)
+    void loadClipUrl(row.file).then(
+      (url) => {
+        if (batchHold.current.token !== token) return
+        setBatchUrl(url)
+      },
+      () => {
+        if (batchHold.current.token === token) endClipRef.current()
+      },
+    )
   }
 
   const publish = useCallback((state: BuddyState, dt = 0) => {
@@ -627,13 +767,16 @@ export function App() {
       driveClock.current = step.clock
       driveLook.current = look
       if (step.key) {
+        const filmBusy = Boolean(clipClock.current.playing) || batchHold.current.guard != null
         const brake = step.key === 'car_brake_soft_a' || step.key === 'car_brake_soft_b'
-        if (brake) {
+        if (brake && !filmBusy) {
           const started = beginSceneClip(clipClock.current, 'brake-surprise', performance.now(), state.reduced)
           clipClock.current = started.clock
-          if (started.play) setSceneClip(started.play)
-          else if (!clipClock.current.playing) playDriveCue(step.key)
-        } else if (!clipClock.current.playing) {
+          if (started.play) {
+            batchHold.current.guard = 'brake'
+            setSceneClip(started.play)
+          } else if (!clipClock.current.playing) playDriveCue(step.key)
+        } else if (!filmBusy) {
           playDriveCue(step.key)
         }
       }
@@ -750,6 +893,18 @@ export function App() {
   const onAcceleration = useCallback((magnitude: number, lateral: number) => {
     if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
     engine.feedAcceleration(magnitude, lateral)
+    if (engine.snapshot().profile === 'car') {
+      const now = performance.now()
+      if (magnitude > 1.2 || Math.abs(lateral) > 0.25) {
+        batchHold.current.carSawMotion = true
+        batchHold.current.carStillSince = now
+      }
+      const kind = classifyCarMotion(magnitude, lateral)
+      if (kind && !batchHold.current.guard && !sceneRef.current && !engine.snapshot().reduced) {
+        const id = carClipFor(kind, batchHold.current.readyAt, now, batchHold.current.lastCarAt, batchHold.current.suppressUntil)
+        if (id) startBatchRef.current(id)
+      }
+    }
     const status = soundStatus()
     const state = engine.snapshot()
     const next = noteMovement(moves.current, {
@@ -877,7 +1032,7 @@ export function App() {
 
   useEffect(() => {
     const video = clipVideo.current
-    if (!sceneClip || !video) return
+    if ((!sceneClip && !batchUrl) || !video) return
     let cancelled = false
     const pending = video.play()
     void pending?.catch(() => {
@@ -886,7 +1041,26 @@ export function App() {
     return () => {
       cancelled = true
     }
-  }, [sceneClip])
+  }, [sceneClip, batchUrl])
+
+  useEffect(() => {
+    if (!weatherOn || !isUnlocked('weather-moods')) return
+    let cancel = false
+    const run = () => {
+      void requestRoundedFix().then((fix) => {
+        if (!fix || cancel) return null
+        return loadConditions(fix.lat, fix.lon)
+      }).then((conditions) => {
+        if (!cancel && conditions) setWeather(conditions)
+      })
+    }
+    run()
+    const id = window.setInterval(run, 3_600_000)
+    return () => {
+      cancel = true
+      window.clearInterval(id)
+    }
+  }, [weatherOn])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -1044,7 +1218,7 @@ export function App() {
 
   openRef.current = open
   return (
-    <main
+      <main
         ref={rootRef}
         className="app"
         data-controls={open ? 'open' : 'closed'}
@@ -1052,6 +1226,20 @@ export function App() {
         data-tilt={tilt.signals.tilt ? 'live' : 'off'}
         data-movement={tilt.signals.movement ? 'live' : 'off'}
         data-wake-lock={wakeLock.status}
+        onPointerDownCapture={(event) => {
+          if (event.target instanceof Element && event.target.closest('[data-clip-gallery]')) return
+          const step = noteInteraction({ guard: batchHold.current.guard, suppressUntil: batchHold.current.suppressUntil }, performance.now(), false)
+          batchHold.current.suppressUntil = step.hold.suppressUntil
+          if (step.cancel) endClipRef.current()
+          else batchHold.current.guard = step.hold.guard
+        }}
+        onTouchStartCapture={(event) => {
+          if (event.target instanceof Element && event.target.closest('[data-clip-gallery]')) return
+          const step = noteInteraction({ guard: batchHold.current.guard, suppressUntil: batchHold.current.suppressUntil }, performance.now(), false)
+          batchHold.current.suppressUntil = step.hold.suppressUntil
+          if (step.cancel) endClipRef.current()
+          else batchHold.current.guard = step.hold.guard
+        }}
       >
       <button
         ref={faceButtonRef}
@@ -1255,12 +1443,22 @@ onClick={() => {
           }}
           onProfile={(profile) => {
             if (profile !== 'car') {
+              const now = performance.now()
+              const drove = driveWasReal(now - batchHold.current.carOnAt, batchHold.current.carSawMotion)
               carTarget.current = { throttle: 0, bank: 0 }
               carShown.current = { throttle: 0, bank: 0 }
               setRaceOn(false)
               setRaceMarks(false)
               window.clearTimeout(raceTimer.current)
               stopDriveCue(80)
+              if (drove && !batchHold.current.guard && !sceneRef.current && !engine.snapshot().reduced) {
+                const arrived = carClipFor('arrived', batchHold.current.readyAt, now, batchHold.current.lastCarAt, batchHold.current.suppressUntil)
+                if (arrived) startBatchRef.current(arrived)
+              }
+            } else {
+              batchHold.current.carOnAt = performance.now()
+              batchHold.current.carSawMotion = false
+              batchHold.current.carStillSince = performance.now()
             }
             engine.setProfile(profile)
             publish(engine.snapshot())
@@ -1287,8 +1485,10 @@ onClick={() => {
             const reducedNow = engine.snapshot().reduced
             const started = beginSceneClip(clipClock.current, 'race-rush', performance.now(), reducedNow)
             clipClock.current = started.clock
-            if (started.play) setSceneClip(started.play)
-            else if (reducedNow && !clipClock.current.playing) playDriveCue('race_activate_rev')
+            if (started.play && !batchHold.current.guard) {
+              batchHold.current.guard = 'rush'
+              setSceneClip(started.play)
+            } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
             setRaceMarks(true)
             raceTimer.current = window.setTimeout(() => setRaceMarks(false), 1_250)
             publish(engine.snapshot())
@@ -1347,6 +1547,14 @@ onClick={() => {
             publish(engine.snapshot())
           }}
           onToggleWakeLock={wakeLock.toggle}
+          weatherOn={weatherOn && isUnlocked('weather-moods')}
+          onToggleWeather={() => {
+            if (!isUnlocked('weather-moods')) return
+            const next = !weatherOn
+            setWeatherOn(next)
+            writeWeatherMoods(next)
+            if (!next) setWeather(null)
+          }}
           soundOn={soundOn}
           soundAvailable={soundAvailable}
           onToggleSound={() => {
@@ -1369,10 +1577,10 @@ onClick={() => {
           }}
         />
       ) : null}
-      {sceneClip ? (
+      {sceneClip || batchUrl ? (
         <div
           className="scene-clip"
-          data-scene-clip={sceneClip}
+          data-scene-clip={sceneClip ?? batchId ?? ''}
           onPointerDown={(event) => {
             event.stopPropagation()
             endClipRef.current()
@@ -1380,13 +1588,47 @@ onClick={() => {
         >
           <video
             ref={clipVideo}
-            src={sceneClip === 'race-rush' ? raceRushUrl : brakeSurpriseUrl}
+            src={sceneClip === 'race-rush' ? raceRushUrl : sceneClip === 'brake-surprise' ? brakeSurpriseUrl : batchUrl ?? undefined}
             playsInline
             muted={sceneClipMuted(!soundOn)}
             preload="auto"
             onEnded={() => endClipRef.current()}
             onError={() => endClipRef.current()}
           />
+        </div>
+      ) : null}
+      {isUnlocked('clip-gallery') ? (
+        <div className="clip-gallery" data-clip-gallery>
+          <button type="button" className="clip-gallery-open" aria-expanded={galleryOpen} onClick={() => setGalleryOpen((openNow) => !openNow)}>
+            Clips
+          </button>
+          {galleryOpen ? (
+            <div className="clip-gallery-panel">
+              <p>Date</p>
+              <div className="choice-row">
+                {(['normal', 'festive', 'new-year'] as const).map((mode) => (
+                  <button key={mode} type="button" aria-pressed={dateMode === mode} onClick={() => setDateMode(mode)}>
+                    {mode === 'normal' ? 'Normal' : mode === 'festive' ? 'Halloween/Christmas' : 'New Year'}
+                  </button>
+                ))}
+              </div>
+              <p>Weather</p>
+              <div className="choice-row">
+                {(['none', 'rain', 'snow', 'rainbow', 'hot', 'windy'] as const).map((mode) => (
+                  <button key={mode} type="button" aria-pressed={weatherMode === mode} onClick={() => setWeatherMode(mode)}>
+                    {mode === 'none' ? 'None' : mode === 'rainbow' ? 'Rainbow' : mode[0].toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <div className="clip-gallery-list">
+                {CLIP_ROWS.map((row) => (
+                  <button key={row.id} type="button" onClick={() => startBatchRef.current(row.id, true)}>
+                    {row.number}. {row.id.replaceAll('-', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <p className="sr-only" aria-live="polite">

@@ -1,0 +1,287 @@
+import { isUnlocked } from './entitlements.ts'
+import { conditionsFromOverride, type WeatherOverride } from './weather/conditions.ts'
+import type { WeatherConditions } from './weather/types.ts'
+
+/** After a touch, idle and random clips wait this long. Touch reactions stay in code. */
+export const TOUCH_SUPPRESS_MS = 4_000
+
+export const CAR_CLIP_GAP_MS = 45_000
+export const CAR_BUMP_MAG = 12
+export const CAR_TURN_LATERAL = 0.9
+export const CAR_JAM_MS = 60_000
+export const CAR_DRIVE_MIN_MS = 30_000
+
+export type ClipTier = 'free' | 'premium'
+export type DateMode = 'normal' | 'festive' | 'new-year'
+
+export type ClipTrigger =
+  | 'none'
+  | 'season'
+  | 'morning'
+  | 'goodnight'
+  | 'sleepy'
+  | 'weather'
+  | 'car-bump'
+  | 'car-turn'
+  | 'car-jam'
+  | 'car-arrived'
+  | 'car-tunnel'
+  | 'idle'
+
+export interface ClipRow {
+  id: string
+  number: number
+  file: string
+  trigger: ClipTrigger
+  cooldownMs: number
+  tier: ClipTier
+  from?: string
+  to?: string
+  wrap?: boolean
+  weather?: 'rain' | 'snow' | 'clearing' | 'hot' | 'windy'
+}
+
+export interface FeatureRow {
+  id: string
+  tier: ClipTier
+}
+
+/**
+ * Weather moods and the five weather films are the premium candidates.
+ * They need a location reading. The entitlements stub still unlocks them.
+ */
+export const FEATURE_ROWS: readonly FeatureRow[] = [
+  { id: 'weather-moods', tier: 'premium' },
+  { id: 'clip-gallery', tier: 'free' },
+]
+
+const free = (row: Omit<ClipRow, 'tier' | 'file'>): ClipRow => ({ ...row, tier: 'free', file: `${row.id}-v1.mp4` })
+const premium = (row: Omit<ClipRow, 'tier' | 'file'>): ClipRow => ({ ...row, tier: 'premium', file: `${row.id}-v1.mp4` })
+
+export const CLIP_ROWS: readonly ClipRow[] = [
+  free({ id: 'sleepy-doze', number: 1, trigger: 'sleepy', cooldownMs: 480_000 }),
+  free({ id: 'sneeze', number: 2, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'hiccups', number: 3, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'giggle-fit', number: 4, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'love-hearts', number: 5, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'sulky-pout', number: 6, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'proud-sparkle', number: 7, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'shy-peek', number: 8, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'wink-kiss', number: 9, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'bright-idea', number: 10, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'mind-blown', number: 11, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'speed-bump-bounce', number: 12, trigger: 'car-bump', cooldownMs: 45_000 }),
+  free({ id: 'sharp-turn-wobble', number: 13, trigger: 'car-turn', cooldownMs: 45_000 }),
+  free({ id: 'traffic-jam-bored', number: 14, trigger: 'car-jam', cooldownMs: 60_000 }),
+  free({ id: 'arrived-celebration', number: 15, trigger: 'car-arrived', cooldownMs: 45_000 }),
+  free({ id: 'tunnel-peek', number: 16, trigger: 'car-tunnel', cooldownMs: 60_000 }),
+  premium({ id: 'rain-umbrella', number: 17, trigger: 'weather', cooldownMs: 1_200_000, weather: 'rain' }),
+  premium({ id: 'snow-day', number: 18, trigger: 'weather', cooldownMs: 1_200_000, weather: 'snow' }),
+  premium({ id: 'rainbow', number: 19, trigger: 'weather', cooldownMs: 1_200_000, weather: 'clearing' }),
+  premium({ id: 'hot-day-melt', number: 20, trigger: 'weather', cooldownMs: 1_200_000, weather: 'hot' }),
+  premium({ id: 'windy-gust', number: 21, trigger: 'weather', cooldownMs: 1_200_000, weather: 'windy' }),
+  free({ id: 'good-morning', number: 22, trigger: 'morning', cooldownMs: 0 }),
+  free({ id: 'goodnight', number: 23, trigger: 'goodnight', cooldownMs: 0 }),
+  free({ id: 'noodles', number: 24, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'bubble-gum-pop', number: 25, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'juggling', number: 26, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'dance-groove', number: 27, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'headphones-jam', number: 28, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'karate-chop', number: 29, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'superhero-landing', number: 30, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'cool-shades', number: 31, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'soap-bubbles', number: 32, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'low-battery-recharge', number: 33, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'brain-freeze', number: 34, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'birthday-cake', number: 35, trigger: 'none', cooldownMs: 0 }),
+  free({ id: 'christmas-hat', number: 36, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
+  free({ id: 'new-year-fireworks', number: 37, trigger: 'season', cooldownMs: 0, from: '12-26', to: '01-07', wrap: true }),
+  free({ id: 'halloween-pumpkin-boo', number: 38, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
+]
+
+export type ClipGuard = 'rush' | 'brake' | 'batch' | null
+
+export interface ClipHold {
+  guard: ClipGuard
+  suppressUntil: number
+}
+
+export function clipById(id: string): ClipRow | undefined {
+  return CLIP_ROWS.find((row) => row.id === id)
+}
+
+export function localYmd(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+export function minutesOf(date: Date): number {
+  return date.getHours() * 60 + date.getMinutes()
+}
+
+/** Inclusive. wrap uses month-day and crosses 1 January. */
+export function inDateWindow(date: Date, from: string, to: string, wrap = false): boolean {
+  if (!wrap) {
+    const key = localYmd(date)
+    return key >= from && key <= to
+  }
+  const key = localYmd(date).slice(5)
+  if (from <= to) return key >= from && key <= to
+  return key >= from || key <= to
+}
+
+export function previewDate(real: Date, mode: DateMode): Date {
+  if (mode === 'festive') return new Date(2026, 11, 1, 12, 0, 0)
+  if (mode === 'new-year') return new Date(2026, 11, 28, 12, 0, 0)
+  return real
+}
+
+export function noteInteraction(hold: ClipHold, now: number, fromGallery: boolean): { hold: ClipHold; cancel: boolean } {
+  if (fromGallery) return { hold, cancel: false }
+  return {
+    hold: { guard: null, suppressUntil: now + TOUCH_SUPPRESS_MS },
+    cancel: hold.guard != null,
+  }
+}
+
+export function idleBlocked(suppressUntil: number, now: number): boolean {
+  return now < suppressUntil
+}
+
+export function rowOpen(row: ClipRow): boolean {
+  return isUnlocked(row.id)
+}
+
+function ready(readyAt: Readonly<Record<string, number>>, id: string, now: number): boolean {
+  const at = readyAt[id]
+  return at == null || now >= at
+}
+
+export function seasonDue(date: Date, played: readonly string[]): string | null {
+  const rows = CLIP_ROWS.filter((row) => row.trigger === 'season' && row.from && row.to && rowOpen(row) && !played.includes(row.id))
+  const hit = rows.find((row) => inDateWindow(date, row.from!, row.to!, row.wrap))
+  return hit?.id ?? null
+}
+
+export function morningDue(date: Date, storedYmd: string | null): boolean {
+  const row = clipById('good-morning')
+  if (!row || !rowOpen(row)) return false
+  const minutes = minutesOf(date)
+  if (minutes < 5 * 60 || minutes >= 11 * 60) return false
+  return storedYmd !== localYmd(date)
+}
+
+export function goodnightDue(date: Date, played: boolean): boolean {
+  const row = clipById('goodnight')
+  if (!row || !rowOpen(row) || played) return false
+  return minutesOf(date) >= 21 * 60
+}
+
+export function sleepyDue(date: Date, readyAt: Readonly<Record<string, number>>, now: number, suppressUntil: number): boolean {
+  if (idleBlocked(suppressUntil, now)) return false
+  const row = clipById('sleepy-doze')
+  if (!row || !rowOpen(row) || !ready(readyAt, row.id, now)) return false
+  const minutes = minutesOf(date)
+  return minutes >= 23 * 60 || minutes < 5 * 60
+}
+
+const WEATHER_ORDER = ['snow', 'rain', 'clearing', 'hot', 'windy'] as const
+
+export function weatherClipId(
+  conditions: WeatherConditions,
+  readyAt: Readonly<Record<string, number>>,
+  now: number,
+): string | null {
+  if (!isUnlocked('weather-moods')) return null
+  for (const flag of WEATHER_ORDER) {
+    if (!conditions[flag]) continue
+    const row = CLIP_ROWS.find((item) => item.trigger === 'weather' && item.weather === flag)
+    if (!row || !rowOpen(row) || !ready(readyAt, row.id, now)) continue
+    return row.id
+  }
+  return null
+}
+
+export interface ScheduleInput {
+  now: number
+  date: Date
+  reduced: boolean
+  guard: ClipGuard
+  suppressUntil: number
+  playedSeason: readonly string[]
+  goodnightPlayed: boolean
+  morningStored: string | null
+  readyAt: Readonly<Record<string, number>>
+  weather: WeatherConditions | null
+  weatherEnabled: boolean
+}
+
+/** One automatic film. Rush, brake, and any current film block it. Reduced motion skips it. */
+export function chooseScheduledClip(input: ScheduleInput): string | null {
+  if (input.reduced || input.guard) return null
+  if (morningDue(input.date, input.morningStored)) return 'good-morning'
+  if (goodnightDue(input.date, input.goodnightPlayed)) return 'goodnight'
+  const season = seasonDue(input.date, input.playedSeason)
+  if (season) return season
+  if (input.weatherEnabled && input.weather) {
+    const weather = weatherClipId(input.weather, input.readyAt, input.now)
+    if (weather) return weather
+  }
+  if (sleepyDue(input.date, input.readyAt, input.now, input.suppressUntil)) return 'sleepy-doze'
+  return null
+}
+
+export function nextIdleClip(previous: string | null, random = 0): string | null {
+  const pool = CLIP_ROWS.filter((row) => row.trigger === 'idle' && rowOpen(row))
+  if (pool.length === 0) return null
+  const start = Math.abs(Math.floor(random * pool.length)) % pool.length
+  for (let step = 0; step < pool.length; step += 1) {
+    const row = pool[(start + step) % pool.length]
+    if (row.id !== previous) return row.id
+  }
+  return null
+}
+
+export function classifyCarMotion(magnitude: number, lateral: number): 'bump' | 'turn' | null {
+  if (Math.abs(lateral) >= CAR_TURN_LATERAL) return 'turn'
+  if (magnitude >= CAR_BUMP_MAG && Math.abs(lateral) < 0.5) return 'bump'
+  return null
+}
+
+export function jamDue(stillMs: number): boolean {
+  return stillMs >= CAR_JAM_MS
+}
+
+export function driveWasReal(onMs: number, sawMotion: boolean): boolean {
+  return sawMotion && onMs >= CAR_DRIVE_MIN_MS
+}
+
+export function carGapOpen(lastAt: number, now: number): boolean {
+  return now - lastAt >= CAR_CLIP_GAP_MS
+}
+
+export function carClipFor(
+  kind: 'bump' | 'turn' | 'jam' | 'arrived' | 'tunnel',
+  readyAt: Readonly<Record<string, number>>,
+  now: number,
+  lastCarAt: number,
+  suppressUntil: number,
+): string | null {
+  if ((kind === 'tunnel') && idleBlocked(suppressUntil, now)) return null
+  if (!carGapOpen(lastCarAt, now)) return null
+  const trigger = kind === 'bump' ? 'car-bump' : kind === 'turn' ? 'car-turn' : kind === 'jam' ? 'car-jam' : kind === 'arrived' ? 'car-arrived' : 'car-tunnel'
+  const row = CLIP_ROWS.find((item) => item.trigger === trigger)
+  if (!row || !rowOpen(row) || !ready(readyAt, row.id, now)) return null
+  return row.id
+}
+
+export function tunnelRoll(random: number, stillMs: number): boolean {
+  return stillMs >= 12_000 && random < 0.35
+}
+
+export function activeWeather(override: WeatherOverride, live: WeatherConditions | null, enabled: boolean): { weather: WeatherConditions | null; enabled: boolean } {
+  const preview = conditionsFromOverride(override)
+  if (preview) return { weather: preview, enabled: true }
+  return { weather: live, enabled }
+}
