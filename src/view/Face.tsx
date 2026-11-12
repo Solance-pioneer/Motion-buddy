@@ -6,7 +6,7 @@ import type { GenreId, GenreLook, HeadbangSpeed } from '../logic/genres.ts'
 import { genreById, headbangTilt } from '../logic/genre-pack.ts'
 import { GENRE_ART } from './genre-art.tsx'
 
-export function Face({ onReady, genre = 'none', pulse = false, party = false, reduced = false, wide = false, bang = 'medium' }: { onReady: (handles: FaceHandles) => void; genre?: GenreId; pulse?: boolean; party?: boolean; reduced?: boolean; wide?: boolean; bang?: HeadbangSpeed }) {
+export function Face({ onReady, genre = 'none', pulse = false, party = false, reduced = false, wide = false, bang = 'medium', flash = false }: { onReady: (handles: FaceHandles) => void; genre?: GenreId; pulse?: boolean; party?: boolean; reduced?: boolean; wide?: boolean; bang?: HeadbangSpeed; flash?: boolean }) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useLayoutEffect(() => {
@@ -40,7 +40,7 @@ export function Face({ onReady, genre = 'none', pulse = false, party = false, re
       <g transform="scale(0.277778)">
         <CountryOverlays />
       </g>
-      <GenreWear genre={genre} pulse={pulse} party={party} reduced={reduced} bang={bang} />
+      <GenreWear genre={genre} pulse={pulse} party={party} reduced={reduced} bang={bang} flash={flash} />
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
@@ -71,7 +71,7 @@ export function Face({ onReady, genre = 'none', pulse = false, party = false, re
 }
 
 /** Wear sits behind the live eyes and mouth, so shades cannot hide them. */
-function GenreWear({ genre, pulse, party, reduced, bang }: { genre: GenreId; pulse: boolean; party: boolean; reduced: boolean; bang: HeadbangSpeed }) {
+function GenreWear({ genre, pulse, party, reduced, bang, flash }: { genre: GenreId; pulse: boolean; party: boolean; reduced: boolean; bang: HeadbangSpeed; flash: boolean }) {
   const entry = genre === 'none' ? undefined : genreById(genre)
   if (!entry) return null
   const Art = GENRE_ART[entry.id as GenreLook]
@@ -85,6 +85,8 @@ function GenreWear({ genre, pulse, party, reduced, bang }: { genre: GenreId; pul
       data-genre={entry.id}
       data-pack={entry.pack}
       data-pulse={live ? '1' : '0'}
+      data-flash-on={live && flash ? '1' : '0'}
+      data-party={party && !reduced ? '1' : '0'}
       data-reduced={reduced ? '1' : '0'}
       data-reaction={entry.reaction}
       pointerEvents="none"

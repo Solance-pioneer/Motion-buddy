@@ -53,8 +53,21 @@ body {
   opacity: 0.35;
 }
 
-.face [data-part='genre'][data-pulse='0'] [data-flash] {
+.face [data-part='genre'][data-flash-on='0'] [data-flash] {
   opacity: 0.35;
+}
+
+.face [data-part='genre'][data-party='0'] [data-laser],
+.face [data-part='genre'][data-reduced='1'] [data-laser] {
+  opacity: 0;
+}
+
+.face [data-part='genre'][data-party='1'][data-flash-on='0'] [data-laser] {
+  opacity: 0.28;
+}
+
+.face [data-part='genre'][data-party='1'][data-flash-on='1'] [data-laser] {
+  opacity: 0.95;
 }
 
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='step'] { animation: genre-step 1.6s ease-in-out infinite; }

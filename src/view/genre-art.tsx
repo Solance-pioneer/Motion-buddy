@@ -58,6 +58,15 @@ export const GENRE_ART: Record<GenreLook, () => ReactNode> = {
       <circle data-flash cx="78" cy="14" r="1.1" fill="#fff6c2" />
     </>
   ),
+  rave: () => (
+    <>
+      <path data-flash d="M14 34 H46 M14 38 H46 M14 42 H46" stroke="#39ffb0" strokeWidth="1.5" opacity="0.55" />
+      <path data-flash d="M54 34 H86 M54 38 H86 M54 42 H86" stroke="#ff4fd8" strokeWidth="1.5" opacity="0.55" />
+      <path d="M12 60 V80" stroke="#39ffb0" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M88 60 V80" stroke="#ff4fd8" strokeWidth="2.4" strokeLinecap="round" />
+      <path data-laser d="M50 2 L18 28 M50 2 L82 28" stroke="#f7ff6a" strokeWidth="0.8" />
+    </>
+  ),
   reggae: () => (
     <>
       <rect x="14" y="62" width="14" height="16" rx="2" fill="#2a3140" />

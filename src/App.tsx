@@ -798,6 +798,7 @@ export function App() {
   const [genre, setGenre] = useState<GenreId>(() => readGenre())
   const [genrePop, setGenrePop] = useState(false)
   const [genreWide, setGenreWide] = useState(false)
+  const [genreFlash, setGenreFlash] = useState(false)
   const [headbang, setHeadbang] = useState<HeadbangSpeed>(() => readHeadbang())
   const genreHit = useRef(initialGenreHitClock())
   const genreRef = useRef(genre)
@@ -1464,10 +1465,10 @@ export function App() {
         reduced: state.reduced,
         high,
         hearsHigh: look?.reaction === 'shiver',
+        strobe: look?.strobe,
       })
       genreHit.current = planned.clock
-      const off = look?.grid === 'offbeat'
-      const nod = (off ? planned.hit : step.beat) && !state.reduced && state.profile !== 'car'
+      const nod = (look ? planned.hit : step.beat) && !state.reduced && state.profile !== 'car'
       if (nod) {
         const metal = look?.reaction === 'headbang' ? headbangTilt(look.beat.tilt, headbangRef.current, beatFeel === 'party') : 0
         bopUntil.current = now + (look?.reaction === 'headbang' ? (headbangRef.current === 'fast' ? 100 : headbangRef.current === 'slow' ? 220 : 150) : beatFeel === 'party' ? 220 : 160)
@@ -1476,9 +1477,11 @@ export function App() {
       if (planned.hit) {
         setGenrePop(true)
         setGenreWide(planned.wide)
+        setGenreFlash(planned.flash)
         window.setTimeout(() => {
           setGenrePop(false)
           setGenreWide(false)
+          setGenreFlash(false)
         }, 160)
         if (look && isUnlocked(look.feature)) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
       }
@@ -1814,7 +1817,7 @@ export function App() {
               <g className="race-confetti" dangerouslySetInnerHTML={{ __html: confettiRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
             </svg>
           ) : null}
-          <Face onReady={onReady} genre={shownGenre(genre, isUnlocked)} pulse={genrePop} party={beatFeel === 'party'} reduced={view.reduced} wide={genreWide} bang={headbang} />
+          <Face onReady={onReady} genre={shownGenre(genre, isUnlocked)} pulse={genrePop} party={beatFeel === 'party'} reduced={view.reduced} wide={genreWide} bang={headbang} flash={genreFlash} />
           <p className="speech-bubble" aria-live="polite" data-on={speechLine ? '1' : '0'} data-reduced={view.reduced ? '1' : '0'}>
             {speechLine}
           </p>

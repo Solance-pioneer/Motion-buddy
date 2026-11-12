@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { GENRE_ART } from '../view/genre-art.tsx'
 import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, spectralCentroid } from './genre-pack.ts'
 
-const SHORTLIST = ['pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie', 'emo']
+const SHORTLIST = ['pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'rave', 'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie', 'emo']
 
 describe('genre pack', () => {
   it('lists the shortlist batch and gives each look a pack, a drawing, and a sting', () => {
     expect(GENRE_PACK.map((genre) => genre.id)).toEqual(SHORTLIST)
-    expect(GENRE_PACK).toHaveLength(16)
+    expect(GENRE_PACK).toHaveLength(17)
+    expect(genreById('rave')).toMatchObject({ pack: 'rave', grid: 'kick', strobe: true })
     expect(genreById('emo')).toMatchObject({ pack: 'punk', feature: 'genre-punk' })
     expect(genreById('punk')?.feature).toBe('genre-punk')
     expect(genreById('reggae')?.grid).toBe('offbeat')
@@ -38,8 +39,17 @@ describe('genre pack', () => {
       if (step.hit) hits.push(now)
     }
     expect(hits).toEqual(kicks)
-    const crowded = planGenreHit(clock, { now: kicks[2] + 200, onset: true, meanGap: 470, grid: 'kick', reduced: false, high: false, hearsHigh: false })
-    expect(crowded.hit).toBe(false)
+    const crowded = planGenreHit(clock, { now: kicks[2] + 200, onset: true, meanGap: 470, grid: 'kick', reduced: false, high: false, hearsHigh: false, strobe: true })
+    expect(crowded.hit).toBe(true)
+    expect(crowded.flash).toBe(false)
+    const again = planGenreHit(crowded.clock, { now: kicks[2] + 200 + 340, onset: true, meanGap: 470, grid: 'kick', reduced: false, high: false, hearsHigh: false, strobe: true })
+    expect(again.flash).toBe(true)
+    const doubled = planGenreHit(initialGenreHitClock(), { now: 3_000, onset: true, meanGap: 344, grid: 'double', reduced: false, high: false, hearsHigh: false, strobe: true })
+    expect(doubled.hit).toBe(true)
+    expect(doubled.flash).toBe(true)
+    const echo = planGenreHit(doubled.clock, { now: doubled.clock.pendingOff, onset: false, meanGap: 344, grid: 'double', reduced: false, high: false, hearsHigh: false, strobe: true })
+    expect(echo.hit).toBe(true)
+    expect(echo.flash).toBe(false)
 
     const onset = planGenreHit(initialGenreHitClock(), { now: 1_000, onset: true, meanGap: 500, grid: 'offbeat', reduced: false, high: false, hearsHigh: false })
     expect(onset.hit).toBe(false)

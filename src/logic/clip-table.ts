@@ -74,6 +74,7 @@ export const FEATURE_ROWS: readonly FeatureRow[] = [
   { id: 'genre-electronic', tier: 'premium' },
   { id: 'genre-k-pop', tier: 'premium' },
   { id: 'genre-classical', tier: 'premium' },
+  { id: 'genre-rave', tier: 'premium' },
   { id: 'genre-reggae', tier: 'premium' },
   { id: 'genre-soul', tier: 'premium' },
   { id: 'genre-country', tier: 'premium' },
