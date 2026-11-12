@@ -59,7 +59,7 @@ import type { WeatherConditions } from './logic/weather/types.ts'
 import { loadClipUrl } from './view/clip-urls.ts'
 import { CLIP_WIDTHS } from 'virtual:clip-widths'
 import { clipDefinition } from './logic/clip-definition.ts'
-import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
+import { CLIP_PLAY_TIMEOUT_MS, activationFilmMuted, afterPlayRejection, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -232,6 +232,7 @@ export function App() {
     raceTurn: 0,
     startMuted: true,
     raceRevUntil: 0,
+    raceFilmSilent: false,
     follow: null as null | { onEnd?: () => void; onFail?: () => void },
   })
   const startBatchRef = useRef<(id: string, gallery?: boolean, follow?: { onEnd?: () => void; onFail?: () => void }) => boolean>(() => false)
@@ -814,6 +815,7 @@ export function App() {
     setClipDismiss('none')
     setClipMuted(true)
     clipShownRef.current = false
+    batchHold.current.raceFilmSilent = false
   }
   const finishClip = (reason: 'end' | 'cancel' | 'error') => {
     window.clearTimeout(clipFadeTimer.current)
@@ -1286,7 +1288,8 @@ export function App() {
         }
       }
       if (!alive()) return
-      if (video.muted && performance.now() >= batchHold.current.raceRevUntil && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
+      const holdFilmMute = activationFilmMuted(batchHold.current.raceFilmSilent)
+      if (video.muted && !holdFilmMute && performance.now() >= batchHold.current.raceRevUntil && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
         try {
           prepare(false)
           if (video.paused) await video.play()
@@ -1824,6 +1827,7 @@ onClick={() => {
               stopDriveCue(80)
               stopRaceActivate(80)
               batchHold.current.raceRevUntil = 0
+              batchHold.current.raceFilmSilent = false
               engine.setProfile(raceWas.current)
               publish(engine.snapshot())
               return
@@ -1846,11 +1850,8 @@ onClick={() => {
               if (started.play && !batchHold.current.guard) {
                 window.clearTimeout(clipFadeTimer.current)
                 batchHold.current.guard = 'rush'
-                batchHold.current.startMuted = clipShouldStartMuted({
-                  fromGallery: true,
-                  soundOn: soundOnRef.current,
-                  gestureUnlocked: soundStatus().unlocked,
-                })
+                batchHold.current.raceFilmSilent = true
+                batchHold.current.startMuted = true
                 setClipShown(false)
                 setClipDismiss('none')
                 setClipMuted(true)
@@ -1860,7 +1861,8 @@ onClick={() => {
             if (film === 'race-start' && !reducedNow) {
               const row = clipById('race-start')
               const played = row ? startBatchRef.current(row.id, false, { onFail: playRush }) : false
-              if (!played) playRush()
+              if (played) batchHold.current.raceFilmSilent = true
+              else playRush()
             } else playRush()
             setRaceMarks(true)
             raceTimer.current = window.setTimeout(() => setRaceMarks(false), 1_250)

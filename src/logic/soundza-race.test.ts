@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { activationFilmMuted } from './clip-playback.ts'
 import { DRIVE_WAV_BASE64 } from './drive-wavs.ts'
 import { playRaceActivate, setSoundMuted, stopRaceActivate, unlockSound } from './sfx.ts'
 import { SOUNDZA_RACE_ACTIVATE_WAV_BASE64 } from './soundza-wavs.ts'
@@ -95,5 +96,10 @@ describe('Soundza race activation', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
     expect(app.includes('race_activate_rev')).toBe(false)
     expect(app.includes('playRaceActivate()')).toBe(true)
+    expect(activationFilmMuted(true)).toBe(true)
+    expect(activationFilmMuted(false)).toBe(false)
+    expect(existsSync('src/assets/drive-audio-v1/audio/app/race_activate_rev_app_pcm16_48k.wav')).toBe(true)
+    expect(existsSync('src/assets/drive-audio-v1/audio/masters/race_activate_rev_master_f32_48k.wav')).toBe(true)
+    expect(readFileSync('src/assets/soundza-race-v1/PROVENANCE.md', 'utf8')).toContain('not played')
   })
 })

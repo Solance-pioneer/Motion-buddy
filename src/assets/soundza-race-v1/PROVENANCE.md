@@ -12,3 +12,5 @@ The app plays one PCM16 mono 48 kHz copy when Race mode turns on. The original m
 - App copy: PCM16, mono, 48 kHz, 2.0s, fades already applied. It lives in the audio pipeline (`src/logic/soundza-wavs.ts`), not as a downloadable WAV.
 
 The app copy must not be redistributed on its own.
+
+The older synthetic activation rev is still in the repo and is not played. Race-on uses the Soundza cue in every case, including reduced motion and when the rush film does not start. The files left unused are `src/assets/drive-audio-v1/audio/app/race_activate_rev_app_pcm16_48k.wav` and `src/assets/drive-audio-v1/audio/masters/race_activate_rev_master_f32_48k.wav`.

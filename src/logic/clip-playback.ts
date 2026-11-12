@@ -36,6 +36,11 @@ export function clipMayUnmute(input: { soundOn: boolean; userMuted: boolean; pri
   return input.soundOn && !input.userMuted && input.primed
 }
 
+/** Race-on keeps the rush and race-start pictures, and leaves their own audio off. */
+export function activationFilmMuted(activation: boolean): boolean {
+  return activation
+}
+
 /** A playing event at time 0 is still a black frame. Wait for a presented frame or a moved clock. */
 export function clipOverlayRevealed(currentTime: number, presentedFrame: boolean): boolean {
   return presentedFrame || currentTime > 0
