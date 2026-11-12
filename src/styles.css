@@ -75,6 +75,9 @@ body {
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='bounce'] { animation: genre-bounce 0.7s ease-in-out infinite; }
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='choreo'] { animation: genre-step 0.8s ease-in-out infinite; }
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='breath'] { animation: genre-breath 2.8s ease-in-out infinite; }
+.face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='float'] { animation: genre-float 8s ease-in-out infinite; }
+.face [data-part='genre'][data-reduced='0'] [data-drift] { animation: genre-drift 7s ease-in-out infinite; }
+.face [data-part='genre'][data-pulse='1'] [data-halo] { opacity: 0.75; }
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='sway'] { animation: genre-sway 2.2s ease-in-out infinite; }
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='lean'] { animation: genre-sway 2.6s ease-in-out infinite; }
 .face [data-part='genre'][data-reduced='0'][data-pulse='0'] [data-idle='rock'] { animation: genre-nod 2.4s ease-in-out infinite; }
@@ -87,6 +90,8 @@ body {
 @keyframes genre-nod { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.4px); } }
 @keyframes genre-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.6px); } }
 @keyframes genre-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes genre-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2px); } }
+@keyframes genre-drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(1.4px, -2px); } }
 @keyframes genre-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 @keyframes genre-bang { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(6deg); } }
 @keyframes genre-double { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(1.6px); } 60% { transform: translateY(0); } 80% { transform: translateY(1.2px); } }
@@ -94,7 +99,8 @@ body {
 .face [data-part='genre'][data-pulse='1'][data-reaction='double'] [data-idle] { animation: genre-double 0.28s ease-in-out 1; }
 
 @media (prefers-reduced-motion: reduce) {
-  .face [data-idle] { animation: none; }
+  .face [data-idle],
+  .face [data-drift] { animation: none; }
 }
 
 .race-lines {

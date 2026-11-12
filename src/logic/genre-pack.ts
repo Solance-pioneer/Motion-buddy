@@ -1,5 +1,5 @@
 /** One entry is a whole genre. Drawings live beside it, keyed by id. Emo is its own genre and shares the punk pack. */
-export type GenreGrid = 'onset' | 'offbeat' | 'kick' | 'double'
+export type GenreGrid = 'onset' | 'offbeat' | 'kick' | 'double' | 'breath'
 export type HeadbangSpeed = 'slow' | 'medium' | 'fast'
 
 export interface GenreSound {
@@ -54,6 +54,7 @@ export const GENRE_PACK: readonly GenreEntry[] = [
   pack('synthwave', 'Synthwave', 'synthwave', 'sway', 'onset', 'glow', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 100, rootHz: 247, waveform: 'sawtooth', scale: [0, 7, 3, 12], pattern: [1, 0, 1, 0, 1, 0, 0, 1] }),
   pack('drum-and-bass', 'Drum and bass', 'drum-and-bass', 'bounce', 'double', 'jitter', { scale: 1.05, partyScale: 1.11, tilt: 6 }, { tempo: 174, rootHz: 110, waveform: 'square', scale: [0, 0, 7, 12], pattern: [1, 0, 1, 1, 0, 1, 0, 1] }, true),
   pack('gospel', 'Gospel', 'gospel', 'sway', 'onset', 'clap', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 84, rootHz: 262, waveform: 'triangle', scale: [0, 4, 7, 12], pattern: [1, 0, 0, 1, 0, 1, 0, 1] }),
+  pack('ambient', 'Ambient', 'ambient', 'float', 'breath', 'breath', { scale: 1.02, partyScale: 1.04, tilt: 0 }, { tempo: 60, rootHz: 196, waveform: 'sine', scale: [0, 7, 12, 14], pattern: [1, 0, 0, 0, 1, 0, 0, 0] }),
 ]
 
 export type GenreLook = (typeof GENRE_PACK)[number]['id']
@@ -63,6 +64,8 @@ export type GenreId = 'none' | GenreLook
 export const GENRE_PULSE_MIN_MS = 340
 /** Fast kicks and double-time can still move, just not this close together. */
 export const GENRE_MOVE_MIN_MS = 90
+/** Ambient breathes about this often, and never flashes. */
+export const AMBIENT_PULSE_MIN_MS = 1_400
 export const HIGH_CENTROID_HZ = 1_600
 export const HIGH_BAND_MIN = 0.12
 
@@ -159,6 +162,13 @@ function takeHit(clock: GenreHitClock, now: number, rapid: boolean, keepPending:
  */
 export function planGenreHit(clock: GenreHitClock, input: { now: number; onset: boolean; meanGap: number; grid: GenreGrid; reduced: boolean; high: boolean; hearsHigh: boolean; strobe?: boolean }): { clock: GenreHitClock; hit: boolean; flash: boolean; wide: boolean; shiver: boolean } {
   if (input.reduced) return { clock: { ...clock, pendingOff: 0 }, hit: false, flash: false, wide: false, shiver: false }
+  if (input.grid === 'breath') {
+    const swell = input.onset || input.high
+    if (!swell || input.now - clock.lastMove < AMBIENT_PULSE_MIN_MS) {
+      return { clock, hit: false, flash: false, wide: false, shiver: false }
+    }
+    return { clock: { ...clock, lastMove: input.now, pendingOff: 0 }, hit: true, flash: false, wide: false, shiver: false }
+  }
   const rapid = input.grid === 'kick' || input.grid === 'double' || input.strobe === true
   if (input.hearsHigh && input.high) {
     const taken = takeHit(clock, input.now, rapid, false)

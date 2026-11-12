@@ -184,12 +184,17 @@ export const GENRE_ART: Record<GenreLook, () => ReactNode> = {
   ),
   'lo-fi': () => (
     <>
-      <path d="M12 40 h12 v12 h-12 z M76 40 h12 v12 h-12 z" fill="#3d4a5c" />
-      <path d="M24 46 H76" stroke="#3d4a5c" strokeWidth="2" />
-      <ellipse cx="22" cy="16" rx="8" ry="5" fill="#ffe08a" opacity="0.35" />
-      <path d="M80 70 h8 v6 h-8 z" fill="#efe7dc" />
-      <path d="M84 68 q2 -5 0 -7" fill="none" stroke="#d7dde6" strokeWidth="0.8" />
-      <path d="M90 24 v6 M94 30 v8 M90 42 v5" stroke="#9ec9e6" strokeWidth="0.7" strokeLinecap="round" />
+      <path d="M16 48 Q12 18 50 8 Q88 18 84 48" fill="none" stroke="#6e8b74" strokeWidth="2.2" />
+      <path d="M28 16 q5 -6 8 1 q4 -7 8 0 q4 -5 8 2" fill="none" stroke="#8aa58a" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M20 30 Q50 14 80 30" fill="none" stroke="#c4a35a" strokeWidth="2.2" />
+      <path d="M8 36 h16 v18 h-16 z M76 36 h16 v18 h-16 z" fill="#5d7264" />
+      <path d="M26 90 q6 -3 10 0 q5 -3 10 0 q5 -3 10 0 q5 -3 8 0" fill="none" stroke="#c4a35a" strokeWidth="1.8" strokeLinecap="round" />
+      <ellipse cx="16" cy="14" rx="6" ry="3.5" fill="#c4a35a" opacity="0.28" />
+      <path d="M14 76 h10 v6 h-10 z" fill="#efe6d4" />
+      <path d="M18 74 q1.5 -4 0 -6" fill="none" stroke="#8aa58a" strokeWidth="0.8" />
+      <path d="M86 22 h10 v14 h-10 z" fill="none" stroke="#6e8b74" strokeWidth="0.6" />
+      <path d="M88 26 v3 M91 29 v4 M94 25 v3" stroke="#9eb0b8" strokeWidth="0.6" strokeLinecap="round" />
+      <circle data-flash cx="22" cy="70" r="0.7" fill="#c4a35a" />
     </>
   ),
   synthwave: () => (
@@ -213,6 +218,15 @@ export const GENRE_ART: Record<GenreLook, () => ReactNode> = {
       <path d="M18 64 q6 -6 10 0 M72 64 q6 -6 10 0" fill="none" stroke="#fff6c2" strokeWidth="1.3" />
       <circle data-flash cx="30" cy="22" r="1" fill="#fff6c2" />
       <circle data-flash cx="70" cy="20" r="1" fill="#fff6c2" />
+    </>
+  ),
+  ambient: () => (
+    <>
+      <ellipse data-halo cx="50" cy="42" rx="40" ry="36" fill="none" stroke="#d5ecff" strokeWidth="1.3" opacity="0.4" />
+      <circle data-drift cx="16" cy="20" r="1.2" fill="#d7f3ff" />
+      <circle data-drift cx="80" cy="16" r="1" fill="#efe7ff" />
+      <circle data-drift cx="86" cy="50" r="0.9" fill="#fff6d8" />
+      <circle data-drift cx="12" cy="58" r="0.8" fill="#d7f3ff" />
     </>
   ),
 }

@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { GENRE_ART } from '../view/genre-art.tsx'
-import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, spectralCentroid } from './genre-pack.ts'
+import { AMBIENT_PULSE_MIN_MS, GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, spectralCentroid } from './genre-pack.ts'
 
 const SHORTLIST = [
   'pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'rave',
   'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie',
-  'emo', 'disco', 'funk', 'folk', 'lo-fi', 'synthwave', 'drum-and-bass', 'gospel',
+  'emo', 'disco', 'funk', 'folk', 'lo-fi', 'synthwave', 'drum-and-bass', 'gospel', 'ambient',
 ]
 
 describe('genre pack', () => {
   it('lists the shortlist batch and gives each look a pack, a drawing, and a sting', () => {
     expect(GENRE_PACK.map((genre) => genre.id)).toEqual(SHORTLIST)
-    expect(GENRE_PACK).toHaveLength(24)
+    expect(GENRE_PACK).toHaveLength(25)
+    expect(genreById('ambient')).toMatchObject({ pack: 'ambient', grid: 'breath', strobe: false, reaction: 'breath' })
     expect(genreById('rave')).toMatchObject({ pack: 'rave', grid: 'kick', strobe: true })
     expect(genreById('emo')).toMatchObject({ pack: 'punk', feature: 'genre-punk' })
     expect(genreById('punk')?.feature).toBe('genre-punk')
@@ -69,6 +70,15 @@ describe('genre pack', () => {
     expect(quiet).toMatchObject({ hit: true, wide: true, shiver: true })
     const held = planGenreHit(quiet.clock, { now: 2_200, onset: false, meanGap: 0, grid: 'onset', reduced: true, high: true, hearsHigh: true })
     expect(held.hit).toBe(false)
+
+    const breath = planGenreHit(initialGenreHitClock(), { now: 5_000, onset: true, meanGap: 500, grid: 'breath', reduced: false, high: false, hearsHigh: false })
+    expect(breath).toMatchObject({ hit: true, flash: false })
+    const soon = planGenreHit(breath.clock, { now: 5_400, onset: true, meanGap: 500, grid: 'breath', reduced: false, high: true, hearsHigh: false })
+    expect(soon.hit).toBe(false)
+    const later = planGenreHit(breath.clock, { now: 5_000 + AMBIENT_PULSE_MIN_MS, onset: true, meanGap: 500, grid: 'breath', reduced: false, high: false, hearsHigh: false })
+    expect(later).toMatchObject({ hit: true, flash: false })
+    const still = planGenreHit(initialGenreHitClock(), { now: 8_000, onset: true, meanGap: 500, grid: 'breath', reduced: true, high: true, hearsHigh: false })
+    expect(still).toMatchObject({ hit: false, flash: false })
   })
 
   it('treats a bright spectrum as a high note and keeps metal nods ordered by speed', () => {

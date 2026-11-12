@@ -1471,8 +1471,9 @@ export function App() {
       const nod = (look ? planned.hit : step.beat) && !state.reduced && state.profile !== 'car'
       if (nod) {
         const metal = look?.reaction === 'headbang' ? headbangTilt(look.beat.tilt, headbangRef.current, beatFeel === 'party') : 0
-        bopUntil.current = now + (look?.reaction === 'headbang' ? (headbangRef.current === 'fast' ? 100 : headbangRef.current === 'slow' ? 220 : 150) : beatFeel === 'party' ? 220 : 160)
-        bopSize.current = metal > 0 ? metal * 0.5 : beatFeel === 'party' ? 8 : 5
+        const breath = look?.grid === 'breath'
+        bopUntil.current = now + (breath ? 700 : look?.reaction === 'headbang' ? (headbangRef.current === 'fast' ? 100 : headbangRef.current === 'slow' ? 220 : 150) : beatFeel === 'party' ? 220 : 160)
+        bopSize.current = breath ? 2 : metal > 0 ? metal * 0.5 : beatFeel === 'party' ? 8 : 5
       }
       if (planned.hit) {
         setGenrePop(true)
@@ -1482,7 +1483,7 @@ export function App() {
           setGenrePop(false)
           setGenreWide(false)
           setGenreFlash(false)
-        }, 160)
+        }, look?.grid === 'breath' ? 900 : 160)
         if (look && isUnlocked(look.feature)) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
       }
     }).then((end) => {
