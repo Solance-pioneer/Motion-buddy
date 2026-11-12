@@ -20,7 +20,7 @@ import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCa
 import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
-import { beginSceneClip, endSceneClip, initialClipClock, sceneClipMuted, type SceneClip } from './logic/scene-clip.ts'
+import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readIdleGapSeconds, readMorningDay, readWeatherMoods, writeIdleGapSeconds, writeMorningDay, writeWeatherMoods } from './logic/clip-memory.ts'
 import {
   activeWeather,
@@ -51,6 +51,7 @@ import type { WeatherOverride } from './logic/weather/conditions.ts'
 import { requestRoundedFix } from './logic/weather/locate.ts'
 import type { WeatherConditions } from './logic/weather/types.ts'
 import { loadClipUrl } from './view/clip-urls.ts'
+import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -169,6 +170,8 @@ export function App() {
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
   const [soundOn, setSoundOn] = useState(true)
+  const soundOnRef = useRef(soundOn)
+  soundOnRef.current = soundOn
   const [idleGapSeconds, setIdleGapSeconds] = useState(() => readIdleGapSeconds())
   const idleGapRef = useRef(idleGapSeconds)
   idleGapRef.current = idleGapSeconds
@@ -196,6 +199,7 @@ export function App() {
     token: 0,
     idleFirst: true,
     raceTurn: 0,
+    startMuted: true,
     follow: null as null | { onEnd?: () => void; onFail?: () => void },
   })
   const startBatchRef = useRef<(id: string, gallery?: boolean, follow?: { onEnd?: () => void; onFail?: () => void }) => boolean>(() => false)
@@ -709,6 +713,9 @@ export function App() {
   const clipClock = useRef(initialClipClock())
   const clipVideo = useRef<HTMLVideoElement | null>(null)
   const clipGen = useRef(0)
+  const clipPrimed = useRef(false)
+  const [clipShown, setClipShown] = useState(false)
+  const [clipMuted, setClipMuted] = useState(true)
   const endClipRef = useRef(() => {})
   dateModeRef.current = dateMode
   weatherModeRef.current = weatherMode
@@ -733,6 +740,8 @@ export function App() {
     setSceneClip(null)
     setBatchId(null)
     setBatchUrl(null)
+    setClipShown(false)
+    setClipMuted(true)
     if (reason === 'end') follow?.onEnd?.()
     if (reason === 'error') follow?.onFail?.()
   }
@@ -755,15 +764,26 @@ export function App() {
     if (row.cooldownMs > 0) batchHold.current.readyAt[id] = now + row.cooldownMs
     if (row.trigger.startsWith('car-')) batchHold.current.lastCarAt = now
     if (row.trigger === 'idle') batchHold.current.lastIdle = id
+    batchHold.current.startMuted = clipShouldStartMuted({
+      fromGallery: gallery,
+      soundOn: soundOnRef.current,
+      gestureUnlocked: soundStatus().unlocked,
+    })
     setGalleryOpen(false)
     setBatchId(id)
+    setClipShown(false)
+    setClipMuted(true)
     void loadClipUrl(row.file).then(
       (url) => {
         if (batchHold.current.token !== token) return
+        setClipShown(false)
+        setClipMuted(true)
         setBatchUrl(url)
       },
       () => {
-        if (batchHold.current.token === token) finishClip('error')
+        if (batchHold.current.token !== token) return
+        console.warn('Motion Buddy clip did not play: the file did not load')
+        finishClip('error')
       },
     )
     return true
@@ -811,6 +831,9 @@ export function App() {
           clipClock.current = started.clock
           if (started.play) {
             batchHold.current.guard = 'brake'
+            batchHold.current.startMuted = true
+            setClipShown(false)
+            setClipMuted(true)
             setSceneClip(started.play)
           } else if (!clipClock.current.playing) playDriveCue(step.key)
         } else if (!filmBusy && (step.key === 'car_accel_rev_a' || step.key === 'car_accel_rev_b')) {
@@ -1076,13 +1099,108 @@ export function App() {
   useEffect(() => {
     const video = clipVideo.current
     if ((!sceneClip && !batchUrl) || !video) return
-    let cancelled = false
-    const pending = video.play()
-    void pending?.catch(() => {
-      if (!cancelled) endClipRef.current()
-    })
+    const generation = clipGen.current
+    let stopped = false
+    let revealed = false
+    let sawStall = false
+    let timer = 0
+    const alive = () => !stopped && clipGen.current === generation
+    const fail = (reason: string) => {
+      if (!alive()) return
+      console.warn(`Motion Buddy clip did not play: ${reason}`)
+      finishClip('error')
+    }
+    const revealIfReady = (presentedFrame: boolean) => {
+      if (!alive() || revealed) return
+      if (!clipOverlayRevealed(video.currentTime, presentedFrame)) return
+      revealed = true
+      window.clearTimeout(timer)
+      setClipShown(true)
+    }
+    const frameVideo = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number
+      cancelVideoFrameCallback?: (id: number) => void
+    }
+    let frameId = 0
+    const watchFrame = () => {
+      if (!alive()) return
+      revealIfReady(true)
+      if (!revealed && frameVideo.requestVideoFrameCallback) frameId = frameVideo.requestVideoFrameCallback(watchFrame)
+    }
+    const onTime = () => revealIfReady(false)
+    const onStall = () => {
+      sawStall = true
+    }
+    const onMediaError = () => fail('media element error')
+    video.addEventListener('timeupdate', onTime)
+    video.addEventListener('playing', onTime)
+    video.addEventListener('stalled', onStall)
+    video.addEventListener('error', onMediaError)
+    if (frameVideo.requestVideoFrameCallback) frameId = frameVideo.requestVideoFrameCallback(watchFrame)
+    timer = window.setTimeout(() => {
+      if (!alive() || revealed) return
+      fail(sawStall ? 'stalled before a frame' : 'timed out before a frame')
+    }, CLIP_PLAY_TIMEOUT_MS)
+    const prepare = (muted: boolean) => {
+      video.playsInline = true
+      video.setAttribute('playsinline', '')
+      video.setAttribute('webkit-playsinline', 'true')
+      video.defaultMuted = muted
+      video.muted = muted
+      if (muted) video.setAttribute('muted', '')
+      else video.removeAttribute('muted')
+      setClipMuted(muted)
+    }
+    const playWith = async (attempt: 'unmuted' | 'muted') => {
+      prepare(attempt === 'muted')
+      const pending = video.play()
+      if (pending) await pending
+    }
+    const run = async () => {
+      let attempt: 'unmuted' | 'muted' = batchHold.current.startMuted ? 'muted' : 'unmuted'
+      try {
+        await playWith(attempt)
+      } catch (error) {
+        if (!alive()) return
+        if (afterPlayRejection(attempt) === 'retry-muted') {
+          attempt = 'muted'
+          try {
+            await playWith('muted')
+          } catch (retryError) {
+            const detail = retryError instanceof Error ? retryError.message : 'play() rejected'
+            fail(detail)
+            return
+          }
+        } else {
+          const detail = error instanceof Error ? error.message : 'play() rejected'
+          fail(detail)
+          return
+        }
+      }
+      if (!alive()) return
+      if (video.muted && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
+        try {
+          prepare(false)
+          if (video.paused) await video.play()
+        } catch {
+          if (!alive()) return
+          try {
+            await playWith('muted')
+          } catch {
+            // The muted playback already started.
+          }
+        }
+      }
+    }
+    void run()
     return () => {
-      cancelled = true
+      stopped = true
+      window.clearTimeout(timer)
+      video.removeEventListener('timeupdate', onTime)
+      video.removeEventListener('playing', onTime)
+      video.removeEventListener('stalled', onStall)
+      video.removeEventListener('error', onMediaError)
+      if (frameId && frameVideo.cancelVideoFrameCallback) frameVideo.cancelVideoFrameCallback(frameId)
     }
   }, [sceneClip, batchUrl])
 
@@ -1261,6 +1379,25 @@ export function App() {
 
   openRef.current = open
   const shownClipGen = clipGen.current
+  const primeClipVideo = () => {
+    const video = clipVideo.current
+    if (!video || batchHold.current.guard) return
+    clipPrimed.current = true
+    video.playsInline = true
+    video.setAttribute('playsinline', '')
+    video.setAttribute('webkit-playsinline', 'true')
+    video.defaultMuted = true
+    video.muted = true
+    video.setAttribute('muted', '')
+    const generation = clipGen.current
+    const pending = video.play()
+    void pending?.then(() => {
+      if (clipGen.current !== generation || video.currentSrc) return
+      video.pause()
+    }).catch(() => {
+      // The element stays primed. Idle clips still start muted.
+    })
+  }
   return (
       <main
         ref={rootRef}
@@ -1307,6 +1444,7 @@ export function App() {
         }}
         onPointerDown={(event) => {
           if (event.button !== 0) return
+          primeClipVideo()
           heldRef.current = true
           if (sceneRef.current || waitRelease.current) return
           unlockQuiet()
@@ -1472,6 +1610,7 @@ export function App() {
             className="allow-motion"
 onClick={() => {
           unlockQuiet()
+          primeClipVideo()
           setPromptDone(true)
           void tilt.enable()
         }}
@@ -1558,6 +1697,13 @@ onClick={() => {
               clipClock.current = started.clock
               if (started.play && !batchHold.current.guard) {
                 batchHold.current.guard = 'rush'
+                batchHold.current.startMuted = clipShouldStartMuted({
+                  fromGallery: true,
+                  soundOn: soundOnRef.current,
+                  gestureUnlocked: soundStatus().unlocked,
+                })
+                setClipShown(false)
+                setClipMuted(true)
                 setSceneClip(started.play)
               } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
             }
@@ -1661,32 +1807,25 @@ onClick={() => {
           }}
         />
       ) : null}
-      {sceneClip || batchUrl ? (
-        <div
-          className="scene-clip"
-          data-scene-clip={sceneClip ?? batchId ?? ''}
-          onPointerDown={(event) => {
-            event.stopPropagation()
-            finishClip('cancel')
-          }}
-        >
-          <video
-            ref={clipVideo}
-            src={sceneClip === 'race-rush' ? raceRushUrl : sceneClip === 'brake-surprise' ? brakeSurpriseUrl : batchUrl ?? undefined}
-            playsInline
-            muted={sceneClipMuted(!soundOn)}
-            preload="auto"
-            onEnded={() => {
-              if (clipGen.current !== shownClipGen) return
-              finishClip('end')
-            }}
-            onError={() => {
-              if (clipGen.current !== shownClipGen) return
-              finishClip('error')
-            }}
-          />
-        </div>
-      ) : null}
+      <video
+        ref={clipVideo}
+        className="scene-clip"
+        data-scene-clip={sceneClip ?? batchId ?? ''}
+        data-revealed={clipShown ? '1' : '0'}
+        src={sceneClip === 'race-rush' ? raceRushUrl : sceneClip === 'brake-surprise' ? brakeSurpriseUrl : batchUrl ?? undefined}
+        playsInline
+        muted={clipMuted}
+        preload="auto"
+        onPointerDown={(event) => {
+          if (!clipShown) return
+          event.stopPropagation()
+          finishClip('cancel')
+        }}
+        onEnded={() => {
+          if (clipGen.current !== shownClipGen) return
+          finishClip('end')
+        }}
+      />
       {isUnlocked('clip-gallery') ? (
         <div className="clip-gallery" data-clip-gallery>
           <button type="button" className="clip-gallery-open" aria-expanded={galleryOpen} onClick={() => setGalleryOpen((openNow) => !openNow)}>
@@ -1712,7 +1851,10 @@ onClick={() => {
               </div>
               <div className="clip-gallery-list">
                 {CLIP_ROWS.map((row) => (
-                  <button key={row.id} type="button" disabled={!row.file} onClick={() => startBatchRef.current(row.id, true)}>
+                  <button key={row.id} type="button" disabled={!row.file} onClick={() => {
+                    primeClipVideo()
+                    startBatchRef.current(row.id, true)
+                  }}>
                     {row.number}. {row.id.replaceAll('-', ' ')}{row.file ? '' : ' unavailable'}
                   </button>
                 ))}
