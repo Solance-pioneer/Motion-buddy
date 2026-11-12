@@ -76,12 +76,15 @@ export function idleChoices(): IdleChoice[] {
     group: groupOf(row.id),
     kind: 'clip' as const,
   }))
-  const coded = SCENE_ORDER.map((id) => ({
-    id,
-    label: CODED_LABEL[id],
-    group: 'Dress-up',
-    kind: 'coded' as const,
-  }))
+  const coded = [
+    ...SCENE_ORDER.map((id) => ({
+      id,
+      label: CODED_LABEL[id],
+      group: 'Dress-up',
+      kind: 'coded' as const,
+    })),
+    { id: 'ooh', label: 'Ooh', group: 'Feelings', kind: 'coded' as const },
+  ]
   return [...clips, ...coded].sort((a, b) => GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group) || a.label.localeCompare(b.label))
 }
 

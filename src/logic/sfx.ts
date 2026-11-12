@@ -10,6 +10,7 @@ import { allowBleep, initialBleepClock, type BleepClock, type BleepRole } from '
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
+import { oohClip, oohReleaseSeconds } from './ooh.ts'
 
 export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'celebration_three_squeaks' | 'proud_rise_beeps' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
@@ -491,10 +492,11 @@ function stopLater(source: AudioBufferSourceNode, seconds: number): void {
   source.stop(context.currentTime + seconds + 0.02)
 }
 
-/** One play of the drag clip. A second call while it is still sounding does not start another. */
+/** One finite ooh. A second call while it, or a pet note, is still sounding does not start another. */
 export function beginContact(): boolean {
-  if (!context || gate.muted || !gate.unlocked || bedSource) return false
-  const clip = pcm16('curious_contact_loop', CONTACT_WAV_BASE64.curious_contact_loop)
+  if (!context || gate.muted || !gate.unlocked || bedSource || variantSource) return false
+  const spec = oohClip()
+  const clip = pcm16(spec.key, spec.b64)
   const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
   buffer.getChannelData(0).set(clip.samples)
   const source = context.createBufferSource()
@@ -558,7 +560,7 @@ export function playContactVariant(now = performance.now()): ContactVariant | nu
 
 /** One short pet note. The same note waits. A different gesture may play as soon as the last note has ended. */
 export function playPetNote(key: PetNote, now = performance.now()): PetNote | null {
-  if (!context || gate.muted || !gate.unlocked || variantSource) return null
+  if (!context || gate.muted || !gate.unlocked || variantSource || bedSource) return null
   if (key === lastPetKey && now - lastPetAt < PET_REPEAT_MS) return null
   const clip = pcm16(key, CONTACT_WAV_BASE64[key])
   const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
@@ -841,7 +843,7 @@ export function stopDriveCue(ms = 80): void {
 
 /** Fade the bed and any variant. Pending ended callbacks from this contact cannot start audio again. */
 export function endContact(ms = 130): void {
-  const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
+  const seconds = oohReleaseSeconds(ms)
   contactGen += 1
   const bed = bedSource
   const bedAt = bedGain

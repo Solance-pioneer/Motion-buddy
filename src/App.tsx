@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { BuddyEngine, type BuddyState, type Presence, type Selection } from './logic/engine.ts'
 import type { PoseId, Profile } from './logic/library.ts'
 import { applyPose, type FaceHandles, type FaceStyle } from './view/applyPose.ts'
-import { FaceBlend } from './view/features.ts'
+import { FaceBlend, oohFeatures } from './view/features.ts'
 import { glanceOffset } from './view/glance.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
@@ -16,9 +16,10 @@ import { motionNeedsGesture, useTilt, type MotionUiStatus } from './view/useTilt
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
-import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
+import { choosePetNote, nextCodedIdle, noteOohRun, OOH_FACE_MS, oohIdleDue } from './logic/ooh.ts'
+import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
@@ -209,6 +210,7 @@ export function App() {
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
   const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, wide: 1, onFace: false, mode: 'chase' as PetMode, dragging: false, downAt: 0, sounded: false, tucked: false, boopUntil: 0 })
+  const oohRun = useRef(0)
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
   const batchHold = useRef({
     guard: null as ClipGuard,
@@ -217,6 +219,9 @@ export function App() {
     goodnight: false,
     readyAt: {} as Record<string, number>,
     lastIdle: null as string | null,
+    lastCoded: null as string | null,
+    lastOohAt: -100_000,
+    oohUntil: 0,
     lastCarAt: -100_000,
     carOnAt: 0,
     carSawMotion: false,
@@ -365,6 +370,15 @@ export function App() {
     if (!inside(leave)) return false
     return was
   }
+  const playChosenPet = () => {
+    const choice = choosePetNote(Math.random(), oohRun.current)
+    oohRun.current = noteOohRun(oohRun.current, choice)
+    if (choice === 'ooh') {
+      beginContact()
+      return
+    }
+    playPetNote(choice)
+  }
   const say = (kind: SpeechKind) => {
     const step = offerSpeech(speechClock.current, kind, performance.now(), speechOnRef.current, Math.random())
     speechClock.current = step.clock
@@ -388,7 +402,7 @@ export function App() {
     if (!p.dragging && !p.sounded && heldRef.current && performance.now() - p.downAt > 340) {
       p.tucked = true
       p.sounded = true
-      playPetNote(cueForGesture('tuck'))
+      playChosenPet()
       say('pet')
     }
     const posMs = reduced ? 0 : p.dragging ? 70 : 280
@@ -628,7 +642,17 @@ export function App() {
             }
           }
           if (!hold.guard) {
-            const key = nextAmbientScene(lastScene.current, codedOn)
+            const coded = nextCodedIdle(hold.lastCoded, codedOn)
+            if (coded) hold.lastCoded = coded
+            if (coded === 'ooh') {
+              if (!reduced && oohIdleDue(hold.lastOohAt, now)) {
+                hold.lastOohAt = now
+                hold.oohUntil = now + OOH_FACE_MS
+                beginContact()
+                return
+              }
+            }
+            const key = coded && coded !== 'ooh' ? coded : nextAmbientScene(lastScene.current, codedOn)
             const film = key && !reduced ? costumeClipId(key) : null
             const clipId = film && clipsOn.has(film) ? film : null
             if (key && clipId) {
@@ -941,8 +965,9 @@ export function App() {
       root.dataset.eyeH = features.left.h.toFixed(2)
       root.dataset.glanceX = glanceOffset(state.gazeX, state.gazeY).x.toFixed(2)
     }
+    const oohFace = !state.reduced && !sceneRef.current && performance.now() < batchHold.current.oohUntil
     if (handlesRef.current) {
-      applyPose(handlesRef.current, features, state.blink, colors.face, state.gazeX, state.gazeY)
+      applyPose(handlesRef.current, oohFace ? oohFeatures() : features, state.blink, colors.face, state.gazeX, state.gazeY)
       if (state.profile === 'car' && !sceneRef.current) {
         handlesRef.current.speed.setAttribute('opacity', carFace(carShown.current).speed.toFixed(2))
       }
@@ -1026,7 +1051,7 @@ export function App() {
     if (!state.reduced) engine.requestGreeting()
     if (!pet.current.sounded) {
       pet.current.sounded = true
-      playPetNote(cueForGesture('tap'))
+      playChosenPet()
       say('pet')
     }
     playBleep('tap')
@@ -1570,7 +1595,7 @@ export function App() {
             const gesture = classifyStroke(onFace, fast)
             pet.current.mode = gesture === 'dodge' ? 'dodge' : 'chase'
             pet.current.sounded = true
-            playPetNote(cueForGesture(gesture))
+            beginContact()
             say('pet')
           }
           const dir = pet.current.mode === 'dodge' ? -1 : 1
@@ -1578,7 +1603,9 @@ export function App() {
           aimPet(nx, ny, true)
         }}
         onPointerUp={() => {
+          const wasDrag = pet.current.dragging
           heldRef.current = false
+          if (wasDrag) endContact(130)
           if (sceneRef.current || waitRelease.current) {
             waitRelease.current = false
             touch.current = touchCancel(touch.current).clock

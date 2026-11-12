@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, beforeEach } from 'vitest'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
-import { advanceSound, beginContact, contactStatus, endContact, initialSoundMemory, playContactVariant, playCue, resetContactForTests, setSoundMuted, unlockSound } from './sfx.ts'
+import { advanceSound, beginContact, contactStatus, endContact, initialSoundMemory, playContactVariant, playCue, playPetNote, resetContactForTests, setSoundMuted, unlockSound } from './sfx.ts'
 
 const files = {
   curious_contact_loop: ['src/assets/contact-audio-v1/audio/app/curious_contact_loop_app_pcm16_48k.wav', '87b629cead273de97ac0d496d381d99180227489bd6cdda930945670a01897d0', 134400],
@@ -120,6 +120,20 @@ describe('contact audio', () => {
     expect(playContactVariant(1_500)).toBeNull()
     expect(playContactVariant(1_900)).toBe('pet_round_chirp')
     expect(contactStatus().variantKeys).toEqual(['pet_soft_squeak', 'pet_round_chirp'])
+  })
+
+  it('does not stack a pet note on an ooh, and mute blocks the ooh', () => {
+    expect(beginContact()).toBe(true)
+    expect(beginContact()).toBe(false)
+    expect(playPetNote('pet_round_chirp', 3_000)).toBeNull()
+    expect(contactStatus().liveSources).toBe(1)
+    expect(contactStatus().loop).toBe(false)
+    endContact(130)
+    setSoundMuted(true)
+    expect(beginContact()).toBe(false)
+    setSoundMuted(false)
+    expect(playPetNote('pet_soft_squeak', 4_000)).toBe('pet_soft_squeak')
+    expect(beginContact()).toBe(false)
   })
 
   it('does not let a stopped variant restore or restart the bed', () => {

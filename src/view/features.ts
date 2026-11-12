@@ -201,6 +201,11 @@ export function eye(cx: number, cy: number, w: number, h: number, peak: number, 
   return { cx, cy, w, h, peak, rot, radius: Math.min(w, h) / 2 }
 }
 
+/** Idle ooh: curious level eyes, a little wider, and a small round mouth. */
+export function oohFeatures(): FaceFeatures {
+  return face(eye(32, 38, 23, 28, 0, 0), eye(68, 38, 23, 28, 0, 0), mouth(70, 8, 0.4, 1, 3.2, 0), 0, 0, 0)
+}
+
 export function mouth(y: number, width: number, curve: number, open: number, gape: number, shift: number): MouthSpec {
   return { y, width, curve, open, gape, shift }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { lookFromDegrees } from '../logic/motion.ts'
-import { FaceBlend, featuresFor } from './features.ts'
+import { FaceBlend, featuresFor, oohFeatures } from './features.ts'
 import { glanceOffset } from './glance.ts'
 
 describe('face blend', () => {
@@ -37,6 +37,13 @@ describe('face blend', () => {
     const curious = featuresFor('curious', 'soft')
     const happy = featuresFor('happy', 'soft')
     const worried = featuresFor('worried', 'soft')
+    const ooh = oohFeatures()
+    expect(ooh.left.w).toBeGreaterThan(curious.left.w)
+    expect(ooh.left.peak).toBe(0)
+    expect(ooh.left.h).toBe(curious.left.h)
+    expect(ooh.mouth.width).toBeLessThan(12)
+    expect(ooh.mouth.curve).toBeLessThan(2)
+    expect(ooh.mouth.open).toBeGreaterThan(0)
     expect(curious.mouth.curve).toBeGreaterThan(8)
     expect(curious.mouth.width).toBeGreaterThan(18)
     expect(happy.left.h).toBeLessThan(curious.left.h - 16)
