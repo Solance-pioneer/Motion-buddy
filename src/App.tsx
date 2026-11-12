@@ -20,6 +20,9 @@ import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCa
 import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
+import { beginSceneClip, endSceneClip, initialClipClock, sceneClipMuted, type SceneClip } from './logic/scene-clip.ts'
+import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
+import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
 import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
 
@@ -579,6 +582,15 @@ export function App() {
   const [promptDone, setPromptDone] = useState(false)
   const [raceOn, setRaceOn] = useState(false)
   const [raceMarks, setRaceMarks] = useState(false)
+  const [sceneClip, setSceneClip] = useState<SceneClip | null>(null)
+  const clipClock = useRef(initialClipClock())
+  const clipVideo = useRef<HTMLVideoElement | null>(null)
+  const endClipRef = useRef(() => {})
+  endClipRef.current = () => {
+    clipVideo.current?.pause()
+    clipClock.current = endSceneClip(clipClock.current)
+    setSceneClip(null)
+  }
 
   const publish = useCallback((state: BuddyState, dt = 0) => {
     const root = rootRef.current
@@ -614,7 +626,17 @@ export function App() {
       const step = driveCueOnEntry(driveLook.current, look, performance.now(), driveClock.current)
       driveClock.current = step.clock
       driveLook.current = look
-      if (step.key) playDriveCue(step.key)
+      if (step.key) {
+        const brake = step.key === 'car_brake_soft_a' || step.key === 'car_brake_soft_b'
+        if (brake) {
+          const started = beginSceneClip(clipClock.current, 'brake-surprise', performance.now(), state.reduced)
+          clipClock.current = started.clock
+          if (started.play) setSceneClip(started.play)
+          else if (!clipClock.current.playing) playDriveCue(step.key)
+        } else if (!clipClock.current.playing) {
+          playDriveCue(step.key)
+        }
+      }
     } else if (driveLook.current !== 'neutral') {
       driveLook.current = 'neutral'
       driveClock.current = { ...driveClock.current, neutralSince: performance.now() }
@@ -646,9 +668,10 @@ export function App() {
     )
     originalArm.current = cue.arm
     if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
-    if (!sceneRef.current && state.blink >= 0.45 && blinkEdge.current < 0.45) playBleep('blink')
+    const clipBusy = clipClock.current.playing != null
+    if (!clipBusy && !sceneRef.current && state.blink >= 0.45 && blinkEdge.current < 0.45) playBleep('blink')
     blinkEdge.current = state.blink
-    if (!sceneRef.current && !state.hidden && !state.reduced && state.presence === 'awake' && !contactStatus().active) playBleep('idle')
+    if (!clipBusy && !sceneRef.current && !state.hidden && !state.reduced && state.presence === 'awake' && !contactStatus().active) playBleep('idle')
     stepPet(dt)
     sceneTickRef.current(dt)
     const key = viewKey(state)
@@ -815,6 +838,7 @@ export function App() {
         current.cueFired = true
       }
       stopSceneAudio(130)
+      endClipRef.current()
       loop.running = false
       engine.setHidden(true)
       abandonGesture()
@@ -832,6 +856,7 @@ export function App() {
     }
     const onLeave = () => {
       if (sceneRef.current?.kind === 'country') cancelCountryRef.current()
+      endClipRef.current()
       abandonGesture()
     }
     window.addEventListener('blur', onBlur)
@@ -849,6 +874,19 @@ export function App() {
       stop()
     }
   }, [engine, publish])
+
+  useEffect(() => {
+    const video = clipVideo.current
+    if (!sceneClip || !video) return
+    let cancelled = false
+    const pending = video.play()
+    void pending?.catch(() => {
+      if (!cancelled) endClipRef.current()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [sceneClip])
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -1246,7 +1284,11 @@ onClick={() => {
             setPromptDone(true)
             if (tilt.status !== 'active') void tilt.enable()
             driveClock.current = { ...driveClock.current, lastAny: performance.now() }
-            playDriveCue('race_activate_rev')
+            const reducedNow = engine.snapshot().reduced
+            const started = beginSceneClip(clipClock.current, 'race-rush', performance.now(), reducedNow)
+            clipClock.current = started.clock
+            if (started.play) setSceneClip(started.play)
+            else if (reducedNow && !clipClock.current.playing) playDriveCue('race_activate_rev')
             setRaceMarks(true)
             raceTimer.current = window.setTimeout(() => setRaceMarks(false), 1_250)
             publish(engine.snapshot())
@@ -1326,6 +1368,26 @@ onClick={() => {
             }
           }}
         />
+      ) : null}
+      {sceneClip ? (
+        <div
+          className="scene-clip"
+          data-scene-clip={sceneClip}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            endClipRef.current()
+          }}
+        >
+          <video
+            ref={clipVideo}
+            src={sceneClip === 'race-rush' ? raceRushUrl : brakeSurpriseUrl}
+            playsInline
+            muted={sceneClipMuted(!soundOn)}
+            preload="auto"
+            onEnded={() => endClipRef.current()}
+            onError={() => endClipRef.current()}
+          />
+        </div>
       ) : null}
       <p className="sr-only" aria-live="polite">
         {live}
