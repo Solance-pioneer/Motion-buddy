@@ -16,6 +16,10 @@ export const OOH_IDLE_COOLDOWN_MS = 45_000
 export const OOH_FACE_MS = 1_800
 export const OOH_RELEASE_FADE_MS = 130
 
+/** The 2.8s contact clip is cut in playback to about one gesture. The file itself stays whole. */
+export const OOH_MAX_MS = 1_400
+export const OOH_CAP_FADE_MS = 180
+
 const PET_NOTES = ['pet_soft_squeak', 'pet_round_chirp', 'pet_content_wobble', 'pet_squish_press', 'pet_spring_release'] as const
 export type OohPetNote = (typeof PET_NOTES)[number]
 export type PetChoice = 'ooh' | OohPetNote
@@ -53,6 +57,17 @@ export function oohIdleDue(lastAt: number, now: number): boolean {
 /** Release fade stays inside 100–150ms. */
 export function oohReleaseSeconds(ms = OOH_RELEASE_FADE_MS): number {
   return Math.max(0.1, Math.min(0.15, ms / 1000))
+}
+
+/** Fade at the end of a capped contact ooh, inside 150–200ms. */
+export function oohCapFadeSeconds(ms = OOH_CAP_FADE_MS): number {
+  return Math.max(0.15, Math.min(0.2, ms / 1000))
+}
+
+/** Contact ooh stops near OOH_MAX_MS. The glide alternative is already a short take and is not cut. */
+export function oohPlaybackCap(source: 'contact' | 'glide' = OOH_SOURCE): { maxMs: number; fadeMs: number } | null {
+  if (source !== 'contact') return null
+  return { maxMs: OOH_MAX_MS, fadeMs: OOH_CAP_FADE_MS }
 }
 
 /** Costumes plus the ooh expression, in that order. Disabled ids are left out. */

@@ -10,7 +10,7 @@ import { allowBleep, initialBleepClock, type BleepClock, type BleepRole } from '
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
-import { oohClip, oohReleaseSeconds } from './ooh.ts'
+import { oohCapFadeSeconds, oohClip, oohPlaybackCap, oohReleaseSeconds } from './ooh.ts'
 
 export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'celebration_three_squeaks' | 'proud_rise_beeps' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
@@ -442,6 +442,7 @@ export interface ContactStatus {
 }
 
 let contactGen = 0
+let oohCapTimer: ReturnType<typeof setTimeout> | null = null
 let bedSource: AudioBufferSourceNode | null = null
 let bedGain: GainNode | null = null
 let bedLevel = 0
@@ -492,6 +493,12 @@ function stopLater(source: AudioBufferSourceNode, seconds: number): void {
   source.stop(context.currentTime + seconds + 0.02)
 }
 
+function clearOohCap(): void {
+  if (oohCapTimer == null) return
+  clearTimeout(oohCapTimer)
+  oohCapTimer = null
+}
+
 /** One finite ooh. A second call while it, or a pet note, is still sounding does not start another. */
 export function beginContact(): boolean {
   if (!context || gate.muted || !gate.unlocked || bedSource || variantSource) return false
@@ -512,6 +519,14 @@ export function beginContact(): boolean {
   bedGain = gain
   bedStarts += 1
   const generation = contactGen
+  const cap = oohPlaybackCap()
+  if (cap) {
+    clearOohCap()
+    oohCapTimer = setTimeout(() => {
+      if (generation !== contactGen || bedSource !== source) return
+      endContact(cap.fadeMs, 'cap')
+    }, cap.maxMs - cap.fadeMs)
+  }
   source.onended = () => {
     if (generation !== contactGen) return
     if (bedSource === source) {
@@ -842,8 +857,9 @@ export function stopDriveCue(ms = 80): void {
 }
 
 /** Fade the bed and any variant. Pending ended callbacks from this contact cannot start audio again. */
-export function endContact(ms = 130): void {
-  const seconds = oohReleaseSeconds(ms)
+export function endContact(ms = 130, fade: 'release' | 'cap' = 'release'): void {
+  const seconds = fade === 'cap' ? oohCapFadeSeconds(ms) : oohReleaseSeconds(ms)
+  clearOohCap()
   contactGen += 1
   const bed = bedSource
   const bedAt = bedGain

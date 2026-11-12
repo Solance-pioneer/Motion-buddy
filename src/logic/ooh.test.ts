@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { OOH_SOURCE, choosePetNote, dragOohCue, nextCodedIdle, noteOohRun, oohClip, oohIdleDue, oohReleaseSeconds, OOH_IDLE_COOLDOWN_MS, OOH_PET_WEIGHT } from './ooh.ts'
+import { OOH_CAP_FADE_MS, OOH_MAX_MS, OOH_SOURCE, choosePetNote, dragOohCue, nextCodedIdle, noteOohRun, oohCapFadeSeconds, oohClip, oohIdleDue, oohPlaybackCap, oohReleaseSeconds, OOH_IDLE_COOLDOWN_MS, OOH_PET_WEIGHT } from './ooh.ts'
 
 describe('ooh', () => {
   it('uses the contact clip unless the one constant says glide', () => {
@@ -47,6 +47,20 @@ describe('ooh', () => {
     expect(nextCodedIdle('ooh', new Set(['ninja', 'ooh']))).toBe('ninja')
     expect(nextCodedIdle('sheet_ghost', new Set(['ninja', 'cord_hero', 'racer', 'sheet_ghost']))).toBe('ninja')
     expect(nextCodedIdle(null, new Set(['racer']))).toBe('racer')
+  })
+
+  it('cuts the contact ooh in playback near 1.4s and fades that ending over 150–200ms', () => {
+    expect(OOH_MAX_MS).toBe(1_400)
+    expect(OOH_CAP_FADE_MS).toBeGreaterThanOrEqual(150)
+    expect(OOH_CAP_FADE_MS).toBeLessThanOrEqual(200)
+    const cap = oohPlaybackCap('contact')
+    expect(cap).toEqual({ maxMs: 1_400, fadeMs: OOH_CAP_FADE_MS })
+    expect(oohPlaybackCap('glide')).toBeNull()
+    expect(oohCapFadeSeconds()).toBeGreaterThanOrEqual(0.15)
+    expect(oohCapFadeSeconds()).toBeLessThanOrEqual(0.2)
+    expect(oohCapFadeSeconds(100)).toBe(0.15)
+    expect(oohCapFadeSeconds(500)).toBe(0.2)
+    expect(cap && cap.maxMs - cap.fadeMs).toBeGreaterThan(1_000)
   })
 
   it('plays one ooh per drag and fades the release inside 100–150ms', () => {

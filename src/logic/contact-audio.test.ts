@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
+import { OOH_CAP_FADE_MS, OOH_MAX_MS } from './ooh.ts'
 import { advanceSound, beginContact, contactStatus, endContact, initialSoundMemory, playContactVariant, playCue, playPetNote, resetContactForTests, setSoundMuted, unlockSound } from './sfx.ts'
 
 const files = {
@@ -120,6 +121,27 @@ describe('contact audio', () => {
     expect(playContactVariant(1_500)).toBeNull()
     expect(playContactVariant(1_900)).toBe('pet_round_chirp')
     expect(contactStatus().variantKeys).toEqual(['pet_soft_squeak', 'pet_round_chirp'])
+  })
+
+  it('stops a contact ooh near 1.4s with a fade, and sooner if the gesture ends', () => {
+    vi.useFakeTimers()
+    try {
+      expect(beginContact()).toBe(true)
+      expect(sources[0].loop).toBe(false)
+      vi.advanceTimersByTime(OOH_MAX_MS - OOH_CAP_FADE_MS - 1)
+      expect(sources[0].stopped).toBe(0)
+      vi.advanceTimersByTime(1)
+      expect(sources[0].stopped).toBe(1)
+      sources.length = 0
+      expect(beginContact()).toBe(true)
+      vi.advanceTimersByTime(200)
+      endContact(130)
+      expect(sources[0].stopped).toBe(1)
+      vi.advanceTimersByTime(OOH_MAX_MS)
+      expect(sources[0].stopped).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('does not stack a pet note on an ooh, and mute blocks the ooh', () => {
