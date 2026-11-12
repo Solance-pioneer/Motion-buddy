@@ -51,6 +51,7 @@ import {
   type DateMode,
 } from './logic/clip-table.ts'
 import { isUnlocked } from './logic/entitlements.ts'
+import { chooseSynthCue, initialSynthClock } from './logic/synth-cues.ts'
 import { initialBatteryClock, stepBattery, takeLowBatteryClip, watchBattery, webBatteryProvider, type BatteryClock } from './logic/battery.ts'
 import { loadConditions } from './logic/weather/cache.ts'
 import type { WeatherOverride } from './logic/weather/conditions.ts'
@@ -205,6 +206,8 @@ export function App() {
   const [speechLine, setSpeechLine] = useState<string | null>(null)
   const [soundReady, setSoundReady] = useState(false)
   const heard = useRef<SoundMemory>(initialSoundMemory())
+  const synthClock = useRef(initialSynthClock())
+  const synthFace = useRef('')
   const moves = useRef<MoveClock>(initialMoveClock())
   const faceTaps = useRef<TapClock>(initialTapClock())
   const touch = useRef<TouchClock>(initialTouch())
@@ -984,9 +987,23 @@ export function App() {
     originalArm.current = cue.arm
     if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
     const clipBusy = clipClock.current.playing != null
-    if (!clipBusy && !sceneRef.current && state.blink >= 0.45 && blinkEdge.current < 0.45) playBleep('blink')
+    let faceSound = false
+    if (!clipBusy && !sceneRef.current && state.blink >= 0.45 && blinkEdge.current < 0.45) {
+      const blink = chooseSynthCue(synthClock.current, {
+        cue: 'blink',
+        now: performance.now(),
+        hasExisting: true,
+        reduced: state.reduced,
+        muted: soundStatus().muted || !soundOnRef.current,
+        unlocked: soundStatus().unlocked,
+        blocked: false,
+      })
+      synthClock.current = blink.clock
+      if (blink.choice === 'synth') faceSound = playCue('blink')
+      else if (blink.choice === 'existing') faceSound = playBleep('blink')
+    }
     blinkEdge.current = state.blink
-    if (!clipBusy && !sceneRef.current && !state.hidden && !state.reduced && state.presence === 'awake' && !contactStatus().active) playBleep('idle')
+    if (!faceSound && !clipBusy && !sceneRef.current && !state.hidden && !state.reduced && state.presence === 'awake' && !contactStatus().active) playBleep('idle')
     stepPet(dt)
     sceneTickRef.current(dt)
     const key = viewKey(state)
@@ -1078,8 +1095,10 @@ export function App() {
     }
     const status = soundStatus()
     const state = engine.snapshot()
+    const now = performance.now()
+    const movesBefore = moves.current.moves
     const next = noteMovement(moves.current, {
-      now: performance.now(),
+      now,
       magnitude,
       reduced: state.reduced,
       muted: status.muted || !soundOn,
@@ -1088,21 +1107,47 @@ export function App() {
       allowGrumpy: state.autoSet.includes('grumpy'),
       busyUntil: heard.current.voiceUntil,
     })
+    const distinct = next.clock.moves > movesBefore
     moves.current = next.clock
+    const clipHere = Boolean(batchHold.current.guard) || clipClock.current.playing != null
     if (next.cue === 'grumpy') {
       const scolded = engine.requestScold()
       if (scolded) say('shake')
-      if (scolded && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
+      if (scolded && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: now + 120 }
       publish(engine.snapshot())
     } else if (next.cue === 'dizzy') {
       const already = state.reaction === 'dizzy'
       engine.previewReaction('dizzy')
       publish(engine.snapshot())
-      if (already && playCue('dizzy')) heard.current = { ...heard.current, voiceUntil: performance.now() + 1_200 }
-    } else if (next.cue === 'chirp') {
-      const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
-      heard.current = claimed.memory
-      if (claimed.ok) playCue('chirp')
+      const step = chooseSynthCue(synthClock.current, {
+        cue: 'movement',
+        now,
+        hasExisting: true,
+        reduced: state.reduced,
+        muted: status.muted || !soundOn,
+        unlocked: status.unlocked,
+        blocked: clipHere,
+      })
+      synthClock.current = step.clock
+      if (step.choice === 'synth') playCue('movement')
+      else if (step.choice === 'existing' && already && playCue('dizzy')) heard.current = { ...heard.current, voiceUntil: now + 1_200 }
+    } else if (distinct) {
+      const step = chooseSynthCue(synthClock.current, {
+        cue: 'movement',
+        now,
+        hasExisting: next.cue === 'chirp',
+        reduced: state.reduced,
+        muted: status.muted || !soundOn,
+        unlocked: status.unlocked,
+        blocked: clipHere || now < batchHold.current.suppressUntil,
+      })
+      synthClock.current = step.clock
+      if (step.choice === 'synth') playCue('movement')
+      else if (step.choice === 'existing') {
+        const claimed = claimChirp(heard.current, now, { unlocked: true, muted: false, explicit: true })
+        heard.current = claimed.memory
+        if (claimed.ok) playCue('chirp')
+      }
     }
   }, [engine, publish, soundOn])
 
@@ -1396,7 +1441,24 @@ export function App() {
       performance.now(),
     )
     heard.current = next.memory
-    if (next.cue) playCue(next.cue)
+    const faceId = view.showcase?.id ?? view.expression
+    const entered = faceId !== synthFace.current
+    synthFace.current = faceId
+    const synthCue = faceId === 'scan' || faceId === 'curious' ? 'curious' : faceId === 'happy' ? 'happy' : null
+    if (synthCue && entered) {
+      const step = chooseSynthCue(synthClock.current, {
+        cue: synthCue,
+        now: performance.now(),
+        hasExisting: Boolean(next.cue),
+        reduced: view.reduced,
+        muted: status.muted || !soundOn,
+        unlocked: status.unlocked,
+        blocked: false,
+      })
+      synthClock.current = step.clock
+      if (step.choice === 'synth') playCue(synthCue)
+      else if (step.choice === 'existing' && next.cue) playCue(next.cue)
+    } else if (next.cue) playCue(next.cue)
   }, [soundOn, view.expression, view.reaction, view.reduced, view.allowDizzy, view.allowStartled, view.hidden, view.showcase?.id, soundReady])
 
   useEffect(() => {

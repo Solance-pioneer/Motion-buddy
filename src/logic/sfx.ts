@@ -12,6 +12,7 @@ import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
 import { oohCapFadeSeconds, oohClip, oohPlaybackCap, oohReleaseSeconds } from './ooh.ts'
+import { isSynthCue } from './synth-cues.ts'
 
 export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'celebration_three_squeaks' | 'proud_rise_beeps' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
@@ -947,7 +948,8 @@ export function playCue(kind: Cue | null): boolean {
   const replacement = kind === 'celebration_three_squeaks' || kind === 'proud_rise_beeps'
   const original = kind === 'sneeze_zip' || kind === 'peek_pop' || kind === 'pout_boop'
   const approved = kind === 'scan' || kind === 'giggle' || kind === 'surprise' || kind === 'yawn' || kind === 'wink' || kind === 'dizzy'
-  if (!approved && !spoken && !original && !replacement && kind !== 'chirp') return false
+  const synth = isSynthCue(kind)
+  if (!approved && !spoken && !original && !replacement && kind !== 'chirp' && !synth) return false
   const voice = spoken ? voicePcm.get(kind) : undefined
   if (spoken && !voice) return false
   let samples: Float32Array
@@ -963,8 +965,8 @@ export function playCue(kind: Cue | null): boolean {
     const clip = replacementSamples(kind)
     samples = clip.samples
     rate = clip.rate
-  } else if (kind === 'chirp') {
-    samples = renderCue('chirp', 22050)
+  } else if (kind === 'chirp' || synth) {
+    samples = renderCue(kind, 22050)
     rate = 22050
   } else if (approved) {
     samples = approvedSamples(kind)
@@ -974,7 +976,8 @@ export function playCue(kind: Cue | null): boolean {
   buffer.getChannelData(0).set(samples)
   const source = context.createBufferSource()
   const gain = context.createGain()
-  gain.gain.value = kind in PLAYBACK_GAIN ? PLAYBACK_GAIN[kind] : 0.32
+  const listed = (PLAYBACK_GAIN as Record<string, number>)[kind]
+  gain.gain.value = listed ?? 0.32
   source.buffer = buffer
   source.connect(gain)
   gain.connect(context.destination)
