@@ -25,6 +25,7 @@ import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITI
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readBeatFeel, readGenre, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
+import { genrePulse, type GenreId } from './logic/genres.ts'
 import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
 import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
@@ -793,7 +794,9 @@ export function App() {
   const [chosenTheme, setChosenTheme] = useState<ThemeId>(() => readTheme())
   const [beatOn, setBeatOn] = useState(() => readBeatFeel().on)
   const [beatFeel, setBeatFeel] = useState<BeatFeel>(() => readBeatFeel().feel)
-  const [genre, setGenre] = useState<'none' | 'indie' | 'hip-hop'>(() => readGenre())
+  const [genre, setGenre] = useState<GenreId>(() => readGenre())
+  const [genrePop, setGenrePop] = useState(false)
+  const genreLast = useRef(0)
   const beatClock = useRef(initialBeatClock())
   const bopUntil = useRef(0)
   const bopSize = useRef(5)
@@ -1442,6 +1445,12 @@ export function App() {
       beatClock.current = step.clock
       const state = engine.snapshot()
       if (step.beat && !state.reduced && state.profile !== 'car') bopUntil.current = performance.now() + (beatFeel === 'party' ? 220 : 160)
+      const pop = genrePulse({ now: performance.now(), lastAt: genreLast.current, beat: step.beat, reduced: state.reduced, party: beatFeel === 'party' })
+      genreLast.current = pop.lastAt
+      if (pop.pulse) {
+        setGenrePop(true)
+        window.setTimeout(() => setGenrePop(false), 160)
+      }
     }).then((end) => {
       if (closed) end()
       else stop = end
@@ -1774,7 +1783,7 @@ export function App() {
               <g className="race-confetti" dangerouslySetInnerHTML={{ __html: confettiRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
             </svg>
           ) : null}
-          <Face onReady={onReady} genre={isUnlocked('genre-looks') ? genre : 'none'} />
+          <Face onReady={onReady} genre={isUnlocked('genre-looks') ? genre : 'none'} pulse={genrePop} party={beatFeel === 'party'} reduced={view.reduced} />
           <p className="speech-bubble" aria-live="polite" data-on={speechLine ? '1' : '0'} data-reduced={view.reduced ? '1' : '0'}>
             {speechLine}
           </p>

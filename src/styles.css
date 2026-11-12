@@ -49,6 +49,14 @@ body {
     inset 0 -20px 0 #c0392b;
 }
 
+.face [data-part='genre'][data-reduced='1'] [data-flash] {
+  opacity: 0.35;
+}
+
+.face [data-part='genre'][data-pulse='0'] [data-flash] {
+  opacity: 0.35;
+}
+
 .race-lines {
   position: absolute;
   inset: 0;

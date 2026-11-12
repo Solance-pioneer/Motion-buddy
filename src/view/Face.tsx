@@ -1,9 +1,10 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, type ReactNode } from 'react'
 import type { FaceHandles } from './applyPose.ts'
 import { Costumes } from './costumes.tsx'
 import { CountryOverlays } from './country-art.tsx'
+import type { GenreId } from '../logic/genres.ts'
 
-export function Face({ onReady, genre = 'none' }: { onReady: (handles: FaceHandles) => void; genre?: 'none' | 'indie' | 'hip-hop' }) {
+export function Face({ onReady, genre = 'none', pulse = false, party = false, reduced = false }: { onReady: (handles: FaceHandles) => void; genre?: GenreId; pulse?: boolean; party?: boolean; reduced?: boolean }) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useLayoutEffect(() => {
@@ -37,7 +38,7 @@ export function Face({ onReady, genre = 'none' }: { onReady: (handles: FaceHandl
       <g transform="scale(0.277778)">
         <CountryOverlays />
       </g>
-      <GenreWear genre={genre} />
+      <GenreWear genre={genre} pulse={pulse} party={party} reduced={reduced} />
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
@@ -65,25 +66,72 @@ export function Face({ onReady, genre = 'none' }: { onReady: (handles: FaceHandl
   )
 }
 
-/** Wear sits behind the live eyes and mouth. */
-function GenreWear({ genre }: { genre: 'none' | 'indie' | 'hip-hop' }) {
-  if (genre === 'none') return null
-  if (genre === 'indie') {
-    return (
-      <g data-part="genre" data-genre="indie" pointerEvents="none">
-        <ellipse cx="50" cy="16" rx="26" ry="8" fill="#2f3d55" />
-        <path d="M24 16 Q50 8 76 16 L74 20 Q50 14 26 20 Z" fill="#243044" />
-        <path d="M18 62 Q22 78 28 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
-        <path d="M82 62 Q78 78 72 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
-      </g>
-    )
-  }
-  return (
-    <g data-part="genre" data-genre="hip-hop" pointerEvents="none">
+const GENRE_ART: Record<Exclude<GenreId, 'none'>, () => ReactNode> = {
+  indie: () => (
+    <>
+      <ellipse cx="50" cy="16" rx="26" ry="8" fill="#2f3d55" />
+      <path d="M24 16 Q50 8 76 16 L74 20 Q50 14 26 20 Z" fill="#243044" />
+      <path d="M18 62 Q22 78 28 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
+      <path d="M82 62 Q78 78 72 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
+    </>
+  ),
+  'hip-hop': () => (
+    <>
       <path d="M22 74 Q30 86 38 76" fill="none" stroke="#e2c56a" strokeWidth="3" strokeLinecap="round" />
       <path d="M78 74 Q70 86 62 76" fill="none" stroke="#e2c56a" strokeWidth="3" strokeLinecap="round" />
       <circle cx="30" cy="80" r="1.6" fill="#f3e2a2" />
       <circle cx="70" cy="80" r="1.6" fill="#f3e2a2" />
+    </>
+  ),
+  country: () => (
+    <>
+      <ellipse cx="50" cy="14" rx="28" ry="6" fill="#8a5a2b" />
+      <path d="M22 14 Q50 2 78 14 L74 18 Q50 10 26 18 Z" fill="#6d4520" />
+      <path d="M20 58 Q24 70 30 74" fill="none" stroke="#234e70" strokeWidth="4" strokeLinecap="round" />
+      <path d="M80 58 Q76 70 70 74" fill="none" stroke="#234e70" strokeWidth="4" strokeLinecap="round" />
+    </>
+  ),
+  disco: () => (
+    <>
+      <circle cx="50" cy="10" r="6" fill="#d9dde6" stroke="#9aa3b5" strokeWidth="0.6" />
+      <path d="M47 7 L53 13 M53 7 L47 13 M50 5 V15 M45 10 H55" stroke="#ffffff" strokeWidth="0.4" />
+      <circle data-flash cx="18" cy="22" r="1.1" fill="#fff4c2" />
+      <circle data-flash cx="82" cy="24" r="1.1" fill="#d7f3ff" />
+      <circle data-flash cx="30" cy="8" r="0.8" fill="#ffd0ea" />
+      <circle data-flash cx="70" cy="9" r="0.8" fill="#fff4c2" />
+      <ellipse cx="32" cy="40" rx="14" ry="8" fill="#1c2430" opacity="0.28" />
+      <ellipse cx="68" cy="40" rx="14" ry="8" fill="#1c2430" opacity="0.28" />
+    </>
+  ),
+  'rave-iator': () => (
+    <>
+      <path d="M16 36 Q32 28 46 36 Q32 44 16 36 Z" fill="#39ffb0" opacity="0.34" />
+      <path d="M54 36 Q68 28 84 36 Q68 44 54 36 Z" fill="#ff4fd8" opacity="0.34" />
+      <path d="M46 36 H54" stroke="#f7ff6a" strokeWidth="1.2" />
+      <path data-flash d="M12 70 V84" stroke="#39ffb0" strokeWidth="2.4" strokeLinecap="round" />
+      <path data-flash d="M88 70 V84" stroke="#ff4fd8" strokeWidth="2.4" strokeLinecap="round" />
+      <circle data-flash cx="22" cy="18" r="1.3" fill="#39ffb0" />
+      <circle data-flash cx="78" cy="18" r="1.3" fill="#ff4fd8" />
+    </>
+  ),
+}
+
+/** Wear sits behind the live eyes and mouth, so shades cannot hide them. */
+function GenreWear({ genre, pulse, party, reduced }: { genre: GenreId; pulse: boolean; party: boolean; reduced: boolean }) {
+  if (genre === 'none') return null
+  const Art = GENRE_ART[genre]
+  const live = pulse && !reduced
+  const scale = live ? (party ? 1.08 : 1.04) : 1
+  return (
+    <g
+      data-part="genre"
+      data-genre={genre}
+      data-pulse={live ? '1' : '0'}
+      data-reduced={reduced ? '1' : '0'}
+      pointerEvents="none"
+      transform={`translate(50 42) scale(${scale}) translate(-50 -42)`}
+    >
+      {Art()}
     </g>
   )
 }

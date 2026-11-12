@@ -8,6 +8,7 @@ import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 import { IDLE_GAP_MAX_S, IDLE_GAP_MIN_S } from '../logic/clip-table.ts'
 import { THEME_IDS, type ThemeId } from '../logic/themes.ts'
+import { GENRE_LOOKS, type GenreId } from '../logic/genres.ts'
 import { idleGroups, type IdleChoice } from '../logic/idle-prefs.ts'
 
 const EXPRESSION_LABEL: Record<PoseId, string> = {
@@ -132,9 +133,9 @@ export function Controls({
   beatFeel: 'steady' | 'party'
   onToggleBeat: () => void
   onBeatFeel: (feel: 'steady' | 'party') => void
-  genre: 'none' | 'indie' | 'hip-hop'
+  genre: GenreId
   genreOpen: boolean
-  onGenre: (id: 'none' | 'indie' | 'hip-hop') => void
+  onGenre: (id: GenreId) => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
   idleChoices: readonly IdleChoice[]
@@ -431,14 +432,15 @@ export function Controls({
             <button type="button" aria-pressed={beatFeel === 'party'} onClick={() => onBeatFeel('party')}>Party mode</button>
           </div>
           <p className="note">Beat listens only while it is on, after you tap. Nothing is saved or sent. The head nods in Desk. Reduced motion stays still.</p>
-          <div className="choice-row">
-            {(['none', 'indie', 'hip-hop'] as const).map((id) => (
-              <button key={id} type="button" aria-pressed={genre === id} disabled={!genreOpen && id !== 'none'} onClick={() => onGenre(id)}>
-                {id === 'none' ? 'No look' : id === 'indie' ? 'Indie' : 'Hip-hop'}
+          <div className="choice-grid">
+            <button type="button" aria-pressed={genre === 'none'} onClick={() => onGenre('none')}>No look</button>
+            {GENRE_LOOKS.map((look) => (
+              <button key={look.id} type="button" aria-pressed={genre === look.id} disabled={!genreOpen} onClick={() => onGenre(look.id)}>
+                {look.label}
               </button>
             ))}
           </div>
-          <p className="note">Genre looks are a separate premium set. Indie is a beanie and scarf. Hip-hop is gold chains.</p>
+          <p className="note">Genre looks are one premium set: indie, hip-hop, country, disco, and rave. They bounce on the beat. Reduced motion stays still, and the eyes stay visible.</p>
         </fieldset>
 
         <fieldset>

@@ -2,6 +2,7 @@ import { ADMIN_KEY, adminFromStorage, adminToStorage } from './admin-flag.ts'
 import { idlePrefsFromStorage, idlePrefsToStorage, IDLE_PREFS_KEY, type IdlePrefs } from './idle-prefs.ts'
 import { themeFromStorage, type ThemeId } from './themes.ts'
 import type { BeatFeel } from './beat.ts'
+import { genreFromStorage, type GenreId } from './genres.ts'
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
 import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
@@ -136,17 +137,15 @@ export function writeBeatFeel(on: boolean, feel: BeatFeel): void {
   }
 }
 
-export function readGenre(): 'none' | 'indie' | 'hip-hop' {
+export function readGenre(): GenreId {
   try {
-    const raw = localStorage.getItem(GENRE_KEY)
-    if (raw === 'indie' || raw === 'hip-hop') return raw
-    return 'none'
+    return genreFromStorage(localStorage.getItem(GENRE_KEY))
   } catch {
     return 'none'
   }
 }
 
-export function writeGenre(id: 'none' | 'indie' | 'hip-hop'): void {
+export function writeGenre(id: GenreId): void {
   try {
     localStorage.setItem(GENRE_KEY, id)
   } catch {
