@@ -47,6 +47,7 @@ import {
   type DateMode,
 } from './logic/clip-table.ts'
 import { isUnlocked } from './logic/entitlements.ts'
+import { initialBatteryClock, stepBattery, takeLowBatteryClip, watchBattery, webBatteryProvider, type BatteryClock } from './logic/battery.ts'
 import { loadConditions } from './logic/weather/cache.ts'
 import type { WeatherOverride } from './logic/weather/conditions.ts'
 import { requestRoundedFix } from './logic/weather/locate.ts'
@@ -219,6 +220,7 @@ export function App() {
   const weatherModeRef = useRef<WeatherOverride>('none')
   const weatherRef = useRef<WeatherConditions | null>(null)
   const weatherOnRef = useRef(false)
+  const batteryRef = useRef<BatteryClock>(initialBatteryClock())
   const sceneRef = useRef<
     | { kind: 'costume'; key: SceneKey; started: number; banked: number; paused: boolean; cueFired: boolean }
     | { kind: 'country'; key: CountryKey; started: number; banked: number; paused: boolean; cueFired: boolean; stingFired: boolean; leadUntil: number; reduced: boolean }
@@ -585,6 +587,20 @@ export function App() {
         hold.idleFirst = stepped.clock.first
         if (stepped.due) {
           const reduced = engine.snapshot().reduced
+          const battery = takeLowBatteryClip(batteryRef.current, {
+            reduced,
+            guard: hold.guard,
+            touching: heldRef.current,
+            suppressUntil: hold.suppressUntil,
+            now,
+            unlocked: isUnlocked('low-battery-recharge'),
+          })
+          batteryRef.current = battery.clock
+          if (battery.id) {
+            const started = startBatchRef.current(battery.id)
+            if (started) return
+            batteryRef.current = { ...battery.clock, pending: true }
+          }
           const action = chooseIdleAction(Math.random(), reduced, hold.lastIdle, Math.random())
           if (action.kind === 'clip') {
             const key = nextAmbientScene(lastScene.current)
@@ -1251,6 +1267,10 @@ export function App() {
       if (frameId && frameVideo.cancelVideoFrameCallback) frameVideo.cancelVideoFrameCallback(frameId)
     }
   }, [sceneClip, batchUrl])
+
+  useEffect(() => watchBattery(webBatteryProvider, (sample) => {
+    batteryRef.current = stepBattery(batteryRef.current, sample)
+  }), [])
 
   useEffect(() => {
     if (!weatherOn || !isUnlocked('weather-moods')) return
