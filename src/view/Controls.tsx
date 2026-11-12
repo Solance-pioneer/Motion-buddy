@@ -8,7 +8,7 @@ import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 import { IDLE_GAP_MAX_S, IDLE_GAP_MIN_S } from '../logic/clip-table.ts'
 import { THEME_IDS, type ThemeId } from '../logic/themes.ts'
-import { GENRE_LOOKS, type GenreId } from '../logic/genres.ts'
+import { GENRE_LOOKS, type GenreId, type HeadbangSpeed } from '../logic/genres.ts'
 import { idleGroups, type IdleChoice } from '../logic/idle-prefs.ts'
 
 const EXPRESSION_LABEL: Record<PoseId, string> = {
@@ -89,7 +89,10 @@ export function Controls({
   onBeatFeel,
   genre,
   genreOpen,
+  packOpen,
   onGenre,
+  headbang,
+  onHeadbang,
 }: {
   presence: Presence
   selection: Selection
@@ -135,7 +138,10 @@ export function Controls({
   onBeatFeel: (feel: 'steady' | 'party') => void
   genre: GenreId
   genreOpen: boolean
+  packOpen: (feature: string) => boolean
   onGenre: (id: GenreId) => void
+  headbang: HeadbangSpeed
+  onHeadbang: (speed: HeadbangSpeed) => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
   idleChoices: readonly IdleChoice[]
@@ -435,12 +441,21 @@ export function Controls({
           <div className="choice-grid">
             <button type="button" aria-pressed={genre === 'none'} onClick={() => onGenre('none')}>No look</button>
             {GENRE_LOOKS.map((look) => (
-              <button key={look.id} type="button" aria-pressed={genre === look.id} disabled={!genreOpen} onClick={() => onGenre(look.id)}>
+              <button key={look.id} type="button" aria-pressed={genre === look.id} disabled={!genreOpen || !packOpen(look.feature)} onClick={() => onGenre(look.id)}>
                 {look.label}
               </button>
             ))}
           </div>
-          <p className="note">Each genre is one premium look, chosen here, with its own bounce and a short sound made on this device. Reduced motion stays still, and the eyes stay visible.</p>
+          {genre === 'metal' ? (
+            <div className="choice-row">
+              {(['slow', 'medium', 'fast'] as const).map((speed) => (
+                <button key={speed} type="button" aria-pressed={headbang === speed} onClick={() => onHeadbang(speed)}>
+                  {speed === 'slow' ? 'Slow bang' : speed === 'fast' ? 'Fast bang' : 'Medium bang'}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <p className="note">Each genre is its own premium pack, chosen here. Electronic hits every kick, reggae waits for the off-beat, and classical opens up on a high note. Reduced motion stays still, and the eyes stay visible.</p>
         </fieldset>
 
         <fieldset>

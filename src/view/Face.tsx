@@ -2,11 +2,11 @@ import { useLayoutEffect, useRef } from 'react'
 import type { FaceHandles } from './applyPose.ts'
 import { Costumes } from './costumes.tsx'
 import { CountryOverlays } from './country-art.tsx'
-import type { GenreId } from '../logic/genres.ts'
-import { genreById } from '../logic/genre-pack.ts'
+import type { GenreId, GenreLook, HeadbangSpeed } from '../logic/genres.ts'
+import { genreById, headbangTilt } from '../logic/genre-pack.ts'
 import { GENRE_ART } from './genre-art.tsx'
 
-export function Face({ onReady, genre = 'none', pulse = false, party = false, reduced = false }: { onReady: (handles: FaceHandles) => void; genre?: GenreId; pulse?: boolean; party?: boolean; reduced?: boolean }) {
+export function Face({ onReady, genre = 'none', pulse = false, party = false, reduced = false, wide = false, bang = 'medium' }: { onReady: (handles: FaceHandles) => void; genre?: GenreId; pulse?: boolean; party?: boolean; reduced?: boolean; wide?: boolean; bang?: HeadbangSpeed }) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useLayoutEffect(() => {
@@ -40,13 +40,14 @@ export function Face({ onReady, genre = 'none', pulse = false, party = false, re
       <g transform="scale(0.277778)">
         <CountryOverlays />
       </g>
-      <GenreWear genre={genre} pulse={pulse} party={party} reduced={reduced} />
+      <GenreWear genre={genre} pulse={pulse} party={party} reduced={reduced} bang={bang} />
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
         <path data-part="brow-l" d="M22 31 Q32 25 42 31" fill="none" stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round" opacity="0" />
         <path data-part="brow-r" d="M58 31 Q68 25 78 31" fill="none" stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round" opacity="0" />
         <path data-part="mouth" fill="#ffffff" stroke="none" />
+        <ellipse data-part="genre-mouth" cx="50" cy="70" rx="8" ry="5.5" fill="#ffffff" opacity={wide && !reduced ? 1 : 0} />
         <ellipse data-part="blush-l" cx="22" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
         <ellipse data-part="blush-r" cx="78" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
         <path data-part="sweat" d="M74 30 q2 4 0 6 q-2-2 0-6z" fill="#ffffff" opacity="0" />
@@ -69,23 +70,26 @@ export function Face({ onReady, genre = 'none', pulse = false, party = false, re
 }
 
 /** Wear sits behind the live eyes and mouth, so shades cannot hide them. */
-function GenreWear({ genre, pulse, party, reduced }: { genre: GenreId; pulse: boolean; party: boolean; reduced: boolean }) {
+function GenreWear({ genre, pulse, party, reduced, bang }: { genre: GenreId; pulse: boolean; party: boolean; reduced: boolean; bang: HeadbangSpeed }) {
   const entry = genre === 'none' ? undefined : genreById(genre)
   if (!entry) return null
-  const Art = GENRE_ART[entry.id]
+  const Art = GENRE_ART[entry.id as GenreLook]
   const live = pulse && !reduced
   const scale = live ? (party ? entry.beat.partyScale : entry.beat.scale) : 1
-  const tilt = live ? entry.beat.tilt * (party ? 1.4 : 1) : 0
+  const tilt = !live ? 0 : entry.reaction === 'headbang' ? headbangTilt(entry.beat.tilt, bang, party) : entry.beat.tilt * (party ? 1.4 : 1)
+  const drop = !live ? 0 : entry.reaction === 'pogo' ? -3.2 : entry.reaction === 'nod' || entry.reaction === 'heavy' || entry.reaction === 'offbeat' ? (party ? 2.2 : 1.3) : entry.reaction === 'kick' ? (party ? -2 : -1.1) : 0
   return (
     <g
       data-part="genre"
       data-genre={entry.id}
+      data-pack={entry.pack}
       data-pulse={live ? '1' : '0'}
       data-reduced={reduced ? '1' : '0'}
+      data-reaction={entry.reaction}
       pointerEvents="none"
-      transform={`translate(50 42) rotate(${tilt}) scale(${scale}) translate(-50 -42)`}
+      transform={live ? `translate(50 42) translate(0 ${drop}) rotate(${tilt}) scale(${scale}) translate(-50 -42)` : undefined}
     >
-      {Art()}
+      <g data-idle={entry.idle}>{Art()}</g>
     </g>
   )
 }

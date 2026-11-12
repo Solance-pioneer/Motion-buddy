@@ -2,7 +2,7 @@ import { ADMIN_KEY, adminFromStorage, adminToStorage } from './admin-flag.ts'
 import { idlePrefsFromStorage, idlePrefsToStorage, IDLE_PREFS_KEY, type IdlePrefs } from './idle-prefs.ts'
 import { themeFromStorage, type ThemeId } from './themes.ts'
 import type { BeatFeel } from './beat.ts'
-import { genreFromStorage, type GenreId } from './genres.ts'
+import { genreFromStorage, headbangFromStorage, type GenreId, type HeadbangSpeed } from './genres.ts'
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
 import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
@@ -142,6 +142,24 @@ export function readGenre(): GenreId {
     return genreFromStorage(localStorage.getItem(GENRE_KEY))
   } catch {
     return 'none'
+  }
+}
+
+export const HEADBANG_KEY = 'motion-buddy-headbang-v1'
+
+export function readHeadbang(): HeadbangSpeed {
+  try {
+    return headbangFromStorage(localStorage.getItem(HEADBANG_KEY))
+  } catch {
+    return 'medium'
+  }
+}
+
+export function writeHeadbang(speed: HeadbangSpeed): void {
+  try {
+    localStorage.setItem(HEADBANG_KEY, speed)
+  } catch {
+    // The choice still applies until the page closes.
   }
 }
 

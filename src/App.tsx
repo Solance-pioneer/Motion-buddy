@@ -23,9 +23,9 @@ import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readAdminEnabled, readBeatFeel, readGenre, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readAdminEnabled, readBeatFeel, readGenre, readHeadbang, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeHeadbang, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
-import { genreById, genrePulse, type GenreId } from './logic/genres.ts'
+import { genreById, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, shownGenre, spectralCentroid, type GenreId, type HeadbangSpeed } from './logic/genres.ts'
 import { playGenreSting } from './logic/genre-sound.ts'
 import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
@@ -797,9 +797,13 @@ export function App() {
   const [beatFeel, setBeatFeel] = useState<BeatFeel>(() => readBeatFeel().feel)
   const [genre, setGenre] = useState<GenreId>(() => readGenre())
   const [genrePop, setGenrePop] = useState(false)
-  const genreLast = useRef(0)
+  const [genreWide, setGenreWide] = useState(false)
+  const [headbang, setHeadbang] = useState<HeadbangSpeed>(() => readHeadbang())
+  const genreHit = useRef(initialGenreHitClock())
   const genreRef = useRef(genre)
   genreRef.current = genre
+  const headbangRef = useRef(headbang)
+  headbangRef.current = headbang
   const beatClock = useRef(initialBeatClock())
   const bopUntil = useRef(0)
   const bopSize = useRef(5)
@@ -1444,25 +1448,39 @@ export function App() {
     void openBeatMic((bins, sampleRate, fftSize) => {
       const normal = new Float32Array(bins.length)
       for (let i = 0; i < bins.length; i += 1) normal[i] = bins[i] / 255
-      const step = stepBeat(beatClock.current, bassEnergy(normal, sampleRate, fftSize), performance.now(), beatFeel)
+      const now = performance.now()
+      const step = stepBeat(beatClock.current, bassEnergy(normal, sampleRate, fftSize), now, beatFeel)
       beatClock.current = step.clock
       const state = engine.snapshot()
-      if (step.beat && !state.reduced && state.profile !== 'car') bopUntil.current = performance.now() + (beatFeel === 'party' ? 220 : 160)
       const look = genreById(genreRef.current)
-      const pop = genrePulse({
-        now: performance.now(),
-        lastAt: genreLast.current,
-        beat: step.beat,
+      const gaps = step.clock.gaps
+      const meanGap = gaps.length === 0 ? 0 : gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length
+      const high = isHighNote(spectralCentroid(normal, sampleRate, fftSize), highBandEnergy(normal, sampleRate, fftSize))
+      const planned = planGenreHit(genreHit.current, {
+        now,
+        onset: step.beat,
+        meanGap,
+        grid: look?.grid ?? 'onset',
         reduced: state.reduced,
-        party: beatFeel === 'party',
-        scale: look?.beat.scale ?? 1,
-        partyScale: look?.beat.partyScale ?? 1,
+        high,
+        hearsHigh: look?.reaction === 'shiver',
       })
-      genreLast.current = pop.lastAt
-      if (pop.pulse) {
+      genreHit.current = planned.clock
+      const off = look?.grid === 'offbeat'
+      const nod = (off ? planned.hit : step.beat) && !state.reduced && state.profile !== 'car'
+      if (nod) {
+        const metal = look?.reaction === 'headbang' ? headbangTilt(look.beat.tilt, headbangRef.current, beatFeel === 'party') : 0
+        bopUntil.current = now + (look?.reaction === 'headbang' ? (headbangRef.current === 'fast' ? 100 : headbangRef.current === 'slow' ? 220 : 150) : beatFeel === 'party' ? 220 : 160)
+        bopSize.current = metal > 0 ? metal * 0.5 : beatFeel === 'party' ? 8 : 5
+      }
+      if (planned.hit) {
         setGenrePop(true)
-        window.setTimeout(() => setGenrePop(false), 160)
-        if (look) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
+        setGenreWide(planned.wide)
+        window.setTimeout(() => {
+          setGenrePop(false)
+          setGenreWide(false)
+        }, 160)
+        if (look && isUnlocked(look.feature)) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
       }
     }).then((end) => {
       if (closed) end()
@@ -1796,7 +1814,7 @@ export function App() {
               <g className="race-confetti" dangerouslySetInnerHTML={{ __html: confettiRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
             </svg>
           ) : null}
-          <Face onReady={onReady} genre={isUnlocked('genre-looks') ? genre : 'none'} pulse={genrePop} party={beatFeel === 'party'} reduced={view.reduced} />
+          <Face onReady={onReady} genre={shownGenre(genre, isUnlocked)} pulse={genrePop} party={beatFeel === 'party'} reduced={view.reduced} wide={genreWide} bang={headbang} />
           <p className="speech-bubble" aria-live="polite" data-on={speechLine ? '1' : '0'} data-reduced={view.reduced ? '1' : '0'}>
             {speechLine}
           </p>
@@ -2115,10 +2133,17 @@ onClick={() => {
           }}
           genre={genre}
           genreOpen={isUnlocked('genre-looks')}
+          packOpen={(feature) => isUnlocked(feature)}
           onGenre={(id) => {
-            if (id !== 'none' && !isUnlocked('genre-looks')) return
+            const look = id === 'none' ? undefined : genreById(id)
+            if (look && (!isUnlocked('genre-looks') || !isUnlocked(look.feature))) return
             setGenre(id)
             writeGenre(id)
+          }}
+          headbang={headbang}
+          onHeadbang={(speed) => {
+            setHeadbang(speed)
+            writeHeadbang(speed)
           }}
           idleGapSeconds={idleGapSeconds}
           onIdleGap={(seconds) => {
