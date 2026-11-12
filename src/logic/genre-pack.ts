@@ -13,6 +13,17 @@ export const GENRE_PACK = [
   { id: 'electronic', label: 'Electronic', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 0 }, sound: { tempo: 128, rootHz: 220, waveform: 'square', scale: [0, 7, 0, 12], pattern: [1, 1, 0, 1, 0, 1, 0, 0] } },
   { id: 'metal', label: 'Metal', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.06, partyScale: 1.12, tilt: 12 }, sound: { tempo: 160, rootHz: 98, waveform: 'sawtooth', scale: [0, 1, 6, 7], pattern: [1, 1, 0, 1, 1, 0, 1, 1] } },
   { id: 'punk', label: 'Punk', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.11, tilt: 6 }, sound: { tempo: 176, rootHz: 185, waveform: 'square', scale: [0, 0, 5, 7], pattern: [1, 1, 1, 0, 1, 0, 1, 0] } },
+  { id: 'reggae', label: 'Reggae', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.07, tilt: 2 }, sound: { tempo: 76, rootHz: 196, waveform: 'sine', scale: [0, 0, 5, 7], pattern: [1, 0, 0, 1, 0, 0, 1, 0] } },
+  { id: 'funk', label: 'Funk', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.1, tilt: 3 }, sound: { tempo: 108, rootHz: 147, waveform: 'square', scale: [0, 5, 7, 10], pattern: [1, 0, 1, 1, 0, 1, 0, 1] } },
+  { id: 'soul', label: 'Soul', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.07, tilt: 0 }, sound: { tempo: 88, rootHz: 220, waveform: 'sine', scale: [0, 3, 7, 10], pattern: [1, 0, 1, 0, 0, 1, 0, 0] } },
+  { id: 'gospel', label: 'Gospel', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.02, partyScale: 1.05, tilt: 0 }, sound: { tempo: 84, rootHz: 262, waveform: 'triangle', scale: [0, 4, 7, 12], pattern: [1, 0, 0, 1, 0, 1, 0, 1] } },
+  { id: 'folk', label: 'Folk', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.06, tilt: 0 }, sound: { tempo: 100, rootHz: 196, waveform: 'triangle', scale: [0, 2, 4, 7], pattern: [1, 0, 1, 0, 1, 0, 0, 1] } },
+  { id: 'ambient', label: 'Ambient', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.02, partyScale: 1.04, tilt: 0 }, sound: { tempo: 64, rootHz: 220, waveform: 'sine', scale: [0, 7, 12, 14], pattern: [1, 0, 0, 0, 1, 0, 0, 0] } },
+  { id: 'lo-fi', label: 'Lo-fi', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.06, tilt: 0 }, sound: { tempo: 82, rootHz: 174, waveform: 'triangle', scale: [0, 3, 7, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 0] } },
+  { id: 'k-pop', label: 'K-pop', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 0 }, sound: { tempo: 126, rootHz: 294, waveform: 'sine', scale: [0, 4, 7, 11], pattern: [1, 0, 1, 1, 0, 1, 0, 1] } },
+  { id: 'latin', label: 'Latin', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 3 }, sound: { tempo: 116, rootHz: 220, waveform: 'square', scale: [0, 4, 7, 9], pattern: [1, 0, 1, 1, 0, 1, 0, 1] } },
+  { id: 'synthwave', label: 'Synthwave', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.08, tilt: 0 }, sound: { tempo: 100, rootHz: 247, waveform: 'sawtooth', scale: [0, 7, 3, 12], pattern: [1, 0, 1, 0, 1, 0, 0, 1] } },
+  { id: 'drum-and-bass', label: 'Drum and bass', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.11, tilt: 4 }, sound: { tempo: 174, rootHz: 110, waveform: 'square', scale: [0, 0, 7, 12], pattern: [1, 0, 1, 1, 0, 1, 0, 1] } },
 ] as const
 
 export type GenreLook = (typeof GENRE_PACK)[number]['id']

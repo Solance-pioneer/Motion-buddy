@@ -5,7 +5,11 @@ import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes
 describe('genre pack', () => {
   it('gives every look one entry, a drawing, a bounce, and an original sting', () => {
     const ids = GENRE_PACK.map((genre) => genre.id)
-    expect(ids).toEqual(['indie', 'hip-hop', 'country', 'disco', 'rave-iator', 'rock', 'pop', 'jazz', 'blues', 'classical', 'electronic', 'metal', 'punk'])
+    expect(ids).toEqual([
+      'indie', 'hip-hop', 'country', 'disco', 'rave-iator',
+      'rock', 'pop', 'jazz', 'blues', 'classical', 'electronic', 'metal', 'punk',
+      'reggae', 'funk', 'soul', 'gospel', 'folk', 'ambient', 'lo-fi', 'k-pop', 'latin', 'synthwave', 'drum-and-bass',
+    ])
     expect(genreById('metal')?.beat.tilt).toBeGreaterThan(0)
     expect(new Set(ids).size).toBe(ids.length)
     for (const genre of GENRE_PACK) {
