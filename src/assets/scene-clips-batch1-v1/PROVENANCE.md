@@ -3,6 +3,7 @@
 Original clips by Mochi, the team's animation director. Approved by Michael Dicker on 12 Nov 2026.
 The zip SHA256 is 555efaa4369daed2dc1e6df56e50161cb9d10ac385863bf55653762059b4eb46.
 Rush and brake stay in scene-clips-v1. These films load only when one is played.
+Clip 7 proud-sparkle is the v2 file. Clips 2 sneeze, 4 giggle-fit, and 9 wink-kiss stay on their v1 files.
 
 | File | SHA256 |
 | --- | --- |
@@ -28,7 +29,7 @@ Rush and brake stay in scene-clips-v1. These films load only when one is played.
 | mind-blown-v1.mp4 | 9720dd2f847283df95d28caf4ae830c5cec8c5fac20f93e3a233fde427adcf56 |
 | new-year-fireworks-v1.mp4 | a6db56f4402987b7a4b9a4be65423cb2d9831a1b17de111b7c22ce4bb162dd9d |
 | noodles-v1.mp4 | be0cf4d78fab2e074d7d52862dbe8648270292a344fd80fdeb9e465a34afb606 |
-| proud-sparkle-v1.mp4 | 056ef3849798b3ce6a3b828439b393da51c61f424b6400a78fc06a1a778ae5cf |
+| proud-sparkle-v2.mp4 | 7cd914fdbb5d79f811313a3a5cd53733eaf25a011fa8783819f585319490be47 |
 | rain-umbrella-v1.mp4 | f559afe17781d5d3a8ef34cd23ef46eb65ad1d9df8e789a28dfc41e93454395b |
 | rainbow-v1.mp4 | cbd0e4c295484c50150cd81d23c6e0a58e62ebb89ac245c5818fa904ecdb18b9 |
 | sharp-turn-wobble-v1.mp4 | f243806494c53452902dc42e5f827426cfafa53cfbb0a6833dc802632283ce00 |

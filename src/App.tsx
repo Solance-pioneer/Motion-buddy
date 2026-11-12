@@ -29,12 +29,15 @@ import {
   classifyCarMotion,
   clipById,
   CLIP_ROWS,
+  costumeClipId,
   driveWasReal,
   idleBlocked,
   jamDue,
   localYmd,
   nextIdleClip,
+  nextRaceFilm,
   noteInteraction,
+  portalPlan,
   previewDate,
   tunnelRoll,
   type ClipGuard,
@@ -187,8 +190,10 @@ export function App() {
     lastSchedule: 0,
     token: 0,
     idleTurn: false,
+    raceTurn: 0,
+    follow: null as null | { onEnd?: () => void; onFail?: () => void },
   })
-  const startBatchRef = useRef<(id: string, gallery?: boolean) => void>(() => {})
+  const startBatchRef = useRef<(id: string, gallery?: boolean, follow?: { onEnd?: () => void; onFail?: () => void }) => boolean>(() => false)
   const dateModeRef = useRef<DateMode>('normal')
   const weatherModeRef = useRef<WeatherOverride>('none')
   const weatherRef = useRef<WeatherConditions | null>(null)
@@ -551,7 +556,15 @@ export function App() {
               return
             }
           }
-          if (!hold.guard) beginScene(nextAmbientScene(lastScene.current))
+          if (!hold.guard) {
+            const key = nextAmbientScene(lastScene.current)
+            const clipId = engine.snapshot().reduced ? null : costumeClipId(key)
+            if (clipId) {
+              const started = startBatchRef.current(clipId, false, { onFail: () => beginScene(key) })
+              if (started) lastScene.current = key
+              else beginScene(key)
+            } else beginScene(key)
+          }
         }
       }
       return
@@ -680,12 +693,16 @@ export function App() {
   const [weather, setWeather] = useState<WeatherConditions | null>(null)
   const clipClock = useRef(initialClipClock())
   const clipVideo = useRef<HTMLVideoElement | null>(null)
+  const clipGen = useRef(0)
   const endClipRef = useRef(() => {})
   dateModeRef.current = dateMode
   weatherModeRef.current = weatherMode
   weatherRef.current = weather
   weatherOnRef.current = weatherOn
-  endClipRef.current = () => {
+  const finishClip = (reason: 'end' | 'cancel' | 'error') => {
+    clipGen.current += 1
+    const follow = batchHold.current.follow
+    batchHold.current.follow = null
     batchHold.current.token += 1
     batchHold.current.guard = null
     const video = clipVideo.current
@@ -701,14 +718,18 @@ export function App() {
     setSceneClip(null)
     setBatchId(null)
     setBatchUrl(null)
+    if (reason === 'end') follow?.onEnd?.()
+    if (reason === 'error') follow?.onFail?.()
   }
-  startBatchRef.current = (id: string, gallery = false) => {
+  endClipRef.current = () => finishClip('cancel')
+  startBatchRef.current = (id: string, gallery = false, follow) => {
     const row = clipById(id)
-    if (!row || !isUnlocked(id)) return
-    if (batchHold.current.guard) return
-    if (engine.snapshot().reduced && !gallery) return
+    if (!row?.file || !isUnlocked(id)) return false
+    if (batchHold.current.guard) return false
+    if (engine.snapshot().reduced && !gallery) return false
     const now = performance.now()
     batchHold.current.guard = 'batch'
+    batchHold.current.follow = follow ?? null
     batchHold.current.token += 1
     const token = batchHold.current.token
     if (row.trigger === 'season' && !batchHold.current.playedSeason.includes(id)) {
@@ -727,9 +748,10 @@ export function App() {
         setBatchUrl(url)
       },
       () => {
-        if (batchHold.current.token === token) endClipRef.current()
+        if (batchHold.current.token === token) finishClip('error')
       },
     )
+    return true
   }
 
   const publish = useCallback((state: BuddyState, dt = 0) => {
@@ -776,6 +798,12 @@ export function App() {
             batchHold.current.guard = 'brake'
             setSceneClip(started.play)
           } else if (!clipClock.current.playing) playDriveCue(step.key)
+        } else if (!filmBusy && (step.key === 'car_accel_rev_a' || step.key === 'car_accel_rev_b')) {
+          const cue = step.key
+          const now = performance.now()
+          const accelId = carClipFor('accel', batchHold.current.readyAt, now, batchHold.current.lastCarAt, batchHold.current.suppressUntil)
+          const played = accelId ? startBatchRef.current(accelId, false, { onFail: () => playDriveCue(cue) }) : false
+          if (!played) playDriveCue(cue)
         } else if (!filmBusy) {
           playDriveCue(step.key)
         }
@@ -1217,6 +1245,7 @@ export function App() {
       : `Motion Buddy looks ${view.expression}.`
 
   openRef.current = open
+  const shownClipGen = clipGen.current
   return (
       <main
         ref={rootRef}
@@ -1360,11 +1389,35 @@ export function App() {
           aria-disabled={sceneOn}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => {
-            if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion) return
+            if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion || batchHold.current.guard) return
             unlockQuiet()
             const turn = takeCountryTurn(countryCursor.current, true)
-            if (!turn.key || !beginCountry(turn.key)) return
-            countryCursor.current = turn.cursor
+            if (!turn.key) return
+            const key = turn.key
+            const plan = portalPlan(key, engine.snapshot().reduced)
+            let accepted = false
+            const accept = () => {
+              if (accepted) return
+              accepted = true
+              countryCursor.current = turn.cursor
+            }
+            const playScene = () => {
+              if (beginCountry(key)) accept()
+            }
+            const playAt = (index: number) => {
+              if (index >= plan.clips.length) {
+                if (plan.sceneAfter) playScene()
+                else accept()
+                return
+              }
+              const ok = startBatchRef.current(plan.clips[index], false, {
+                onEnd: () => playAt(index + 1),
+                onFail: playScene,
+              })
+              if (ok) accept()
+              else playScene()
+            }
+            playAt(0)
           }}
         >
           <span>Teleport</span>
@@ -1483,12 +1536,21 @@ onClick={() => {
             if (tilt.status !== 'active') void tilt.enable()
             driveClock.current = { ...driveClock.current, lastAny: performance.now() }
             const reducedNow = engine.snapshot().reduced
-            const started = beginSceneClip(clipClock.current, 'race-rush', performance.now(), reducedNow)
-            clipClock.current = started.clock
-            if (started.play && !batchHold.current.guard) {
-              batchHold.current.guard = 'rush'
-              setSceneClip(started.play)
-            } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
+            const film = nextRaceFilm(batchHold.current.raceTurn)
+            batchHold.current.raceTurn += 1
+            const playRush = () => {
+              const started = beginSceneClip(clipClock.current, 'race-rush', performance.now(), reducedNow)
+              clipClock.current = started.clock
+              if (started.play && !batchHold.current.guard) {
+                batchHold.current.guard = 'rush'
+                setSceneClip(started.play)
+              } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
+            }
+            if (film === 'race-start' && !reducedNow) {
+              const row = clipById('race-start')
+              const played = row ? startBatchRef.current(row.id, false, { onFail: playRush }) : false
+              if (!played) playRush()
+            } else playRush()
             setRaceMarks(true)
             raceTimer.current = window.setTimeout(() => setRaceMarks(false), 1_250)
             publish(engine.snapshot())
@@ -1583,7 +1645,7 @@ onClick={() => {
           data-scene-clip={sceneClip ?? batchId ?? ''}
           onPointerDown={(event) => {
             event.stopPropagation()
-            endClipRef.current()
+            finishClip('cancel')
           }}
         >
           <video
@@ -1592,8 +1654,14 @@ onClick={() => {
             playsInline
             muted={sceneClipMuted(!soundOn)}
             preload="auto"
-            onEnded={() => endClipRef.current()}
-            onError={() => endClipRef.current()}
+            onEnded={() => {
+              if (clipGen.current !== shownClipGen) return
+              finishClip('end')
+            }}
+            onError={() => {
+              if (clipGen.current !== shownClipGen) return
+              finishClip('error')
+            }}
           />
         </div>
       ) : null}
@@ -1622,8 +1690,8 @@ onClick={() => {
               </div>
               <div className="clip-gallery-list">
                 {CLIP_ROWS.map((row) => (
-                  <button key={row.id} type="button" onClick={() => startBatchRef.current(row.id, true)}>
-                    {row.number}. {row.id.replaceAll('-', ' ')}
+                  <button key={row.id} type="button" disabled={!row.file} onClick={() => startBatchRef.current(row.id, true)}>
+                    {row.number}. {row.id.replaceAll('-', ' ')}{row.file ? '' : ' unavailable'}
                   </button>
                 ))}
               </div>

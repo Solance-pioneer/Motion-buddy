@@ -26,7 +26,15 @@ export type ClipTrigger =
   | 'car-jam'
   | 'car-arrived'
   | 'car-tunnel'
+  | 'car-accel'
   | 'idle'
+  | 'teleport'
+  | 'race'
+  | 'costume'
+  | 'country'
+
+export type CostumeClipScene = 'ninja' | 'cord_hero' | 'racer' | 'sheet_ghost'
+export type CountryClip = 'uk_guard' | 'france_cafe' | 'usa_eagle' | 'egypt_pharaoh' | 'japan_bow' | 'australia_hop'
 
 export interface ClipRow {
   id: string
@@ -39,6 +47,8 @@ export interface ClipRow {
   to?: string
   wrap?: boolean
   weather?: 'rain' | 'snow' | 'clearing' | 'hot' | 'windy'
+  scene?: CostumeClipScene
+  country?: CountryClip
 }
 
 export interface FeatureRow {
@@ -55,8 +65,16 @@ export const FEATURE_ROWS: readonly FeatureRow[] = [
   { id: 'clip-gallery', tier: 'free' },
 ]
 
-const free = (row: Omit<ClipRow, 'tier' | 'file'>): ClipRow => ({ ...row, tier: 'free', file: `${row.id}-v1.mp4` })
-const premium = (row: Omit<ClipRow, 'tier' | 'file'>): ClipRow => ({ ...row, tier: 'premium', file: `${row.id}-v1.mp4` })
+const free = (row: Omit<ClipRow, 'tier' | 'file'> & { file?: string }): ClipRow => ({
+  ...row,
+  tier: 'free',
+  file: row.file ?? `${row.id}-v1.mp4`,
+})
+const premium = (row: Omit<ClipRow, 'tier' | 'file'> & { file?: string }): ClipRow => ({
+  ...row,
+  tier: 'premium',
+  file: row.file ?? `${row.id}-v1.mp4`,
+})
 
 export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'sleepy-doze', number: 1, trigger: 'sleepy', cooldownMs: 480_000 }),
@@ -65,7 +83,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'giggle-fit', number: 4, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'love-hearts', number: 5, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'sulky-pout', number: 6, trigger: 'idle', cooldownMs: 0 }),
-  free({ id: 'proud-sparkle', number: 7, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'proud-sparkle', number: 7, trigger: 'idle', cooldownMs: 0, file: 'proud-sparkle-v2.mp4' }),
   free({ id: 'shy-peek', number: 8, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'wink-kiss', number: 9, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'bright-idea', number: 10, trigger: 'idle', cooldownMs: 0 }),
@@ -97,6 +115,19 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'christmas-hat', number: 36, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
   free({ id: 'new-year-fireworks', number: 37, trigger: 'season', cooldownMs: 0, from: '12-26', to: '01-07', wrap: true }),
   free({ id: 'halloween-pumpkin-boo', number: 38, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
+  free({ id: 'teleport', number: 39, trigger: 'teleport', cooldownMs: 0 }),
+  free({ id: 'car-accelerate', number: 40, trigger: 'car-accel', cooldownMs: 45_000 }),
+  free({ id: 'race-start', number: 41, trigger: 'race', cooldownMs: 0 }),
+  free({ id: 'ninja-idle', number: 42, trigger: 'none', cooldownMs: 0, file: '' }),
+  free({ id: 'superhero-idle', number: 43, trigger: 'costume', cooldownMs: 0, scene: 'cord_hero' }),
+  free({ id: 'racer-idle', number: 44, trigger: 'costume', cooldownMs: 0, scene: 'racer', file: 'racer-idle-v2.mp4' }),
+  free({ id: 'ghost-idle', number: 45, trigger: 'none', cooldownMs: 0, file: '' }),
+  free({ id: 'uk-guard', number: 46, trigger: 'country', cooldownMs: 0, country: 'uk_guard' }),
+  free({ id: 'usa-eagle', number: 47, trigger: 'country', cooldownMs: 0, country: 'usa_eagle' }),
+  free({ id: 'france-eiffel', number: 48, trigger: 'country', cooldownMs: 0, country: 'france_cafe' }),
+  free({ id: 'egypt-pyramids', number: 49, trigger: 'country', cooldownMs: 0, country: 'egypt_pharaoh' }),
+  free({ id: 'japan-fuji', number: 50, trigger: 'country', cooldownMs: 0, country: 'japan_bow', file: 'japan-fuji-v2.mp4' }),
+  free({ id: 'australia-kangaroo', number: 51, trigger: 'country', cooldownMs: 0, country: 'australia_hop' }),
 ]
 
 export type ClipGuard = 'rush' | 'brake' | 'batch' | null
@@ -262,7 +293,7 @@ export function carGapOpen(lastAt: number, now: number): boolean {
 }
 
 export function carClipFor(
-  kind: 'bump' | 'turn' | 'jam' | 'arrived' | 'tunnel',
+  kind: 'bump' | 'turn' | 'jam' | 'arrived' | 'tunnel' | 'accel',
   readyAt: Readonly<Record<string, number>>,
   now: number,
   lastCarAt: number,
@@ -270,10 +301,33 @@ export function carClipFor(
 ): string | null {
   if ((kind === 'tunnel') && idleBlocked(suppressUntil, now)) return null
   if (!carGapOpen(lastCarAt, now)) return null
-  const trigger = kind === 'bump' ? 'car-bump' : kind === 'turn' ? 'car-turn' : kind === 'jam' ? 'car-jam' : kind === 'arrived' ? 'car-arrived' : 'car-tunnel'
-  const row = CLIP_ROWS.find((item) => item.trigger === trigger)
+  const trigger = kind === 'bump' ? 'car-bump' : kind === 'turn' ? 'car-turn' : kind === 'jam' ? 'car-jam' : kind === 'arrived' ? 'car-arrived' : kind === 'accel' ? 'car-accel' : 'car-tunnel'
+  const row = CLIP_ROWS.find((item) => item.trigger === trigger && item.file)
   if (!row || !rowOpen(row) || !ready(readyAt, row.id, now)) return null
   return row.id
+}
+
+/** Even turns keep the existing rush film. Odd turns use the race-start film. */
+export function nextRaceFilm(turn: number): 'rush' | 'race-start' {
+  return turn % 2 === 0 ? 'rush' : 'race-start'
+}
+
+/** Costume-cycle film for this scene. Ninja and ghost stay on the coded costume. */
+export function costumeClipId(scene: CostumeClipScene): string | null {
+  const row = CLIP_ROWS.find((item) => item.trigger === 'costume' && item.scene === scene && item.file && rowOpen(item))
+  return row?.id ?? null
+}
+
+/**
+ * One Teleport press. The teleport film plays first, then the country film.
+ * Reduced motion skips both. A missing country film leaves the coded scene to follow.
+ */
+export function portalPlan(country: CountryClip, reduced: boolean): { clips: string[]; sceneAfter: boolean } {
+  if (reduced) return { clips: [], sceneAfter: true }
+  const intro = CLIP_ROWS.find((item) => item.trigger === 'teleport' && item.file && rowOpen(item))
+  const landed = CLIP_ROWS.find((item) => item.trigger === 'country' && item.country === country && item.file && rowOpen(item))
+  const clips = [intro?.id, landed?.id].filter((id): id is string => Boolean(id))
+  return { clips, sceneAfter: !landed }
 }
 
 export function tunnelRoll(random: number, stillMs: number): boolean {

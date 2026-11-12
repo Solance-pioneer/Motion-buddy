@@ -190,13 +190,12 @@ writeFileSync(
 const batchClipDir = join(dist, 'scene-clips-batch1-v1')
 mkdirSync(batchClipDir, { recursive: true })
 for (const name of readdirSync('src/assets/scene-clips-batch1-v1')) {
+  if (name.endsWith('.mp4')) continue
   copyFileSync(join('src/assets/scene-clips-batch1-v1', name), join(batchClipDir, name))
 }
 const clipDir = join(dist, 'scene-clips-v1')
 mkdirSync(clipDir, { recursive: true })
-for (const name of ['buddy-anime-speed-rush-v2.mp4', 'buddy-brake-surprised-v1.mp4', 'PROVENANCE.md']) {
-  copyFileSync(join('src/assets/scene-clips-v1', name), join(clipDir, name))
-}
+copyFileSync(join('src/assets/scene-clips-v1', 'PROVENANCE.md'), join(clipDir, 'PROVENANCE.md'))
 const driveDir = join(dist, 'drive-audio-v1')
 mkdirSync(driveDir, { recursive: true })
 for (const name of [
