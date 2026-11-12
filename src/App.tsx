@@ -52,6 +52,7 @@ import {
 } from './logic/clip-table.ts'
 import { isUnlocked } from './logic/entitlements.ts'
 import { chooseSynthCue, initialSynthClock } from './logic/synth-cues.ts'
+import { CALIBRATE_NOTE, CALIBRATE_NOTE_MS } from './logic/calibrate.ts'
 import { initialBatteryClock, stepBattery, takeLowBatteryClip, watchBattery, webBatteryProvider, type BatteryClock } from './logic/battery.ts'
 import { loadConditions } from './logic/weather/cache.ts'
 import type { WeatherOverride } from './logic/weather/conditions.ts'
@@ -785,6 +786,8 @@ export function App() {
   const blendRef = useRef(new FaceBlend())
   const [promptDone, setPromptDone] = useState(false)
   const [raceOn, setRaceOn] = useState(false)
+  const [calNote, setCalNote] = useState<string | null>(null)
+  const pendingCal = useRef(false)
   const [raceMarks, setRaceMarks] = useState(false)
   const [sceneClip, setSceneClip] = useState<SceneClip | null>(null)
   const [batchId, setBatchId] = useState<string | null>(null)
@@ -1153,6 +1156,16 @@ export function App() {
 
   const tilt = useTilt(onSample, onAcceleration)
   tiltStatusRef.current = tilt.status
+  useEffect(() => {
+    if (!pendingCal.current || tilt.status !== 'active') return
+    pendingCal.current = false
+    tilt.recenter()
+    carTarget.current = { throttle: 0, bank: 0 }
+    carShown.current = { throttle: 0, bank: 0 }
+    engine.feedLook(0, 0)
+    publish(engine.snapshot())
+    setCalNote(CALIBRATE_NOTE)
+  }, [engine, publish, tilt])
   const wakeLock = useScreenWakeLock()
   const enableMotion = tilt.enable
   const askForMotion = motionNeedsGesture() && !promptDone && tilt.status === 'idle'
@@ -1405,6 +1418,12 @@ export function App() {
     const id = window.setTimeout(() => setHintOn(false), hintDuration())
     return () => window.clearTimeout(id)
   }, [])
+
+  useEffect(() => {
+    if (!calNote) return
+    const id = window.setTimeout(() => setCalNote(null), CALIBRATE_NOTE_MS)
+    return () => window.clearTimeout(id)
+  }, [calNote])
 
   useEffect(() => {
     if (!muteLit || !soundOn) return
@@ -1728,7 +1747,7 @@ export function App() {
         ) : null}
       </button>
       {!menuOpen ? (
-        <div className="screen-chips">
+        <div className="screen-chips" data-car={view.profile === 'car' ? '1' : '0'}>
         <button
           type="button"
           className="screen-chip portal-chip"
@@ -1800,8 +1819,41 @@ export function App() {
           </svg>
           <span>{soundOn ? 'Mute' : 'Unmute'}</span>
         </button>
+        {view.profile === 'car' ? (
+          <button
+            type="button"
+            className="screen-chip calibrate-chip"
+            aria-label="Calibrate"
+            onPointerDown={(event) => {
+              event.stopPropagation()
+              wakeChrome()
+            }}
+            onClick={() => {
+              unlockQuiet()
+              if (tilt.status === 'active') {
+                pendingCal.current = false
+                tilt.recenter()
+                carTarget.current = { throttle: 0, bank: 0 }
+                carShown.current = { throttle: 0, bank: 0 }
+                engine.feedLook(0, 0)
+                publish(engine.snapshot())
+                setCalNote(CALIBRATE_NOTE)
+                return
+              }
+              pendingCal.current = true
+              void tilt.enable()
+            }}
+          >
+            <svg className="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M12 3v3M12 18v3M3 12h3M18 12h3" fill="none" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            <span>Calibrate</span>
+          </button>
+        ) : null}
         </div>
       ) : null}
+      {calNote ? <p className="cal-note" role="status">{calNote}</p> : null}
       {!menuOpen ? (
         <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
           <svg viewBox="0 0 100 100">
@@ -1936,6 +1988,7 @@ onClick={() => {
             carShown.current = { throttle: 0, bank: 0 }
             engine.feedLook(0, 0)
             publish(engine.snapshot())
+            setCalNote(CALIBRATE_NOTE)
           }}
           onSelection={(selection) => {
             engine.setSelection(selection)
