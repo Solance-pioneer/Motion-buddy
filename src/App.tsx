@@ -51,7 +51,7 @@ import type { WeatherOverride } from './logic/weather/conditions.ts'
 import { requestRoundedFix } from './logic/weather/locate.ts'
 import type { WeatherConditions } from './logic/weather/types.ts'
 import { loadClipUrl } from './view/clip-urls.ts'
-import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
+import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -714,22 +714,20 @@ export function App() {
   const clipVideo = useRef<HTMLVideoElement | null>(null)
   const clipGen = useRef(0)
   const clipPrimed = useRef(false)
+  const clipFadeTimer = useRef(0)
   const [clipShown, setClipShown] = useState(false)
+  const clipShownRef = useRef(false)
+  const [clipDismiss, setClipDismiss] = useState<'none' | 'cancel'>('none')
   const [clipMuted, setClipMuted] = useState(true)
+  clipShownRef.current = clipShown
   const endClipRef = useRef(() => {})
   dateModeRef.current = dateMode
   weatherModeRef.current = weatherMode
   weatherRef.current = weather
   weatherOnRef.current = weatherOn
-  const finishClip = (reason: 'end' | 'cancel' | 'error') => {
-    clipGen.current += 1
-    const follow = batchHold.current.follow
-    batchHold.current.follow = null
-    batchHold.current.token += 1
-    batchHold.current.guard = null
+  const releaseClip = () => {
     const video = clipVideo.current
     if (video) {
-      video.pause()
       try {
         video.currentTime = 0
       } catch {
@@ -741,15 +739,46 @@ export function App() {
     setBatchId(null)
     setBatchUrl(null)
     setClipShown(false)
+    setClipDismiss('none')
     setClipMuted(true)
-    if (reason === 'end') follow?.onEnd?.()
-    if (reason === 'error') follow?.onFail?.()
+    clipShownRef.current = false
+  }
+  const finishClip = (reason: 'end' | 'cancel' | 'error') => {
+    window.clearTimeout(clipFadeTimer.current)
+    clipGen.current += 1
+    const epoch = clipGen.current
+    const follow = batchHold.current.follow
+    batchHold.current.follow = null
+    batchHold.current.token += 1
+    batchHold.current.guard = null
+    const video = clipVideo.current
+    if (video) {
+      video.pause()
+      video.style.pointerEvents = 'none'
+    }
+    const reduced = engine.snapshot().reduced || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const ms = clipShownRef.current ? clipFadeMs(reason, reduced) : 0
+    if (reason === 'cancel') setClipDismiss('cancel')
+    const settle = () => {
+      if (clipGen.current !== epoch) return
+      releaseClip()
+      if (reason === 'end') follow?.onEnd?.()
+      if (reason === 'error') follow?.onFail?.()
+    }
+    if (ms === 0) {
+      settle()
+      return
+    }
+    setClipShown(false)
+    clipShownRef.current = false
+    clipFadeTimer.current = window.setTimeout(settle, ms)
   }
   endClipRef.current = () => finishClip('cancel')
   startBatchRef.current = (id: string, gallery = false, follow) => {
     const row = clipById(id)
     if (!row?.file || !isUnlocked(id)) return false
     if (batchHold.current.guard) return false
+    window.clearTimeout(clipFadeTimer.current)
     if (engine.snapshot().reduced && !gallery) return false
     const now = performance.now()
     batchHold.current.guard = 'batch'
@@ -830,9 +859,11 @@ export function App() {
           const started = beginSceneClip(clipClock.current, 'brake-surprise', performance.now(), state.reduced)
           clipClock.current = started.clock
           if (started.play) {
+            window.clearTimeout(clipFadeTimer.current)
             batchHold.current.guard = 'brake'
             batchHold.current.startMuted = true
             setClipShown(false)
+            setClipDismiss('none')
             setClipMuted(true)
             setSceneClip(started.play)
           } else if (!clipClock.current.playing) playDriveCue(step.key)
@@ -1115,6 +1146,9 @@ export function App() {
       if (!clipOverlayRevealed(video.currentTime, presentedFrame)) return
       revealed = true
       window.clearTimeout(timer)
+      video.style.pointerEvents = ''
+      clipShownRef.current = true
+      setClipDismiss('none')
       setClipShown(true)
     }
     const frameVideo = video as HTMLVideoElement & {
@@ -1696,6 +1730,7 @@ onClick={() => {
               const started = beginSceneClip(clipClock.current, 'race-rush', performance.now(), reducedNow)
               clipClock.current = started.clock
               if (started.play && !batchHold.current.guard) {
+                window.clearTimeout(clipFadeTimer.current)
                 batchHold.current.guard = 'rush'
                 batchHold.current.startMuted = clipShouldStartMuted({
                   fromGallery: true,
@@ -1703,6 +1738,7 @@ onClick={() => {
                   gestureUnlocked: soundStatus().unlocked,
                 })
                 setClipShown(false)
+                setClipDismiss('none')
                 setClipMuted(true)
                 setSceneClip(started.play)
               } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
@@ -1812,6 +1848,8 @@ onClick={() => {
         className="scene-clip"
         data-scene-clip={sceneClip ?? batchId ?? ''}
         data-revealed={clipShown ? '1' : '0'}
+        data-dismiss={clipDismiss}
+        style={{ ['--clip-fade' as string]: `${clipFadeMs(clipDismiss === 'cancel' ? 'cancel' : 'show', view.reduced || window.matchMedia('(prefers-reduced-motion: reduce)').matches)}ms` }}
         src={sceneClip === 'race-rush' ? raceRushUrl : sceneClip === 'brake-surprise' ? brakeSurpriseUrl : batchUrl ?? undefined}
         playsInline
         muted={clipMuted}

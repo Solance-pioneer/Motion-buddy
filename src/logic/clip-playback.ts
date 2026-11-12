@@ -1,6 +1,19 @@
 /** Give up if a clip has not produced a frame within this long. */
 export const CLIP_PLAY_TIMEOUT_MS = 4_000
 
+/** Opacity fade for a clip that has a frame, in and out. */
+export const CLIP_FADE_MS = 150
+
+/** Touch-cancel returns to the live face without waiting on the full fade. */
+export const CLIP_CANCEL_FADE_MS = 80
+
+/** Reduced motion is instant. Cancel stays at or under CLIP_CANCEL_FADE_MS. Errors do not linger. */
+export function clipFadeMs(kind: 'show' | 'end' | 'cancel' | 'error', reduced: boolean): number {
+  if (reduced || kind === 'error') return 0
+  if (kind === 'cancel') return CLIP_CANCEL_FADE_MS
+  return CLIP_FADE_MS
+}
+
 export type ClipAudibleAttempt = 'unmuted' | 'muted'
 
 /**

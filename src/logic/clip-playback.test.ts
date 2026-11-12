@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CLIP_CANCEL_FADE_MS,
+  CLIP_FADE_MS,
   CLIP_PLAY_TIMEOUT_MS,
   afterPlayRejection,
+  clipFadeMs,
   clipMayUnmute,
   clipOverlayRevealed,
   clipShouldStartMuted,
@@ -33,5 +36,17 @@ describe('idle clip playback', () => {
     expect(clipOverlayRevealed(0, false)).toBe(false)
     expect(clipOverlayRevealed(0, true)).toBe(true)
     expect(clipOverlayRevealed(0.04, false)).toBe(true)
+  })
+
+  it('fades scene clips over 150ms, skips the fade for reduced motion, and cancels quickly', () => {
+    expect(CLIP_FADE_MS).toBe(150)
+    expect(clipFadeMs('show', false)).toBe(CLIP_FADE_MS)
+    expect(clipFadeMs('end', false)).toBe(CLIP_FADE_MS)
+    expect(clipFadeMs('cancel', false)).toBe(CLIP_CANCEL_FADE_MS)
+    expect(clipFadeMs('cancel', false)).toBeLessThanOrEqual(80)
+    expect(clipFadeMs('show', true)).toBe(0)
+    expect(clipFadeMs('end', true)).toBe(0)
+    expect(clipFadeMs('cancel', true)).toBe(0)
+    expect(clipFadeMs('error', false)).toBe(0)
   })
 })
