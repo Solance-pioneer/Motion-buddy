@@ -1,5 +1,6 @@
 import { ADMIN_KEY, adminFromStorage, adminToStorage } from './admin-flag.ts'
 import { idlePrefsFromStorage, idlePrefsToStorage, IDLE_PREFS_KEY, type IdlePrefs } from './idle-prefs.ts'
+import { themeFromStorage, type ThemeId } from './themes.ts'
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
 import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
@@ -99,6 +100,24 @@ export function readIdlePrefs(): IdlePrefs {
     return idlePrefsFromStorage(localStorage.getItem(IDLE_PREFS_KEY))
   } catch {
     return { off: [] }
+  }
+}
+
+export const THEME_KEY = 'motion-buddy-theme-v1'
+
+export function readTheme(): ThemeId {
+  try {
+    return themeFromStorage(localStorage.getItem(THEME_KEY))
+  } catch {
+    return 'plain'
+  }
+}
+
+export function writeTheme(id: ThemeId): void {
+  try {
+    localStorage.setItem(THEME_KEY, id)
+  } catch {
+    // The choice still applies until the page closes.
   }
 }
 

@@ -7,6 +7,7 @@ import type { FaceStyle } from './applyPose.ts'
 import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 import { IDLE_GAP_MAX_S, IDLE_GAP_MIN_S } from '../logic/clip-table.ts'
+import { THEME_IDS, type ThemeId } from '../logic/themes.ts'
 import { idleGroups, type IdleChoice } from '../logic/idle-prefs.ts'
 
 const EXPRESSION_LABEL: Record<PoseId, string> = {
@@ -78,6 +79,9 @@ export function Controls({
   onToggleWakeLock,
   weatherOn,
   onToggleWeather,
+  theme,
+  themeOpen,
+  onTheme,
 }: {
   presence: Presence
   selection: Selection
@@ -114,6 +118,9 @@ export function Controls({
   onToggleWakeLock: () => void
   weatherOn: boolean
   onToggleWeather: () => void
+  theme: ThemeId
+  themeOpen: (id: ThemeId) => boolean
+  onTheme: (id: ThemeId) => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
   idleChoices: readonly IdleChoice[]
@@ -388,6 +395,18 @@ export function Controls({
             {soundAvailable ? (soundOn ? 'Sound on' : 'Sound off') : 'Sound unavailable'}
           </button>
           <p className="note">Sound is on until you turn it off here. Nothing plays until the first tap.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Edge</legend>
+          <div className="choice-grid">
+            {THEME_IDS.map((id) => (
+              <button key={id} type="button" aria-pressed={theme === id} disabled={!themeOpen(id)} onClick={() => onTheme(id)}>
+                {id === 'plain' ? 'Plain' : id === 'race-kerb' ? 'Race kerb' : id === 'night-drive' ? 'Night drive' : 'Neon city'}
+              </button>
+            ))}
+          </div>
+          <p className="note">Race uses the kerb while it is on. Night drive and neon city are stubs.</p>
         </fieldset>
 
         <fieldset>

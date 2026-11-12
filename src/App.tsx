@@ -23,7 +23,8 @@ import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readAdminEnabled, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readAdminEnabled, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
+import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
 import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
 import { adminFromSearch } from './logic/admin-flag.ts'
 import { initialSpeechClock, offerSpeech, SPEECH_VISIBLE_MS, type SpeechKind } from './logic/speech.ts'
@@ -786,6 +787,7 @@ export function App() {
   const blendRef = useRef(new FaceBlend())
   const [promptDone, setPromptDone] = useState(false)
   const [raceOn, setRaceOn] = useState(false)
+  const [chosenTheme, setChosenTheme] = useState<ThemeId>(() => readTheme())
   const [calNote, setCalNote] = useState<string | null>(null)
   const pendingCal = useRef(false)
   const [raceMarks, setRaceMarks] = useState(false)
@@ -1607,6 +1609,7 @@ export function App() {
       <main
         ref={rootRef}
         className="app"
+        data-theme={activeTheme({ race: raceOn, chosen: chosenTheme }, isUnlocked)}
         data-controls={menuOpen ? 'open' : 'closed'}
         data-chrome={chromeOn ? 'on' : 'off'}
         data-motion={tilt.status}
@@ -1628,6 +1631,12 @@ export function App() {
           else batchHold.current.guard = step.hold.guard
         }}
       >
+      <div className="edge-layer" data-theme={activeTheme({ race: raceOn, chosen: chosenTheme }, isUnlocked)} />
+      {raceOn && !view.reduced ? (
+        <svg className="race-lines" viewBox="0 0 100 100" aria-hidden="true">
+          <path d="M8 20 H28 M6 32 H24 M10 78 H30 M70 18 H94 M74 30 H96 M72 80 H92" fill="none" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      ) : null}
       <button
         ref={faceButtonRef}
         type="button"
@@ -2032,6 +2041,12 @@ onClick={() => {
             setWeatherOn(next)
             writeWeatherMoods(next)
             if (!next) setWeather(null)
+          }}
+          theme={chosenTheme}
+          themeOpen={(id) => themeOpen(id, isUnlocked)}
+          onTheme={(id) => {
+            setChosenTheme(id)
+            writeTheme(id)
           }}
           idleGapSeconds={idleGapSeconds}
           onIdleGap={(seconds) => {

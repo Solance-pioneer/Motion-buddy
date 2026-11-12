@@ -64,6 +64,10 @@ export interface FeatureRow {
 export const FEATURE_ROWS: readonly FeatureRow[] = [
   { id: 'weather-moods', tier: 'premium' },
   { id: 'clip-gallery', tier: 'free' },
+  { id: 'theme-race-kerb', tier: 'free' },
+  { id: 'theme-night-drive', tier: 'premium' },
+  { id: 'theme-neon-city', tier: 'premium' },
+  { id: 'genre-looks', tier: 'premium' },
 ]
 
 const free = (row: Omit<ClipRow, 'tier' | 'file'> & { file?: string }): ClipRow => ({
