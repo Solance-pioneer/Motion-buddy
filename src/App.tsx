@@ -19,7 +19,7 @@ import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
 import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
-import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
+import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
@@ -512,8 +512,10 @@ export function App() {
       glance.setAttribute('transform', 'translate(0 0)')
     }
   }
-  const beginScene = (key: SceneKey) => {
-    if (sceneRef.current || contactStatus().active || waitRelease.current) return false
+  const beginScene = (key: SceneKey, fromMenu = false) => {
+    if (contactStatus().active || waitRelease.current) return false
+    if (!fromMenu && sceneRef.current) return false
+    if (sceneRef.current) finishScene()
     sceneRef.current = { kind: 'costume', key, started: performance.now(), banked: 0, paused: false, cueFired: false }
     setSceneGuard(true)
     endContact(100)
@@ -1502,14 +1504,14 @@ export function App() {
         data-movement={tilt.signals.movement ? 'live' : 'off'}
         data-wake-lock={wakeLock.status}
         onPointerDownCapture={(event) => {
-          if (event.target instanceof Element && event.target.closest('[data-clip-gallery]')) return
+          if (event.target instanceof Element && event.target.closest('[data-clip-gallery], [data-menu-panel]')) return
           const step = noteInteraction({ guard: batchHold.current.guard, suppressUntil: batchHold.current.suppressUntil }, performance.now(), false)
           batchHold.current.suppressUntil = step.hold.suppressUntil
           if (step.cancel) endClipRef.current()
           else batchHold.current.guard = step.hold.guard
         }}
         onTouchStartCapture={(event) => {
-          if (event.target instanceof Element && event.target.closest('[data-clip-gallery]')) return
+          if (event.target instanceof Element && event.target.closest('[data-clip-gallery], [data-menu-panel]')) return
           const step = noteInteraction({ guard: batchHold.current.guard, suppressUntil: batchHold.current.suppressUntil }, performance.now(), false)
           batchHold.current.suppressUntil = step.hold.suppressUntil
           if (step.cancel) endClipRef.current()
@@ -1951,7 +1953,12 @@ onClick={() => {
             setGalleryOpen(true)
           }}
           onPlayScene={(key) => {
-            beginScene(key)
+            const action = menuCostumeAction(key, { contactActive: contactStatus().active, waitRelease: waitRelease.current })
+            if (!action) return
+            endClipRef.current()
+            setOpen(false)
+            setAdminOpen(false)
+            beginScene(action.play, true)
           }}
           onPreviewWake={() => {
             engine.previewWake()

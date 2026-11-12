@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { featuresFor } from '../view/features.ts'
-import { HERO_CAPE, SCENE_CUE, SCENE_GAP_MS, SCENE_MS, heroCapePath, nextAmbientScene, sampleScene } from './scenes.ts'
+import { HERO_CAPE, SCENE_CUE, SCENE_GAP_MS, SCENE_MS, SCENE_ORDER, heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene } from './scenes.ts'
 
 const files = {
   ninja_soft_swish: ['src/assets/scenes-v1/audio/app/ninja_soft_swish_app_pcm16_48k.wav', 'b3336913388017bb6d3ecc33c9680d9a9c8c7e5f662611254396074b59f114d5'],
@@ -77,5 +77,24 @@ describe('costume scenes', () => {
     expect(heroCapePath(1_000, false)).not.toBe(HERO_CAPE[0])
     expect(SCENE_CUE.racer.at).toBe(0)
     expect(SCENE_CUE.sheet_ghost.at).toBe(2_200)
+  })
+
+  it.each([
+    ['ninja', 2_400],
+    ['cord_hero', 3_200],
+    ['racer', 5_600],
+    ['sheet_ghost', 3_200],
+  ] as const)('plays %s when the admin menu asks for it', (key, at) => {
+    const action = menuCostumeAction(key, { contactActive: false, waitRelease: false })
+    expect(action).toEqual({ play: key, closeMenu: true })
+    const pose = sampleScene(action?.play ?? key, at)
+    expect(pose.done).toBe(false)
+    expect(pose.opacity).toBe(1)
+    expect(SCENE_ORDER).toContain(key)
+  })
+
+  it('does not let a menu tap start a costume while a finger is still held', () => {
+    expect(menuCostumeAction('ninja', { contactActive: false, waitRelease: true })).toBeNull()
+    expect(menuCostumeAction('racer', { contactActive: true, waitRelease: false })).toBeNull()
   })
 })

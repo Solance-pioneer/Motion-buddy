@@ -185,6 +185,19 @@ function ghost(ms: number, reduced: boolean): ScenePose {
   return pose
 }
 
+/**
+ * A dress-up tap from the admin menu always asks for that scene and closes the menu.
+ * An already running scene is not a reason to ignore it. A held finger, or an active
+ * contact bed, still blocks the start.
+ */
+export function menuCostumeAction(
+  key: SceneKey,
+  blockers: { contactActive: boolean; waitRelease: boolean },
+): { play: SceneKey; closeMenu: true } | null {
+  if (blockers.contactActive || blockers.waitRelease) return null
+  return { play: key, closeMenu: true }
+}
+
 /** Allowed set limits coded idle. An empty set plays nothing. Omit it to use every scene. */
 export function nextAmbientScene(previous: SceneKey | null, allowed?: ReadonlySet<string> | null): SceneKey | null {
   const order = allowed ? SCENE_ORDER.filter((key) => allowed.has(key)) : [...SCENE_ORDER]
