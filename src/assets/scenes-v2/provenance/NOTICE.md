@@ -12,3 +12,6 @@ Timing choices used by the app:
 - uk_soft_march_once and egypt_wonder_once are finite app copies. They play once, do not loop, and duck the country music by 3 dB while they sound. Masters are kept and not rewritten. They were not human-listened.
 - The France tower is the studio daylight redraw in the same 360 space. No cartoon reference was supplied, so it is not a match to a reference drawing.
 - Note attacks are softened by about 40–70 ms. Playback is not claimed to be listening-perfect.
+- Japan is an original 8s bow with a kabuto and a stationary Mount Fuji. The score is japan_gentle_bow. It is not claimed as historical Japanese music.
+- Australia is an original 9s hop with a cork hat, an ivory Opera House, and a native kangaroo emoji. The score is australia_hop_duet. Reduced motion holds the placed pose instead of hopping.
+- Four CoMiGo bleeps are separate CC0 one-shots. Credit is optional. Provenance is in src/assets/comigo-bleeps-v1.

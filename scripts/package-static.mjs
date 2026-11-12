@@ -138,7 +138,8 @@ writeFileSync(
     'A pet gesture plays one finite note: squish, spring, squeak, chirp, or wobble. It does not loop and a repeated note waits. Masters are not rewritten.',
     'Race plays race_activate_rev once. Accelerate and brake each play one short synthetic cue when that lean begins, then wait. They are not a recorded engine and not the seven-second racer track. Masters are not rewritten.',
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
-    'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, and egypt_cinematic play once at gain 0.68. Masters are not rewritten.',
+    'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, egypt_cinematic, japan_gentle_bow, and australia_hop_duet play once at gain 0.68. Masters are not rewritten.',
+    'Four CoMiGo bleeps (tap, blink, idle, ack) are finite one-shots. They stay silent while muted and wait out their cooldowns. CC0, credit optional.',
     'Open index.html from this folder on a static host. The phone stays quiet until the first tap.',
     '',
   ].join('\n'),
@@ -165,10 +166,26 @@ for (const name of [
   'egypt_cinematic_app_pcm16_48k.wav',
   'egypt_wonder_once_app_pcm16_48k.wav',
   'uk_soft_march_once_app_pcm16_48k.wav',
+  'japan_gentle_bow_app_pcm16_48k.wav',
+  'australia_hop_duet_app_pcm16_48k.wav',
 ]) {
   copyFileSync(join('src/assets/scenes-v2/audio/app', name), join(countryDir, name))
 }
 copyFileSync(join('src/assets/scenes-v2/provenance/NOTICE.md'), join(countryDir, 'NOTICE.md'))
+const bleepDir = join(dist, 'comigo-bleeps')
+mkdirSync(bleepDir, { recursive: true })
+for (const name of [
+  'tap_press03_pcm16_48k.wav',
+  'blink_press02_pcm16_48k.wav',
+  'idle_press01_pcm16_48k.wav',
+  'ack_jump01_pcm16_48k.wav',
+]) {
+  copyFileSync(join('src/assets/comigo-bleeps-v1/audio/app', name), join(bleepDir, name))
+}
+writeFileSync(
+  join(bleepDir, 'CREDIT.txt'),
+  'CoMiGo Bleeps n Bloops by Cosmo Myzrail Gorynych. CC0. Credit optional. These four app copies are finite one-shots.\n',
+)
 const driveDir = join(dist, 'drive-audio-v1')
 mkdirSync(driveDir, { recursive: true })
 for (const name of [

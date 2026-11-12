@@ -1,0 +1,88 @@
+{
+  "status": "PASS_OBJECTIVE_VISUAL_ONLY_REVISION_CHECKS",
+  "prior_static_face_hat_checks_unchanged": {
+    "states": 323,
+    "basis": "exact same face reference, hat and motion transforms as v1; no regeneration of face/hat art",
+    "bounds_pixels1000": [
+      98,
+      45,
+      878,
+      733
+    ]
+  },
+  "canonical_reference_hat_audio_byte_identical": true,
+  "all_tracks_beats_music_duration_policy_reduced_motion_identical": true,
+  "opera_native100_raster_bounds": [
+    6.0,
+    80.0,
+    69.0,
+    98.4
+  ],
+  "opera_face_separation": "Opera miny80 > conservative contest face maxy72.3; no cropping",
+  "native_emoji_slot_hop_envelope": [
+    70,
+    28,
+    96,
+    88
+  ],
+  "native_emoji_slot_face_separation": "slot minx70 > contest hat/face maxx66.2; actual glyph/device ink unproven",
+  "system_emoji_board_font": "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+  "system_emoji_font_sha256": "dac5c27651082d6c53dab5081f50d2022ddf6877d730fa919cf6a4fc2af22de0",
+  "glyph_asset_exported": false,
+  "original_kangaroo_archived_only": true,
+  "audio_metrics_inherited_byte_identical": {
+    "audio/masters/australia_hop_duet_master_f32_48k.wav": {
+      "sha256": "4ff9a1125427c85789ceaabf3f474703aa13650b6fad38220cc0b8fbcb03b54c",
+      "duration_seconds": 9.0,
+      "sample_count": 432000,
+      "sample_rate": 48000,
+      "channels": 1,
+      "peak_dbfs": -13.499999910582904,
+      "rms_dbfs": -23.36749993920956,
+      "dc_offset": -5.467156391944403e-09,
+      "finite": true,
+      "clipped_samples": 0,
+      "endpoint_samples": [
+        0.0,
+        0.0
+      ],
+      "max_consecutive_rms_rise_db_both_windows_above_minus40": {
+        "10ms": 9.144184838619253,
+        "50ms": 4.606206700001223
+      },
+      "ffmpeg_decode_returncode": 0,
+      "ffmpeg_errors": ""
+    },
+    "audio/app/australia_hop_duet_app_pcm16_48k.wav": {
+      "sha256": "31060cceae9d70c6f357925b2745ef8c085363e99dc90683e85fb560a6841e4c",
+      "duration_seconds": 9.0,
+      "sample_count": 432000,
+      "sample_rate": 48000,
+      "channels": 1,
+      "peak_dbfs": -13.500338068104256,
+      "rms_dbfs": -23.3675016339632,
+      "dc_offset": -3.7724268657812345e-08,
+      "finite": true,
+      "clipped_samples": 0,
+      "endpoint_samples": [
+        0.0,
+        0.0
+      ],
+      "max_consecutive_rms_rise_db_both_windows_above_minus40": {
+        "10ms": 9.14435488388377,
+        "50ms": 4.606226942404723
+      },
+      "ffmpeg_decode_returncode": 0,
+      "ffmpeg_errors": ""
+    }
+  },
+  "attachment_reference": "NOT AVAILABLE/NOT SEEN; owner Unicode choice used, no claim of visual match",
+  "limitations": [
+    "curious-rest gaze0 static reference only; all-expression/glance/blend fit unproven",
+    "native emoji font/glyph varies by phone; runtime fit unverified",
+    "no human listening",
+    "no phone/app/runtime testing",
+    "no repository/integration/deployment/publication",
+    "no worldwide legal clearance"
+  ]
+}

@@ -1,0 +1,584 @@
+{
+  "status": "PREPARATORY_FOLLOWUP_V2_NATIVE_EMOJI_AND_IVORY_OPERA_ONLY_NOT_INTEGRATED",
+  "approval_scope": "Owner Australia concept: typical hat, Sydney Opera House, jumping battle with kangaroo. Preparatory assets only; no publication/integration approval.",
+  "registration": {
+    "native_viewbox": [
+      0,
+      0,
+      100,
+      100
+    ],
+    "svg_art_display_pixels": [
+      360,
+      360
+    ],
+    "uniform_100_to_360": 3.6,
+    "costumes_existing_internal_scale": 0.277778,
+    "integration_note": "Assets are NATIVE100, unlike prior360 art. In a legacy Costume group already scaling .277778, wrap these native paths with scale(3.6) so total scale is approximately1 (3.6*.277778=1.0000008); do not apply .277778 directly to native100 geometry. World props remain native100 outside face/glance transforms. No production face redraw.",
+    "face_reference": "reference/curious-rest-reference.svg exact literal paths; reference/face-reference.json and source-excerpts.md copied unchanged.",
+    "canonical_rest_eyes": "centres32/68 y38, width20 height28, y24..52; NOT earlier short-eye art",
+    "canonical_mouth": "M 40.0 67.0 Q 50.0 79.6 60.0 67.0 Q 50.0 69.2 40.0 67.0 Z",
+    "shared_motion": "Face and hat must receive the SAME scene transform about50,46 AND same existing glance alignment; hat behind existing eye/mouth groups. Static board gaze=0 only. Current Costumes/glance are siblings: sanctioned future integration must explicitly align hat without changing face geometry. No app implementation supplied.",
+    "transform_order": "translate(tx ty) translate(50 46) scale(scale*sx scale*sy) translate(-50 -46), applied in native100 world; then existing glance alignment equally for hat/face; eye rotation remains0.",
+    "limits": "ONLY exact curious-rest gaze0 static bounds proven here. Other expressions, gaze, blends, blink/show features not proven; do not assert all-expression/runtime fit. Animation states are static spec samples, not app observations."
+  },
+  "input_policy": {
+    "lock_scope": "Whole fixed9s scene: discard tap/menu/doubletap, drag/petting, sensor reactions and idle scheduler. No interactions interrupt/restart/prolong the scene.",
+    "ignored_input": "discard; never queue",
+    "start_gate": "No start during active contact/drag/pet or another scene.",
+    "release_gate": "Pointer held at deadline must release/cancel before normal NEW pointerdown gestures resume.",
+    "always_available": [
+      "IMMEDIATE mute using short gain ramp; visual may continue",
+      "hidden/visibilitychange/pagehide: stop/dispose audio, cancel timers and remove all scene artwork; identity face restore",
+      "OS/browser navigation/exit never trapped"
+    ],
+    "finish": "Exact pre-scene plain Buddy, identity scene transform, no overlay/props/audio nodes/timers, then unlock. Do not change app face defaults."
+  },
+  "scenes": {
+    "australia_hop_duet": {
+      "duration_seconds": 9,
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.3,
+          "action": "plain Buddy"
+        },
+        {
+          "from": 0.3,
+          "to": 1.1,
+          "action": "hat/Opera House/kangaroo crossfade in; Buddy scales and shifts left gently"
+        },
+        {
+          "from": 1.8,
+          "to": 2.5,
+          "action": "Buddy low hop"
+        },
+        {
+          "from": 2.5,
+          "to": 3.3,
+          "action": "kangaroo effortlessly answers higher"
+        },
+        {
+          "from": 3.3,
+          "to": 4.1,
+          "action": "Buddy another small hop"
+        },
+        {
+          "from": 4.1,
+          "to": 5.0,
+          "action": "kangaroo higher easy hop"
+        },
+        {
+          "from": 5.0,
+          "to": 6.3,
+          "action": "Buddy larger level wobble/squash attempt; soft landing, recover"
+        },
+        {
+          "from": 5.9,
+          "to": 6.7,
+          "action": "kangaroo effortless final answer"
+        },
+        {
+          "from": 6.3,
+          "to": 7.1,
+          "action": "Buddy tiny exhausted hop"
+        },
+        {
+          "from": 7.1,
+          "to": 7.7,
+          "action": "sheepish pause; optional existing blink only if independently fit-verified; no new expression geometry"
+        },
+        {
+          "from": 7.7,
+          "to": 8.5,
+          "action": "all art fades, Buddy restores"
+        },
+        {
+          "from": 8.5,
+          "to": 9,
+          "action": "exact plain; remain locked to deadline"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "scale": 1,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 0.3,
+            "scale": 1,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 1.1,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 1.8,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 2.1,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": -4,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 2.5,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 3.3,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 3.65,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": -5,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 4.1,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 5,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 5.4,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": -9,
+            "sx": 1.03,
+            "sy": 0.98,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 5.9,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 2,
+            "sx": 1.03,
+            "sy": 0.94,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 6.3,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 6.75,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": -2,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 7.1,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 7.7,
+            "scale": 0.72,
+            "tx": -12,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 8.5,
+            "scale": 1,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          },
+          {
+            "t": 9,
+            "scale": 1,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1,
+            "origin": [
+              50,
+              46
+            ],
+            "rotation_degrees": 0
+          }
+        ],
+        "overlay:australia_cork_hat": [
+          {
+            "t": 0,
+            "opacity": 0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0
+          },
+          {
+            "t": 1.1,
+            "opacity": 1
+          },
+          {
+            "t": 7.7,
+            "opacity": 1
+          },
+          {
+            "t": 8.4,
+            "opacity": 0
+          },
+          {
+            "t": 9,
+            "opacity": 0
+          }
+        ],
+        "prop:sydney_opera_house": [
+          {
+            "t": 0,
+            "opacity": 0.0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0.0
+          },
+          {
+            "t": 1.1,
+            "opacity": 0.65
+          },
+          {
+            "t": 7.7,
+            "opacity": 0.65
+          },
+          {
+            "t": 8.4,
+            "opacity": 0.0
+          },
+          {
+            "t": 9,
+            "opacity": 0.0
+          }
+        ],
+        "prop:australia_kangaroo": [
+          {
+            "t": 0,
+            "opacity": 0,
+            "ty": 0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0,
+            "ty": 0
+          },
+          {
+            "t": 1.1,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 2.5,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 2.9,
+            "opacity": 1,
+            "ty": -12
+          },
+          {
+            "t": 3.3,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 4.1,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 4.55,
+            "opacity": 1,
+            "ty": -14
+          },
+          {
+            "t": 5,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 5.9,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 6.3,
+            "opacity": 1,
+            "ty": -10
+          },
+          {
+            "t": 6.7,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 7.7,
+            "opacity": 1,
+            "ty": 0
+          },
+          {
+            "t": 8.4,
+            "opacity": 0,
+            "ty": 0
+          },
+          {
+            "t": 9,
+            "opacity": 0,
+            "ty": 0
+          }
+        ]
+      },
+      "layer_order": [
+        "app black background",
+        "Opera House world stationary",
+        "native Unicode kangaroo emoji world container, ty hop only",
+        "hat face-local with identical face/scene/glance alignment",
+        "EXISTING app face features; never redraw production eyes/mouth"
+      ],
+      "easing": "monotone ease-in-out cubic between keyframes; NO spring/overshoot, rotation or cork swinging.",
+      "prop_placement": "Native100 world identity. Ivory Opera House x6..69 y80..98.4; native kangaroo emoji container x70..96 y42..88 at rest, translates ty0..-14 with unchanged track; actual glyph ink/device fit unverified. Neither follows face/glance.",
+      "music": {
+        "path": "audio/app/australia_hop_duet_app_pcm16_48k.wav",
+        "start_seconds": 0,
+        "duration_seconds": 9,
+        "loop": false,
+        "stretch": false,
+        "retrigger": false,
+        "single_source_only": true,
+        "beat_cues": [
+          {
+            "t": 0.3,
+            "midi": 60,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 1.1,
+            "midi": 64,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 1.8,
+            "midi": 67,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 2.5,
+            "midi": 69,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 3.3,
+            "midi": 65,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 4.1,
+            "midi": 72,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 5.0,
+            "midi": 67,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 5.9,
+            "midi": 62,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 6.7,
+            "midi": 64,
+            "role": "original warm pluck phrase"
+          },
+          {
+            "t": 7.5,
+            "midi": 60,
+            "role": "original warm pluck phrase"
+          }
+        ],
+        "landing_accents_seconds": [
+          2.5,
+          3.3,
+          4.1,
+          5.0,
+          5.9,
+          6.7,
+          7.1
+        ]
+      },
+      "reduced_motion": {
+        "duration_seconds": 9,
+        "mode": "Static placed face at scale.72 tx-12 ty0 with static hat/Opera House/kangaroo. Crossfade exact plain to this static composition .3..1.1; hold; crossfade back7.7..8.5. No interpolated position/scale, hops, wobble, squash or cork movement. Same9s lock/music.",
+        "preferred_static_crossfade": "Crossfade exact plain to fixed placed face+hat/props .3..1.1, hold, crossfade back7.7..8.5. Never duplicate production face features: integrate via existing rendering capability, not this board reference.",
+        "music_lock_safety": "same9s score, lock, input discard, release gate and always-immediate safety; no shortened duration"
+      },
+      "neutral_start_end": "at0 and9 no overlay/prop; scene face transform identity. At9 dispose audio and timers; no lingering nodes.",
+      "native_emoji_prop": {
+        "kind": "native_unicode_text",
+        "text": "\ud83e\udd98",
+        "unicode": "U+1F998",
+        "asset_file": null,
+        "slot_native100": {
+          "left": 70,
+          "top": 42,
+          "width": 26,
+          "height": 46,
+          "right": 96,
+          "bottom": 88
+        },
+        "text_layout": {
+          "font_stack": "\"Apple Color Emoji\", \"Segoe UI Emoji\", \"Noto Color Emoji\", emoji",
+          "font_size_native_units": 26,
+          "line_height": 1,
+          "align": "horizontal center, bottom; world anchor centre83 bottom88",
+          "container": "26x46 native units, flex align-items:flex-end; justify-content:center; no box rotation; overflow visible during verification; never crop glyph to hide bad fit"
+        },
+        "motion": "Apply unchanged prop:australia_kangaroo opacity/ty track to WHOLE WORLD container. Not face/glance-local. No flipped/copied paths or downloaded emoji image.",
+        "reduced_motion": "Static slot ty0 with existing crossfade timing0/.3/1.1/7.7/8.4/9, same music/lock; hidden/pagehide/exit removes text container/timers immediately.",
+        "accessibility": "Decorative aria-hidden=true; no focus, pointer-events:none, user-select:none; do not announce each hop. Any scene menu label is separate accessible UI.",
+        "fit_limit": "Slot bounds mathematical only. Actual native glyph ink/metrics/design vary by OS, font and phone. Font fallback and runtime fit UNVERIFIED; verify real device before integration acceptance. Do not solve overflow with clipping.",
+        "board_only": "System-installed Noto Color Emoji illustration; phone styles vary. No extracted glyph asset or font shipped."
+      }
+    }
+  },
+  "revision_note": "Owner chose native kangaroo emoji after messy-contour feedback; original Opera House sails cleaned. Attachment was NOT available/seen; no claim of matching it. Existing9s tracks/music/face/hat/safety unchanged."
+}

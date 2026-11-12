@@ -78,7 +78,7 @@ test.describe('country scenes', () => {
     expect(lead.boltReduced).toBe('0')
     expect(lead.disabled).toBe('true')
     expect(lead.width).toBeGreaterThanOrEqual(44)
-    expect(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh']).toContain(lead.country)
+    expect(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh', 'japan_bow', 'australia_hop']).toContain(lead.country)
     await page.mouse.click(lead.x + lead.width / 2, lead.y + lead.height / 2)
     const duringLead = await read()
     expect(duringLead.country).toBe(lead.country)

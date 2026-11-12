@@ -15,7 +15,7 @@ import { motionNeedsGesture, useTilt, type MotionUiStatus } from './view/useTilt
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
 import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
@@ -163,6 +163,7 @@ export function App() {
   const raceWas = useRef<Profile>('desk')
   const raceTimer = useRef(0)
   const tiltStatusRef = useRef<MotionUiStatus>('idle')
+  const blinkEdge = useRef(0)
   const openRef = useRef(false)
   const damp = (current: number, target: number, dt: number, ms: number) => {
     if (ms <= 0) return target
@@ -375,7 +376,7 @@ export function App() {
     if (!root || !svg) return
     const px = (svg.offsetWidth || 1) / 360
     svg.style.overflow = 'visible'
-    svg.style.transformOrigin = '50% 52.78%'
+    svg.style.transformOrigin = pose.origin === '46' ? '50% 46%' : '50% 52.78%'
     svg.style.transform = `translate(${(pose.tx * px).toFixed(2)}px, ${(pose.ty * px).toFixed(2)}px) scale(${pose.sx.toFixed(4)}, ${pose.sy.toFixed(4)})`
     for (const [name, layer] of Object.entries(pose.layers)) {
       const node = root.querySelector(`[data-country-layer="${name}"]`) as SVGGElement | null
@@ -385,6 +386,8 @@ export function App() {
       if (name === 'prop:us_flag') node.setAttribute('transform', `translate(${layer.tx} ${layer.ty}) scale(${layer.sx})`)
       else if (name === 'prop:us_eagle') node.setAttribute('transform', `translate(${180 + layer.tx - 120} ${190 + layer.ty - 70})`)
       else if (name === 'prop:egypt_pyramids') node.setAttribute('transform', `translate(0 330) scale(1 ${layer.scaleY.toFixed(4)}) translate(0 -330)`)
+      else if (name === 'prop:australia_kangaroo') node.setAttribute('transform', `translate(0 ${layer.ty.toFixed(2)})`)
+      else if (name === 'overlay:australia_cork_hat') node.setAttribute('transform', `translate(0 ${layer.ty.toFixed(2)}) scale(3.6)`)
       else if (name.startsWith('overlay:')) node.setAttribute('transform', `translate(0 ${layer.ty.toFixed(2)})`)
       else node.removeAttribute('transform')
     }
@@ -392,6 +395,8 @@ export function App() {
     const uk = pose.layers['overlay:uk_guard']
     const france = pose.layers['overlay:france_cafe']
     const egypt = pose.layers['overlay:egypt_pharaoh']
+    const japan = pose.layers['overlay:japan_kabuto']
+    const australia = pose.layers['overlay:australia_cork_hat']
     const eagle = pose.layers['prop:us_eagle']
     if (glance && uk && uk.opacity > 0.01) {
       const placed = /translate\(\s*(-?\d+(?:\.\d+)?)(?:\s+|,)(-?\d+(?:\.\d+)?)/.exec(glance.getAttribute('transform') || '')
@@ -404,6 +409,8 @@ export function App() {
     } else if (glance && egypt && egypt.opacity > 0.2) {
       glance.setAttribute('transform', 'translate(0 6)')
     } else if (glance && eagle && eagle.opacity > 0.2 && pose.sx < 0.9) {
+      glance.setAttribute('transform', 'translate(0 0)')
+    } else if (glance && ((japan && japan.opacity > 0.2) || (australia && australia.opacity > 0.2))) {
       glance.setAttribute('transform', 'translate(0 0)')
     }
   }
@@ -639,6 +646,9 @@ export function App() {
     )
     originalArm.current = cue.arm
     if (cue.play) playCue(cue.play as 'sneeze_zip' | 'peek_pop' | 'pout_boop')
+    if (!sceneRef.current && state.blink >= 0.45 && blinkEdge.current < 0.45) playBleep('blink')
+    blinkEdge.current = state.blink
+    if (!sceneRef.current && !state.hidden && !state.reduced && state.presence === 'awake' && !contactStatus().active) playBleep('idle')
     stepPet(dt)
     sceneTickRef.current(dt)
     const key = viewKey(state)
@@ -680,7 +690,10 @@ export function App() {
     if (soundStatus().muted || !soundOn) return
     const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
     heard.current = claimed.memory
-    if (claimed.ok) playCue('chirp')
+    if (claimed.ok) {
+      playCue('chirp')
+      playBleep('ack')
+    }
   }, [soundOn])
   const confirmSingle = useCallback(() => {
     const step = touchExpire(touch.current, performance.now())
@@ -707,6 +720,7 @@ export function App() {
       pet.current.sounded = true
       playPetNote(cueForGesture('tap'))
     }
+    playBleep('tap')
     pet.current.boopUntil = performance.now() + 420
     publish(engine.snapshot())
   }, [engine, publish, soundOn])
@@ -1305,7 +1319,10 @@ onClick={() => {
             if (enable) {
               const claimed = claimChirp(heard.current, performance.now(), { unlocked: true, muted: false, explicit: true })
               heard.current = claimed.memory
-              if (claimed.ok) playCue('chirp')
+              if (claimed.ok) {
+                playCue('chirp')
+                playBleep('ack')
+              }
             }
           }}
         />

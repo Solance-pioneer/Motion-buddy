@@ -1,0 +1,148 @@
+{
+  "pack": "motion-buddy-australia-scene-v2-clean-art",
+  "status": "PREPARATORY_FOLLOWUP_NATIVE_EMOJI_VISUAL_REVISION_ONLY",
+  "active_assets": {
+    "hat": "svg/overlays/australia_cork_hat.svg",
+    "opera": "svg/props/sydney_opera_house.svg",
+    "kangaroo": {
+      "kind": "native_unicode_text",
+      "text": "\ud83e\udd98",
+      "unicode": "U+1F998",
+      "asset_file": null,
+      "slot_native100": {
+        "left": 70,
+        "top": 42,
+        "width": 26,
+        "height": 46,
+        "right": 96,
+        "bottom": 88
+      },
+      "text_layout": {
+        "font_stack": "\"Apple Color Emoji\", \"Segoe UI Emoji\", \"Noto Color Emoji\", emoji",
+        "font_size_native_units": 26,
+        "line_height": 1,
+        "align": "horizontal center, bottom; world anchor centre83 bottom88",
+        "container": "26x46 native units, flex align-items:flex-end; justify-content:center; no box rotation; overflow visible during verification; never crop glyph to hide bad fit"
+      },
+      "motion": "Apply unchanged prop:australia_kangaroo opacity/ty track to WHOLE WORLD container. Not face/glance-local. No flipped/copied paths or downloaded emoji image.",
+      "reduced_motion": "Static slot ty0 with existing crossfade timing0/.3/1.1/7.7/8.4/9, same music/lock; hidden/pagehide/exit removes text container/timers immediately.",
+      "accessibility": "Decorative aria-hidden=true; no focus, pointer-events:none, user-select:none; do not announce each hop. Any scene menu label is separate accessible UI.",
+      "fit_limit": "Slot bounds mathematical only. Actual native glyph ink/metrics/design vary by OS, font and phone. Font fallback and runtime fit UNVERIFIED; verify real device before integration acceptance. Do not solve overflow with clipping.",
+      "board_only": "System-installed Noto Color Emoji illustration; phone styles vary. No extracted glyph asset or font shipped."
+    }
+  },
+  "inactive_archive": [
+    "archive/australia_kangaroo_v1.svg",
+    "archive/create_australia_v1.py"
+  ],
+  "source": "src/revise_clean_art.py",
+  "source_base": "/workspace/motion-buddy-australia-scene-v1",
+  "provenance": "Opera House original handwritten SVG cleanup. Native Unicode kangaroo uses device font, no downloadable image/glyph paths. Static boards use installed Noto Color Emoji only. Owner attachment not seen. Existing original score/reference/provenance retained in base/archive.",
+  "qa": {
+    "status": "PASS_OBJECTIVE_VISUAL_ONLY_REVISION_CHECKS",
+    "prior_static_face_hat_checks_unchanged": {
+      "states": 323,
+      "basis": "exact same face reference, hat and motion transforms as v1; no regeneration of face/hat art",
+      "bounds_pixels1000": [
+        98,
+        45,
+        878,
+        733
+      ]
+    },
+    "canonical_reference_hat_audio_byte_identical": true,
+    "all_tracks_beats_music_duration_policy_reduced_motion_identical": true,
+    "opera_native100_raster_bounds": [
+      6.0,
+      80.0,
+      69.0,
+      98.4
+    ],
+    "opera_face_separation": "Opera miny80 > conservative contest face maxy72.3; no cropping",
+    "native_emoji_slot_hop_envelope": [
+      70,
+      28,
+      96,
+      88
+    ],
+    "native_emoji_slot_face_separation": "slot minx70 > contest hat/face maxx66.2; actual glyph/device ink unproven",
+    "system_emoji_board_font": "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+    "system_emoji_font_sha256": "dac5c27651082d6c53dab5081f50d2022ddf6877d730fa919cf6a4fc2af22de0",
+    "glyph_asset_exported": false,
+    "original_kangaroo_archived_only": true,
+    "audio_metrics_inherited_byte_identical": {
+      "audio/masters/australia_hop_duet_master_f32_48k.wav": {
+        "sha256": "4ff9a1125427c85789ceaabf3f474703aa13650b6fad38220cc0b8fbcb03b54c",
+        "duration_seconds": 9.0,
+        "sample_count": 432000,
+        "sample_rate": 48000,
+        "channels": 1,
+        "peak_dbfs": -13.499999910582904,
+        "rms_dbfs": -23.36749993920956,
+        "dc_offset": -5.467156391944403e-09,
+        "finite": true,
+        "clipped_samples": 0,
+        "endpoint_samples": [
+          0.0,
+          0.0
+        ],
+        "max_consecutive_rms_rise_db_both_windows_above_minus40": {
+          "10ms": 9.144184838619253,
+          "50ms": 4.606206700001223
+        },
+        "ffmpeg_decode_returncode": 0,
+        "ffmpeg_errors": ""
+      },
+      "audio/app/australia_hop_duet_app_pcm16_48k.wav": {
+        "sha256": "31060cceae9d70c6f357925b2745ef8c085363e99dc90683e85fb560a6841e4c",
+        "duration_seconds": 9.0,
+        "sample_count": 432000,
+        "sample_rate": 48000,
+        "channels": 1,
+        "peak_dbfs": -13.500338068104256,
+        "rms_dbfs": -23.3675016339632,
+        "dc_offset": -3.7724268657812345e-08,
+        "finite": true,
+        "clipped_samples": 0,
+        "endpoint_samples": [
+          0.0,
+          0.0
+        ],
+        "max_consecutive_rms_rise_db_both_windows_above_minus40": {
+          "10ms": 9.14435488388377,
+          "50ms": 4.606226942404723
+        },
+        "ffmpeg_decode_returncode": 0,
+        "ffmpeg_errors": ""
+      }
+    },
+    "attachment_reference": "NOT AVAILABLE/NOT SEEN; owner Unicode choice used, no claim of visual match",
+    "limitations": [
+      "curious-rest gaze0 static reference only; all-expression/glance/blend fit unproven",
+      "native emoji font/glyph varies by phone; runtime fit unverified",
+      "no human listening",
+      "no phone/app/runtime testing",
+      "no repository/integration/deployment/publication",
+      "no worldwide legal clearance"
+    ]
+  },
+  "files": {
+    "README.md": "d463cf5eeeed8c9f478673a3f9939aad116033e22292cb60de6d61dab4183d5b",
+    "archive/README.md": "41f99581cefe6ab81e3b0142e9a6ffaa206d3499cef7dd835bd2c6f22fa56685",
+    "archive/australia_kangaroo_v1.svg": "2ce3fc0acc431e4e4c478fd0db698fb130825310f4fecf0b8137eac59cf9a3b5",
+    "archive/create_australia_v1.py": "1133b14c3b5dc725652e0b9baa0fce2c4a1257a2d54a783f116aa8bbbf05fa26",
+    "audio/app/australia_hop_duet_app_pcm16_48k.wav": "31060cceae9d70c6f357925b2745ef8c085363e99dc90683e85fb560a6841e4c",
+    "audio/masters/australia_hop_duet_master_f32_48k.wav": "4ff9a1125427c85789ceaabf3f474703aa13650b6fad38220cc0b8fbcb03b54c",
+    "board/Australia-props-before-after-static.png": "db189b571aa43c7e83073eb32491b2a885bad1d56db6b7df60f3bbe9d69ae4ed",
+    "board/Australia-small-stage-static.png": "4f2c693563ae25592194a7a95e9dcfa48b33f8d4709b20e916a3f13432310dad",
+    "board/Motion-Buddy-Australia-static-poses.png": "a5adc8323af884e8e137134c29f3925aab907ba2c64d8fd0a71fe709f30501cd",
+    "qa-report.json": "4eb0e4748a4095b049d78b1f58de040e60ec1443b466c496ccac87261fd22dc9",
+    "reference/curious-rest-reference.svg": "71fc818a3449be3ecc248243bf024912eadbd489f55a0cb930dd21382d7906b6",
+    "reference/face-reference.json": "2b3dd6aaf0b85c7ba0ca2c5f0f284bc3230a80edb55e1ae1fc1529bd87910c64",
+    "reference/source-excerpts.md": "b62c400ba7d5d80895707e7e7b0472a3b879b119259286295281229f95b32d4a",
+    "scene-spec.json": "3ec6472c5d3c370b5b7430679b905edcf9c85011e3714b33dbe320955edb3e2e",
+    "src/revise_clean_art.py": "78761a6189fc86752e1860cea533acaed595ca7c0529cd4d4ade2102ec77db3e",
+    "svg/overlays/australia_cork_hat.svg": "26dc9043e67ff82021f668d4ed0fd574767486a6f185057fe572ad3b0552253d",
+    "svg/props/sydney_opera_house.svg": "b51298853285e8638ebccafa61cbe95e1c77918f269b04c38eaa2768f45a4fe1"
+  }
+}

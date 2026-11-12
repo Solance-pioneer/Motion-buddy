@@ -98,6 +98,20 @@ body {
   z-index: 2;
 }
 
+.kangaroo-slot {
+  width: 26px;
+  height: 46px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  pointer-events: none;
+  user-select: none;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", emoji;
+  font-size: 26px;
+  line-height: 1;
+}
+
 .scene-cord {
   position: absolute;
   inset: 0;

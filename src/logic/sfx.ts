@@ -5,6 +5,8 @@ import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { DRIVE_WAV_BASE64 } from './drive-wavs.ts'
 import { COUNTRY_WAV_BASE64 } from './country-wavs.ts'
 import { COUNTRY_GAIN } from './countries.ts'
+import { BLEEP_WAV_BASE64 } from './bleep-wavs.ts'
+import { allowBleep, initialBleepClock, type BleepClock, type BleepRole } from './bleeps.ts'
 import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
@@ -703,10 +705,72 @@ export function playCountryMusic(key: keyof typeof COUNTRY_WAV_BASE64): boolean 
   return true
 }
 
+const BLEEP_GAIN = 0.42
+let bleepClock: BleepClock = initialBleepClock()
+let bleepSource: AudioBufferSourceNode | null = null
+let bleepGain: GainNode | null = null
+let bleepToken = 0
+
+export function resetBleepsForTests(): void {
+  bleepClock = initialBleepClock()
+  stopBleep(0)
+}
+
+/** One CoMiGo bleep. Mute, a locked scene, and the role cooldown keep it quiet. The first idle wait is one full cooldown. */
+export function playBleep(role: BleepRole, now = performance.now()): boolean {
+  if (role === 'idle' && bleepClock.last.idle == null && context && gate.unlocked && !gate.muted && !sceneGuard) {
+    bleepClock = { last: { ...bleepClock.last, idle: now } }
+    return false
+  }
+  const step = allowBleep(bleepClock, role, now, {
+    muted: gate.muted,
+    unlocked: Boolean(context) && gate.unlocked,
+    busy: sceneGuard,
+  })
+  bleepClock = step.clock
+  if (!step.ok || !context) return false
+  stopBleep(20)
+  const clip = pcm16(`bleep:${role}`, BLEEP_WAV_BASE64[role])
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(gain, 0, BLEEP_GAIN, 0.01)
+  source.start()
+  bleepSource = source
+  bleepGain = gain
+  const token = bleepToken
+  source.onended = () => {
+    if (token !== bleepToken) return
+    if (bleepSource === source) {
+      bleepSource = null
+      bleepGain = null
+    }
+  }
+  return true
+}
+
+function stopBleep(ms = 80): void {
+  bleepToken += 1
+  const source = bleepSource
+  const gain = bleepGain
+  bleepSource = null
+  bleepGain = null
+  if (!source || !gain) return
+  const seconds = ms <= 0 ? 0.01 : Math.max(0.02, Math.min(0.08, ms / 1000))
+  fadeNode(gain, BLEEP_GAIN, 0, seconds)
+  stopLater(source, seconds)
+}
+
 export function stopSceneAudio(ms = 130): void {
   const seconds = Math.max(0.1, Math.min(0.15, ms / 1000))
   sceneToken += 1
   cueToken += 1
+  stopBleep(ms)
   const source = sceneSource
   const gain = sceneGain
   const from = sceneLevel

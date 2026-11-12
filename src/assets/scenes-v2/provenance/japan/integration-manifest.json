@@ -1,0 +1,191 @@
+{
+  "pack": "motion-buddy-japan-scene-v1-layout-r1",
+  "status": "ORIGINAL_ADDITIVE_ASSET_HANDOFF_NOT_INTEGRATED_NOT_DEPLOYED",
+  "provenance": "Original handwritten SVG geometry from general historical landmark/helmet knowledge and newly composed numpy additive synthesis. No external assets/samples/downloads/tracing or modern tunes. No claim of authentic historical Japanese music.",
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "reference_eye_rects": [
+      [
+        94,
+        140,
+        62,
+        44
+      ],
+      [
+        204,
+        140,
+        62,
+        44
+      ]
+    ],
+    "eye_rx": 23,
+    "reference_mouth": "M171 216 Q180 222 189 216",
+    "transform_origin_face_space": [
+      180,
+      190
+    ]
+  },
+  "audio": {
+    "audio/masters/japan_gentle_bow_master_f32_48k.wav": {
+      "sha256": "a410f7e0c4f6148a587b06693b526266a4e9172205291f99a2af7e545f1ca650",
+      "duration_seconds": 8.0,
+      "samples": 384000,
+      "sample_rate": 48000,
+      "channels": 1,
+      "peak_dbfs": -13.000000140032197,
+      "rms_dbfs": -22.69405239561225,
+      "dc_offset": -1.0431219889896204e-08,
+      "finite": true,
+      "clipped_samples": 0,
+      "first_sample": 0.0,
+      "last_sample": 0.0,
+      "consecutive_rms_rise_db_above_minus40": {
+        "10ms": 7.551,
+        "50ms": 9.833
+      },
+      "decode_returncode": 0,
+      "decode_errors": ""
+    },
+    "audio/app/japan_gentle_bow_app_pcm16_48k.wav": {
+      "sha256": "83fcc516e40ca9e67a58bb3adda513b06d918d41c71d780fd69df6c60e186880",
+      "duration_seconds": 8.0,
+      "samples": 384000,
+      "sample_rate": 48000,
+      "channels": 1,
+      "peak_dbfs": -12.999812245955065,
+      "rms_dbfs": -22.694319810280014,
+      "dc_offset": -3.735224405924479e-09,
+      "finite": true,
+      "clipped_samples": 0,
+      "first_sample": 0.0,
+      "last_sample": 0.0,
+      "consecutive_rms_rise_db_above_minus40": {
+        "10ms": 7.551,
+        "50ms": 9.833
+      },
+      "decode_returncode": 0,
+      "decode_errors": ""
+    }
+  },
+  "qa": {
+    "status": "PASS_OBJECTIVE_CHECKS",
+    "strict_json_svg_parse": true,
+    "bounds": {
+      "svg/props/japan_mount_fuji.svg": [
+        11,
+        246,
+        349,
+        340
+      ],
+      "svg/overlays/japan_kabuto_overlay.svg": [
+        60,
+        31,
+        300,
+        201
+      ]
+    },
+    "audio": {
+      "audio/masters/japan_gentle_bow_master_f32_48k.wav": {
+        "sha256": "a410f7e0c4f6148a587b06693b526266a4e9172205291f99a2af7e545f1ca650",
+        "duration_seconds": 8.0,
+        "samples": 384000,
+        "sample_rate": 48000,
+        "channels": 1,
+        "peak_dbfs": -13.000000140032197,
+        "rms_dbfs": -22.69405239561225,
+        "dc_offset": -1.0431219889896204e-08,
+        "finite": true,
+        "clipped_samples": 0,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "consecutive_rms_rise_db_above_minus40": {
+          "10ms": 7.551,
+          "50ms": 9.833
+        },
+        "decode_returncode": 0,
+        "decode_errors": ""
+      },
+      "audio/app/japan_gentle_bow_app_pcm16_48k.wav": {
+        "sha256": "83fcc516e40ca9e67a58bb3adda513b06d918d41c71d780fd69df6c60e186880",
+        "duration_seconds": 8.0,
+        "samples": 384000,
+        "sample_rate": 48000,
+        "channels": 1,
+        "peak_dbfs": -12.999812245955065,
+        "rms_dbfs": -22.694319810280014,
+        "dc_offset": -3.735224405924479e-09,
+        "finite": true,
+        "clipped_samples": 0,
+        "first_sample": 0.0,
+        "last_sample": 0.0,
+        "consecutive_rms_rise_db_above_minus40": {
+          "10ms": 7.551,
+          "50ms": 9.833
+        },
+        "decode_returncode": 0,
+        "decode_errors": ""
+      }
+    },
+    "registration_preserved": {
+      "viewbox": [
+        0,
+        0,
+        360,
+        360
+      ],
+      "reference_eye_rects": [
+        [
+          94,
+          140,
+          62,
+          44
+        ],
+        [
+          204,
+          140,
+          62,
+          44
+        ]
+      ],
+      "eye_rx": 23,
+      "reference_mouth": "M171 216 Q180 222 189 216",
+      "transform_origin_face_space": [
+        180,
+        190
+      ]
+    },
+    "layout_revision": "layout-r1",
+    "fuji_visible_min_y": 246,
+    "bow_face_clearance": {
+      "minimum_fuji_y": 246,
+      "conservative_max_face_y_with_mouth_stroke": 236,
+      "minimum_clearance_px": 10,
+      "method": "For all interpolated bow frames, ty<=12 and sy<=1 about y190. Mouth curve/control hull <=222 plus stroke2: max190+12+(224-190)*1=236; actual mouth curve is lower. Conservative bound236 yields10px clearance. Eyes max184+12=196. No rotation; Fuji stationary."
+    },
+    "locks_reduced_motion_cleanup": "specified, not runtime tested",
+    "rise_metric_note": "Max consecutive 10/50ms RMS increase with both windows above -40dBFS; descriptive only, not proof of perceived startle safety.",
+    "not_performed": [
+      "human listening",
+      "phone/device testing",
+      "app/runtime animation integration",
+      "deployment",
+      "worldwide legal clearance"
+    ]
+  },
+  "files": {
+    "README.md": "69a609d91b655097f770a9ed588712513e9597cce0908abc01fb3680d6a79e2d",
+    "audio/app/japan_gentle_bow_app_pcm16_48k.wav": "83fcc516e40ca9e67a58bb3adda513b06d918d41c71d780fd69df6c60e186880",
+    "audio/masters/japan_gentle_bow_master_f32_48k.wav": "a410f7e0c4f6148a587b06693b526266a4e9172205291f99a2af7e545f1ca650",
+    "board/Motion-Buddy-Japan-static-board.png": "4c2bbe217d600ea85e2bf979334d1e5f44dbac44ba5a61720bb2a2d5a43cf5a3",
+    "qa-report.json": "298d4b368c251895c0feebe8aedbb3274c5d9894b489a0d3fc38a4ed46e4de9a",
+    "scene-spec.json": "9d8c77eb99d8b67a2b3d7a1aca406f5b17414658c1351d029b9a250f601982f8",
+    "src/create_japan.py": "4ae0a1cb8ceb565e0a3f5a9674f60046dc25d8f0c13a152b07a70b0838e56c29",
+    "svg/overlays/japan_kabuto_overlay.svg": "71d093b2c31ef2e6059207405a1a76353cc801c798950e2199bc638fc30cf52d",
+    "svg/props/japan_mount_fuji.svg": "19188235b37299cc1aa482eddbd2d2e33ab4bd3b79af248c365a194248207565"
+  }
+}

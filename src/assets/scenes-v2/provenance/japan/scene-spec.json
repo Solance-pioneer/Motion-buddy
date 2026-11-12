@@ -1,0 +1,266 @@
+{
+  "status": "ORIGINAL_ADDITIVE_ASSET_HANDOFF_NOT_INTEGRATED_NOT_DEPLOYED",
+  "approval": "owner t19u: Japan samurai helmet and Mount Fuji; delegated gentle bow/original score",
+  "registration": {
+    "viewbox": [
+      0,
+      0,
+      360,
+      360
+    ],
+    "reference_eye_rects": [
+      [
+        94,
+        140,
+        62,
+        44
+      ],
+      [
+        204,
+        140,
+        62,
+        44
+      ]
+    ],
+    "eye_rx": 23,
+    "reference_mouth": "M171 216 Q180 222 189 216",
+    "transform_origin_face_space": [
+      180,
+      190
+    ]
+  },
+  "input_policy": {
+    "lock_scope": "All face input, double tap/menu gestures, petting, drag/dodge/chase, idle scheduler and motion/sensor reactions locked for entire 8s scene.",
+    "ignored_input": "Discard, never queue.",
+    "held_pointer_at_end": "Wait for release/cancel; only NEW pointerdown starts gestures.",
+    "start_gate": "Never start during contact/drag/pet or another scene.",
+    "always_available": [
+      "immediate mute with short gain ramp; visuals may continue",
+      "hidden/visibilitychange/pagehide: stop/dispose audio and cancel timers, clear all scene artwork",
+      "browser/OS exit/navigation never trapped"
+    ],
+    "finish": "Exact plain Buddy, identity transforms, no overlays/props/timers/audio nodes before unlock."
+  },
+  "scenes": {
+    "japan_bow": {
+      "duration_seconds": 8,
+      "music": "japan_gentle_bow",
+      "summary": "Original kabuto and snowcapped Fuji; gentle respectful bow, quiet hold, exact neutral. No weapon or war gesture.",
+      "beats": [
+        {
+          "from": 0,
+          "to": 0.3,
+          "action": "plain Buddy"
+        },
+        {
+          "from": 0.3,
+          "to": 1.1,
+          "action": "crossfade helmet and Fuji in"
+        },
+        {
+          "from": 2,
+          "to": 3.1,
+          "action": "gentle bow/squash, no eye tilt, level rounded eyes retained"
+        },
+        {
+          "from": 3.1,
+          "to": 6.6,
+          "action": "quiet static hold; soft score accent at3.95/4.7 suggests breeze, no extra moving artwork"
+        },
+        {
+          "from": 6.6,
+          "to": 7.4,
+          "action": "crossfade all art out"
+        },
+        {
+          "from": 7.4,
+          "to": 8,
+          "action": "exact plain neutral; lock remains until8"
+        }
+      ],
+      "tracks": {
+        "face": [
+          {
+            "t": 0,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 2,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 2.55,
+            "tx": 0,
+            "ty": 12,
+            "sx": 1.02,
+            "sy": 0.92
+          },
+          {
+            "t": 3.1,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          },
+          {
+            "t": 8,
+            "tx": 0,
+            "ty": 0,
+            "sx": 1,
+            "sy": 1
+          }
+        ],
+        "overlay:japan_kabuto": [
+          {
+            "t": 0,
+            "opacity": 0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0
+          },
+          {
+            "t": 1.1,
+            "opacity": 1
+          },
+          {
+            "t": 6.6,
+            "opacity": 1
+          },
+          {
+            "t": 7.4,
+            "opacity": 0
+          },
+          {
+            "t": 8,
+            "opacity": 0
+          }
+        ],
+        "prop:japan_mount_fuji": [
+          {
+            "t": 0,
+            "opacity": 0.0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0.0
+          },
+          {
+            "t": 1.1,
+            "opacity": 0.65
+          },
+          {
+            "t": 6.6,
+            "opacity": 0.65
+          },
+          {
+            "t": 7.4,
+            "opacity": 0.0
+          },
+          {
+            "t": 8,
+            "opacity": 0.0
+          }
+        ]
+      },
+      "placement": {
+        "overlay:japan_kabuto": "360x360 face-local identity; follows face bow behind existing eyes/mouth",
+        "prop:japan_mount_fuji": "360x360 world-space identity; peak x250 y246, broad base x11..349 y340, all visible mountain geometry y>=246; stationary lower background, never follows face, opacity .65; below ALL face/costume layers"
+      },
+      "easing": "ease-in-out cubic; crossfades smooth, no flash",
+      "layering": [
+        "black app background",
+        "Fuji world backdrop",
+        "kabuto face-local overlay",
+        "existing app eyes and mouth; never replace"
+      ],
+      "reduced_motion": {
+        "duration_seconds": 8,
+        "face": "identity always; no bow or breeze movement",
+        "overlay_track": [
+          {
+            "t": 0,
+            "opacity": 0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0
+          },
+          {
+            "t": 1.1,
+            "opacity": 1
+          },
+          {
+            "t": 6.6,
+            "opacity": 1
+          },
+          {
+            "t": 7.4,
+            "opacity": 0
+          },
+          {
+            "t": 8,
+            "opacity": 0
+          }
+        ],
+        "backdrop_track": [
+          {
+            "t": 0,
+            "opacity": 0.0
+          },
+          {
+            "t": 0.3,
+            "opacity": 0.0
+          },
+          {
+            "t": 1.1,
+            "opacity": 0.65
+          },
+          {
+            "t": 6.6,
+            "opacity": 0.65
+          },
+          {
+            "t": 7.4,
+            "opacity": 0.0
+          },
+          {
+            "t": 8,
+            "opacity": 0.0
+          }
+        ],
+        "mode": "static art and crossfades only; same lock, music, immediate mute and cleanup"
+      },
+      "music_cue": {
+        "key": "japan_gentle_bow",
+        "at_seconds": 0,
+        "length_seconds": 8,
+        "loop": false,
+        "stretch": false,
+        "retrigger": false,
+        "note_onsets_seconds": [
+          0.3,
+          0.95,
+          1.65,
+          2.4,
+          3.2,
+          3.95,
+          4.7,
+          5.45,
+          6.2
+        ]
+      },
+      "neutral_start_end": {
+        "start": "exact plain Buddy identity; no art/audio before scene starts",
+        "end": "exact plain Buddy identity; remove all props, overlays, timers/audio sources"
+      },
+      "cleanup": "On hidden/pagehide/exit or cancellation: remove art, clear timers, stop/dispose audio; never trap exit."
+    }
+  }
+}

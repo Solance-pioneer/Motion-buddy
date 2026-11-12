@@ -4,6 +4,10 @@ import libertyRaw from '../assets/scenes-v2/svg/props/usa_statue_of_liberty.svg?
 import flagRaw from '../assets/scenes-v2/svg/props/us_flag.svg?raw'
 import eagleRaw from '../assets/scenes-v2/svg/props/us_eagle.svg?raw'
 import pyramidsRaw from '../assets/scenes-v2/svg/props/egypt_pyramids.svg?raw'
+import fujiRaw from '../assets/scenes-v2/svg/props/japan_mount_fuji.svg?raw'
+import operaRaw from '../assets/scenes-v2/svg/props/sydney_opera_house.svg?raw'
+import kabutoRaw from '../assets/scenes-v2/svg/overlays/japan_kabuto_overlay.svg?raw'
+import corkRaw from '../assets/scenes-v2/svg/overlays/australia_cork_hat.svg?raw'
 
 function inner(raw: string) {
   return raw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
@@ -41,6 +45,8 @@ export function CountryOverlays() {
         <path d="M84 62 Q180 46 276 62 L274 76 Q180 64 86 76Z" fill="#2f4f8f" />
         <path d="M180 48 q-10 -20 0 -34 q10 14 0 34Z" fill="#c8a24a" />
       </g>
+      <g data-country-layer="overlay:japan_kabuto" opacity="0" dangerouslySetInnerHTML={{ __html: inner(kabutoRaw) }} />
+      <g data-country-layer="overlay:australia_cork_hat" opacity="0" transform="scale(3.6)" dangerouslySetInnerHTML={{ __html: inner(corkRaw) }} />
     </g>
   )
 }
@@ -53,6 +59,15 @@ export function CountryBackdrop() {
       <g data-country-layer="prop:usa_statue_of_liberty" opacity="0" dangerouslySetInnerHTML={{ __html: inner(libertyRaw) }} />
       <g data-country-layer="prop:us_flag" opacity="0" dangerouslySetInnerHTML={{ __html: inner(flagRaw) }} />
       <g data-country-layer="prop:egypt_pyramids" opacity="0" dangerouslySetInnerHTML={{ __html: inner(pyramidsRaw) }} />
+      <g data-country-layer="prop:japan_mount_fuji" opacity="0" dangerouslySetInnerHTML={{ __html: inner(fujiRaw) }} />
+      <g transform="scale(3.6)">
+        <g data-country-layer="prop:sydney_opera_house" opacity="0" dangerouslySetInnerHTML={{ __html: inner(operaRaw) }} />
+        <g data-country-layer="prop:australia_kangaroo" opacity="0">
+          <foreignObject x="70" y="42" width="26" height="46" overflow="visible">
+            <div className="kangaroo-slot">{"\u{1F998}"}</div>
+          </foreignObject>
+        </g>
+      </g>
     </svg>
   )
 }

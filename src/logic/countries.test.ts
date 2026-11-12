@@ -23,6 +23,8 @@ const files = {
   egypt_cinematic: ['src/assets/scenes-v2/audio/app/egypt_cinematic_app_pcm16_48k.wav', '64c464fa653df9f08b141f717d56cf4f6d7ade02829f22054d48504d911ad3c2'],
   egypt_wonder_once: ['src/assets/scenes-v2/audio/app/egypt_wonder_once_app_pcm16_48k.wav', 'f9aa04a607e519af7e1b8644eb375866b67ebf15ac75f94f37bdef3b71ebe3a2'],
   uk_soft_march_once: ['src/assets/scenes-v2/audio/app/uk_soft_march_once_app_pcm16_48k.wav', 'a6f1e98d53edd38042a696308c7f26798ea832cfc631a98cd9ec816860fa1b68'],
+  japan_gentle_bow: ['src/assets/scenes-v2/audio/app/japan_gentle_bow_app_pcm16_48k.wav', '83fcc516e40ca9e67a58bb3adda513b06d918d41c71d780fd69df6c60e186880'],
+  australia_hop_duet: ['src/assets/scenes-v2/audio/app/australia_hop_duet_app_pcm16_48k.wav', '31060cceae9d70c6f357925b2745ef8c085363e99dc90683e85fb560a6841e4c'],
 } as const
 
 describe('country scenes', () => {
@@ -37,7 +39,7 @@ describe('country scenes', () => {
   })
 
   it('runs each country for its full length and returns to a plain pose', () => {
-    expect(COUNTRY_MS).toEqual({ uk_guard: 8_000, france_cafe: 8_000, usa_eagle: 9_000, egypt_pharaoh: 9_500 })
+    expect(COUNTRY_MS).toEqual({ uk_guard: 8_000, france_cafe: 8_000, usa_eagle: 9_000, egypt_pharaoh: 9_500, japan_bow: 8_000, australia_hop: 9_000 })
     expect(TRANSITION_MS).toEqual({ normal: 280, reduced: 420 })
     for (const key of COUNTRY_ORDER) {
       const done = sampleCountry(key, COUNTRY_MS[key])
@@ -105,9 +107,48 @@ describe('country scenes', () => {
     expect(nextAmbientScene('sheet_ghost')).toBe('ninja')
     expect(pickCountry(0)).toBe('uk_guard')
     expect(pickCountry(0.25)).toBe('france_cafe')
-    expect(pickCountry(0.5)).toBe('usa_eagle')
-    expect(pickCountry(0.75)).toBe('egypt_pharaoh')
-    expect(pickCountry(0.99)).toBe('egypt_pharaoh')
+    expect(pickCountry(0.5)).toBe('egypt_pharaoh')
+    expect(pickCountry(0.75)).toBe('japan_bow')
+    expect(pickCountry(0.99)).toBe('australia_hop')
+  })
+
+  it('bows in Japan and hops beside the kangaroo in Australia', () => {
+    const bow = sampleCountry('japan_bow', 2_550)
+    expect(bow.ty).toBeCloseTo(12, 1)
+    expect(bow.sx).toBeCloseTo(1.02, 2)
+    expect(bow.sy).toBeCloseTo(0.92, 2)
+    expect(bow.layers['overlay:japan_kabuto'].opacity).toBe(1)
+    expect(bow.layers['prop:japan_mount_fuji'].opacity).toBeCloseTo(0.65, 2)
+    expect(sampleCountry('japan_bow', 2_550, true).ty).toBe(0)
+    expect(sampleCountry('japan_bow', 2_550, true).sx).toBe(1)
+    expect(sampleCountry('japan_bow', 8_000).done).toBe(true)
+    const hop = sampleCountry('australia_hop', 2_100)
+    expect(hop.origin).toBe('46')
+    expect(hop.sx).toBeCloseTo(0.72, 2)
+    expect(hop.tx).toBeCloseTo(-43.2, 1)
+    expect(hop.ty).toBeCloseTo(-14.4, 1)
+    const roo = sampleCountry('australia_hop', 2_900)
+    expect(roo.layers['overlay:australia_cork_hat'].opacity).toBe(1)
+    expect(roo.layers['prop:sydney_opera_house'].opacity).toBeCloseTo(0.65, 2)
+    expect(roo.layers['prop:australia_kangaroo'].ty).toBeCloseTo(-12, 1)
+    const still = sampleCountry('australia_hop', 3_000, true)
+    expect(still.tx).toBeCloseTo(-43.2, 1)
+    expect(still.sx).toBeCloseTo(0.72, 2)
+    expect(still.layers['prop:australia_kangaroo'].ty).toBe(0)
+    expect(sampleCountry('australia_hop', 9_000).tx).toBe(0)
+    expect(sampleCountry('australia_hop', 9_000).sx).toBe(1)
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/overlays/japan_kabuto_overlay.svg')).digest('hex')).toBe(
+      '71d093b2c31ef2e6059207405a1a76353cc801c798950e2199bc638fc30cf52d',
+    )
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/props/japan_mount_fuji.svg')).digest('hex')).toBe(
+      '19188235b37299cc1aa482eddbd2d2e33ab4bd3b79af248c365a194248207565',
+    )
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/overlays/australia_cork_hat.svg')).digest('hex')).toBe(
+      '26dc9043e67ff82021f668d4ed0fd574767486a6f185057fe572ad3b0552253d',
+    )
+    expect(createHash('sha256').update(readFileSync('src/assets/scenes-v2/svg/props/sydney_opera_house.svg')).digest('hex')).toBe(
+      'b51298853285e8638ebccafa61cbe95e1c77918f269b04c38eaa2768f45a4fe1',
+    )
   })
 
   it('visits each country once per cycle and does not spend a locked press', () => {
@@ -117,10 +158,10 @@ describe('country scenes', () => {
       cursor = turn.cursor
       return turn.key
     }
-    const first = Array.from({ length: 4 }, () => take(true))
-    const second = Array.from({ length: 4 }, () => take(true))
-    expect(first).toEqual(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh'])
-    expect(new Set(first).size).toBe(4)
+    const first = Array.from({ length: COUNTRY_ORDER.length }, () => take(true))
+    const second = Array.from({ length: COUNTRY_ORDER.length }, () => take(true))
+    expect(first).toEqual(['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh', 'japan_bow', 'australia_hop'])
+    expect(new Set(first).size).toBe(COUNTRY_ORDER.length)
     expect(second).toEqual(first)
     expect(first[3]).not.toBe(second[0])
     const before = cursor

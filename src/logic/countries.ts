@@ -1,9 +1,10 @@
 /**
- * UK, France, USA and Egypt. These are portal scenes, not the ambient costume cycle.
+ * UK, France, USA, Egypt, Japan and Australia. These are portal scenes, not the ambient costume cycle.
  * Times are the supplied tracks. Two ambiguities are resolved here and nowhere else:
  * the USA grab uses the music marker 2.7938s, and the UK march steps the soft-march beats through 6.75s.
+ * Japan bows in 360 space. Australia's native-100 tracks are scaled by 3.6 into that same space.
  */
-export const COUNTRY_ORDER = ['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh'] as const
+export const COUNTRY_ORDER = ['uk_guard', 'france_cafe', 'usa_eagle', 'egypt_pharaoh', 'japan_bow', 'australia_hop'] as const
 
 export type CountryKey = (typeof COUNTRY_ORDER)[number]
 
@@ -12,13 +13,17 @@ export const COUNTRY_MS: Record<CountryKey, number> = {
   france_cafe: 8_000,
   usa_eagle: 9_000,
   egypt_pharaoh: 9_500,
+  japan_bow: 8_000,
+  australia_hop: 9_000,
 }
 
-export const COUNTRY_MUSIC: Record<CountryKey, 'uk_guard_march' | 'france_cafe_waltz' | 'usa_anthem_eagle' | 'egypt_cinematic'> = {
+export const COUNTRY_MUSIC: Record<CountryKey, 'uk_guard_march' | 'france_cafe_waltz' | 'usa_anthem_eagle' | 'egypt_cinematic' | 'japan_gentle_bow' | 'australia_hop_duet'> = {
   uk_guard: 'uk_guard_march',
   france_cafe: 'france_cafe_waltz',
   usa_eagle: 'usa_anthem_eagle',
   egypt_pharaoh: 'egypt_cinematic',
+  japan_bow: 'japan_gentle_bow',
+  australia_hop: 'australia_hop_duet',
 }
 
 /** One lead-in, then the country clock starts at 0. No sound plays during the lead-in. */
@@ -51,6 +56,8 @@ export interface CountryPose {
   ty: number
   sx: number
   sy: number
+  /** Australia hops about 50% 46%. The other countries keep the shared 52.78% face origin. */
+  origin: '46' | '52.78'
   layers: Record<string, LayerPose>
 }
 
@@ -118,6 +125,11 @@ function blank(): Record<string, LayerPose> {
     'prop:usa_statue_of_liberty': layer(),
     'overlay:egypt_pharaoh': layer(),
     'prop:egypt_pyramids': layer({ scaleY: 0 }),
+    'overlay:japan_kabuto': layer(),
+    'prop:japan_mount_fuji': layer(),
+    'overlay:australia_cork_hat': layer(),
+    'prop:sydney_opera_house': layer(),
+    'prop:australia_kangaroo': layer(),
   }
 }
 
@@ -155,16 +167,18 @@ export function sampleCountry(key: CountryKey, ms: number, reduced = false): Cou
   const limit = COUNTRY_MS[key]
   const layers = blank()
   if (ms >= limit) {
-    return { done: true, hold: false, tx: 0, ty: 0, sx: 1, sy: 1, layers }
+    return { done: true, hold: false, tx: 0, ty: 0, sx: 1, sy: 1, origin: '52.78', layers }
   }
   const time = ms / 1000
   if (key === 'uk_guard') return uk(time, reduced, layers)
   if (key === 'france_cafe') return france(time, reduced, layers)
   if (key === 'usa_eagle') return usa(time, reduced, layers)
-  return egypt(time, reduced, layers)
+  if (key === 'egypt_pharaoh') return egypt(time, reduced, layers)
+  if (key === 'japan_bow') return japan(time, reduced, layers)
+  return australia(time, reduced, layers)
 }
 
-function pose(face: Frame, layers: Record<string, LayerPose>, hold: boolean): CountryPose {
+function pose(face: Frame, layers: Record<string, LayerPose>, hold: boolean, origin: '46' | '52.78' = '52.78'): CountryPose {
   return {
     done: false,
     hold,
@@ -172,6 +186,7 @@ function pose(face: Frame, layers: Record<string, LayerPose>, hold: boolean): Co
     ty: face.ty ?? 0,
     sx: face.sx ?? 1,
     sy: face.sy ?? 1,
+    origin,
     layers,
   }
 }
@@ -471,4 +486,144 @@ function egypt(time: number, reduced: boolean, layers: Record<string, LayerPose>
       )
   layers['prop:egypt_pyramids'] = layer({ opacity: pyramids.opacity, scaleY: pyramids.scaleY })
   return pose(face, layers, time >= 5.1 && time <= 7)
+}
+
+/** Native-100 Australia units become the shared 360 scene space. */
+const AUSTRALIA_TO_360 = 3.6
+
+function japan(time: number, reduced: boolean, layers: Record<string, LayerPose>): CountryPose {
+  const face = reduced
+    ? { t: time, tx: 0, ty: 0, sx: 1, sy: 1 }
+    : mix(
+        [
+          { t: 0, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 2, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 2.55, tx: 0, ty: 12, sx: 1.02, sy: 0.92 },
+          { t: 3.1, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 8, tx: 0, ty: 0, sx: 1, sy: 1 },
+        ],
+        time,
+        { t: 0, tx: 0, ty: 0, sx: 1, sy: 1 },
+      )
+  const helmet = mix(
+    [
+      { t: 0, opacity: 0 },
+      { t: 0.3, opacity: 0 },
+      { t: 1.1, opacity: 1 },
+      { t: 6.6, opacity: 1 },
+      { t: 7.4, opacity: 0 },
+      { t: 8, opacity: 0 },
+    ],
+    time,
+    { t: 0, opacity: 0 },
+  )
+  const fuji = mix(
+    [
+      { t: 0, opacity: 0 },
+      { t: 0.3, opacity: 0 },
+      { t: 1.1, opacity: 0.65 },
+      { t: 6.6, opacity: 0.65 },
+      { t: 7.4, opacity: 0 },
+      { t: 8, opacity: 0 },
+    ],
+    time,
+    { t: 0, opacity: 0 },
+  )
+  layers['overlay:japan_kabuto'] = layer({ opacity: helmet.opacity })
+  layers['prop:japan_mount_fuji'] = layer({ opacity: fuji.opacity })
+  return pose(face, layers, time >= 3.1 && time <= 6.6)
+}
+
+function australia(time: number, reduced: boolean, layers: Record<string, LayerPose>): CountryPose {
+  const placed = { t: time, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 }
+  const face = reduced
+    ? time >= 0.3 && time < 7.7
+      ? placed
+      : { t: time, tx: 0, ty: 0, sx: 1, sy: 1 }
+    : mix(
+        [
+          { t: 0, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 0.3, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 1.1, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 1.8, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 2.1, tx: -12 * AUSTRALIA_TO_360, ty: -4 * AUSTRALIA_TO_360, sx: 0.72, sy: 0.72 },
+          { t: 2.5, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 3.3, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 3.65, tx: -12 * AUSTRALIA_TO_360, ty: -5 * AUSTRALIA_TO_360, sx: 0.72, sy: 0.72 },
+          { t: 4.1, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 5, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 5.4, tx: -12 * AUSTRALIA_TO_360, ty: -9 * AUSTRALIA_TO_360, sx: 0.72 * 1.03, sy: 0.72 * 0.98 },
+          { t: 5.9, tx: -12 * AUSTRALIA_TO_360, ty: 2 * AUSTRALIA_TO_360, sx: 0.72 * 1.03, sy: 0.72 * 0.94 },
+          { t: 6.3, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 6.75, tx: -12 * AUSTRALIA_TO_360, ty: -2 * AUSTRALIA_TO_360, sx: 0.72, sy: 0.72 },
+          { t: 7.1, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 7.7, tx: -12 * AUSTRALIA_TO_360, ty: 0, sx: 0.72, sy: 0.72 },
+          { t: 8.5, tx: 0, ty: 0, sx: 1, sy: 1 },
+          { t: 9, tx: 0, ty: 0, sx: 1, sy: 1 },
+        ],
+        time,
+        { t: 0, tx: 0, ty: 0, sx: 1, sy: 1 },
+      )
+  const hat = mix(
+    [
+      { t: 0, opacity: 0 },
+      { t: 0.3, opacity: 0 },
+      { t: 1.1, opacity: 1 },
+      { t: 7.7, opacity: 1 },
+      { t: 8.4, opacity: 0 },
+      { t: 9, opacity: 0 },
+    ],
+    time,
+    { t: 0, opacity: 0 },
+  )
+  const opera = mix(
+    [
+      { t: 0, opacity: 0 },
+      { t: 0.3, opacity: 0 },
+      { t: 1.1, opacity: 0.65 },
+      { t: 7.7, opacity: 0.65 },
+      { t: 8.4, opacity: 0 },
+      { t: 9, opacity: 0 },
+    ],
+    time,
+    { t: 0, opacity: 0 },
+  )
+  const kangaroo = reduced
+    ? mix(
+        [
+          { t: 0, opacity: 0, ty: 0 },
+          { t: 0.3, opacity: 0, ty: 0 },
+          { t: 1.1, opacity: 1, ty: 0 },
+          { t: 7.7, opacity: 1, ty: 0 },
+          { t: 8.4, opacity: 0, ty: 0 },
+          { t: 9, opacity: 0, ty: 0 },
+        ],
+        time,
+        { t: 0, opacity: 0, ty: 0 },
+      )
+    : mix(
+        [
+          { t: 0, opacity: 0, ty: 0 },
+          { t: 0.3, opacity: 0, ty: 0 },
+          { t: 1.1, opacity: 1, ty: 0 },
+          { t: 2.5, opacity: 1, ty: 0 },
+          { t: 2.9, opacity: 1, ty: -12 },
+          { t: 3.3, opacity: 1, ty: 0 },
+          { t: 4.1, opacity: 1, ty: 0 },
+          { t: 4.55, opacity: 1, ty: -14 },
+          { t: 5, opacity: 1, ty: 0 },
+          { t: 5.9, opacity: 1, ty: 0 },
+          { t: 6.3, opacity: 1, ty: -10 },
+          { t: 6.7, opacity: 1, ty: 0 },
+          { t: 7.7, opacity: 1, ty: 0 },
+          { t: 8.4, opacity: 0, ty: 0 },
+          { t: 9, opacity: 0, ty: 0 },
+        ],
+        time,
+        { t: 0, opacity: 0, ty: 0 },
+      )
+  layers['overlay:australia_cork_hat'] = layer({ opacity: hat.opacity })
+  layers['prop:sydney_opera_house'] = layer({ opacity: opera.opacity })
+  layers['prop:australia_kangaroo'] = layer({ opacity: kangaroo.opacity, ty: kangaroo.ty })
+  return pose(face, layers, time >= 7.1 && time <= 7.7, '46')
 }
