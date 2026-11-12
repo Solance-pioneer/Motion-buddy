@@ -12,7 +12,8 @@ describe('genre pack', () => {
     expect(genreById('emo')).toMatchObject({ pack: 'punk', feature: 'genre-punk' })
     expect(genreById('punk')?.feature).toBe('genre-punk')
     expect(genreById('reggae')?.grid).toBe('offbeat')
-    expect(genreById('metal')?.reaction).toBe('headbang')
+    expect(genreById('metal')).toMatchObject({ reaction: 'headbang', strobe: true })
+    expect(['reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie'].every((id) => genreById(id))).toBe(true)
     for (const genre of GENRE_PACK) {
       expect(genre.feature).toBe(`genre-${genre.pack}`)
       expect(genre.tier).toBe('premium')

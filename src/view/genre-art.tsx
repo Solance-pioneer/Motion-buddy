@@ -112,7 +112,7 @@ export const GENRE_ART: Record<GenreLook, () => ReactNode> = {
     <>
       <path d="M22 20 H78" stroke="#b9bec8" strokeWidth="2.4" strokeLinecap="round" />
       <path d="M30 20 l-1 -4 M42 20 l-1 -5 M54 20 l-1 -5 M66 20 l-1 -4" stroke="#eceff4" strokeWidth="1.2" />
-      <path d="M74 28 l6 -8 l-2 8 l6 2 l-8 2 z" fill="#f2f4f8" />
+      <path data-flash d="M74 28 l6 -8 l-2 8 l6 2 l-8 2 z" fill="#f2f4f8" />
     </>
   ),
   latin: () => (
