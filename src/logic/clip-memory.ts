@@ -1,3 +1,4 @@
+import { ADMIN_KEY, adminFromStorage, adminToStorage } from './admin-flag.ts'
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
 import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
@@ -73,5 +74,21 @@ export function writeSpeechEnabled(enabled: boolean): void {
     localStorage.setItem(SPEECH_KEY, speechToStorage(enabled))
   } catch {
     // The switch still applies until the page closes.
+  }
+}
+
+export function readAdminEnabled(): boolean {
+  try {
+    return adminFromStorage(localStorage.getItem(ADMIN_KEY))
+  } catch {
+    return false
+  }
+}
+
+export function writeAdminEnabled(on: boolean): void {
+  try {
+    localStorage.setItem(ADMIN_KEY, adminToStorage(on))
+  } catch {
+    // The flag still applies until the page closes.
   }
 }

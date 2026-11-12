@@ -27,11 +27,14 @@ describe('idle controls', () => {
 
   it('puts Clips in the menu and does not keep a standalone Clips button', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
-    const menu = readFileSync('src/view/Controls.tsx', 'utf8')
+    const menu = readFileSync('src/view/AdminMenu.tsx', 'utf8')
+    const user = readFileSync('src/view/Controls.tsx', 'utf8')
     const css = readFileSync('src/styles.css', 'utf8')
     expect(app.includes('clip-gallery-open')).toBe(false)
     expect(menu.includes('>Clips<')).toBe(true)
     expect(menu.includes('onOpenClips')).toBe(true)
+    expect(user.includes('>Clips<')).toBe(false)
+    expect(user.includes('>Admin<')).toBe(true)
     expect(app.includes('setGalleryOpen(true)')).toBe(true)
     expect(app.includes('if (step.singleTap) confirmSingle()')).toBe(true)
     expect(app.includes("data-chrome={chromeOn ? 'on' : 'off'}")).toBe(true)

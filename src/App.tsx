@@ -6,6 +6,7 @@ import { FaceBlend } from './view/features.ts'
 import { glanceOffset } from './view/glance.ts'
 import { accentById, type AccentId } from './view/accents.ts'
 import { Controls } from './view/Controls.tsx'
+import { AdminMenu } from './view/AdminMenu.tsx'
 import { Face } from './view/Face.tsx'
 import { CountryBackdrop, CountryEagle } from './view/country-art.tsx'
 import flagsRaw from './assets/drive-audio-v1/svg/race_flags.svg?raw'
@@ -21,7 +22,8 @@ import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readIdleGapSeconds, readMorningDay, readSpeechEnabled, readWeatherMoods, writeIdleGapSeconds, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readAdminEnabled, readIdleGapSeconds, readMorningDay, readSpeechEnabled, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { adminFromSearch } from './logic/admin-flag.ts'
 import { initialSpeechClock, offerSpeech, SPEECH_VISIBLE_MS, type SpeechKind } from './logic/speech.ts'
 import {
   activeWeather,
@@ -174,6 +176,13 @@ export function App() {
   const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
+  const [adminOn] = useState(() => {
+    const stored = readAdminEnabled()
+    const decided = adminFromSearch(window.location.search, stored)
+    if (decided.persist) writeAdminEnabled(decided.on)
+    return decided.on
+  })
+  const [adminOpen, setAdminOpen] = useState(false)
   const [chromeOn, setChromeOn] = useState(true)
   const [chromePulse, setChromePulse] = useState(0)
   const wakeChrome = () => setChromePulse((n) => n + 1)
@@ -1442,17 +1451,19 @@ export function App() {
 
   const closeControls = useCallback(() => {
     setOpen(false)
+    setAdminOpen(false)
     requestAnimationFrame(() => faceButtonRef.current?.focus())
   }, [])
 
-  const showHint = hintOn && !seenControls && !open
+  const menuOpen = open || adminOpen
+  const showHint = hintOn && !seenControls && !menuOpen
   const live = view.reaction !== 'none'
     ? `Motion Buddy looks ${view.reaction}.`
     : view.presence === 'rest' && view.wakefulness < 0.5
       ? 'Motion Buddy is resting.'
       : `Motion Buddy looks ${view.expression}.`
 
-  openRef.current = open
+  openRef.current = menuOpen
   const shownClipGen = clipGen.current
   const primeClipVideo = () => {
     const video = clipVideo.current
@@ -1477,7 +1488,7 @@ export function App() {
       <main
         ref={rootRef}
         className="app"
-        data-controls={open ? 'open' : 'closed'}
+        data-controls={menuOpen ? 'open' : 'closed'}
         data-chrome={chromeOn ? 'on' : 'off'}
         data-motion={tilt.status}
         data-tilt={tilt.signals.tilt ? 'live' : 'off'}
@@ -1503,11 +1514,11 @@ export function App() {
         type="button"
         className="face-button"
         aria-label={openerName(coarse)}
-        aria-expanded={open}
+        aria-expanded={menuOpen}
         aria-controls="buddy-controls"
         aria-haspopup="dialog"
-        tabIndex={open ? -1 : 0}
-        inert={open}
+        tabIndex={menuOpen ? -1 : 0}
+        inert={menuOpen}
         onKeyDown={(event) => {
           if (event.key !== 'Enter' && event.key !== ' ') return
           event.preventDefault()
@@ -1574,6 +1585,7 @@ export function App() {
           if (step.openMenu) {
             setSeenControls(true)
             setHintOn(false)
+            setAdminOpen(false)
             setOpen(true)
           }
         }}
@@ -1613,7 +1625,7 @@ export function App() {
           </span>
         ) : null}
       </button>
-      {!open ? (
+      {!menuOpen ? (
         <div className="screen-chips">
         <button
           type="button"
@@ -1688,7 +1700,7 @@ export function App() {
         </button>
         </div>
       ) : null}
-      {!open ? (
+      {!menuOpen ? (
         <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
           <svg viewBox="0 0 100 100">
             <path d="M58 8 L42 46 H54 L40 92 L70 42 H56 Z" fill="#7eb6ff" />
@@ -1696,7 +1708,7 @@ export function App() {
           </svg>
         </div>
       ) : null}
-      {askForMotion && !open ? (
+      {askForMotion && !menuOpen ? (
         <div className="launch">
           <button
             type="button"
@@ -1734,12 +1746,10 @@ onClick={() => {
           wakeLock={wakeLock.status}
           reduced={view.reduced}
           onClose={closeControls}
-          onOpenClips={() => {
+          showAdmin={adminOn}
+          onOpenAdmin={() => {
             setOpen(false)
-            setGalleryOpen(true)
-          }}
-          onPlayScene={(key) => {
-            beginScene(key)
+            setAdminOpen(true)
           }}
           onPresence={(presence) => {
             engine.setPresence(presence)
@@ -1848,14 +1858,6 @@ onClick={() => {
             engine.setReactionEnabled(kind, enabled)
             publish(engine.snapshot())
           }}
-          onPreviewGlance={() => {
-            engine.previewGlance(1)
-            publish(engine.snapshot())
-          }}
-          onPreviewReaction={(kind) => {
-            engine.previewReaction(kind)
-            publish(engine.snapshot())
-          }}
           onEnableMotion={() => {
             setPromptDone(true)
             void tilt.enable()
@@ -1863,10 +1865,6 @@ onClick={() => {
           onStopMotion={() => {
             setPromptDone(true)
             tilt.stop()
-          }}
-          onPreviewWake={() => {
-            engine.previewWake()
-            publish(engine.snapshot())
           }}
           onToggleWakeLock={wakeLock.toggle}
           weatherOn={weatherOn && isUnlocked('weather-moods')}
@@ -1914,6 +1912,34 @@ onClick={() => {
                 playBleep('ack')
               }
             }
+          }}
+        />
+      ) : null}
+      {adminOpen ? (
+        <AdminMenu
+          presence={view.presence}
+          allowStartled={view.allowStartled}
+          allowDizzy={view.allowDizzy}
+          onClose={closeControls}
+          onOpenClips={() => {
+            setOpen(false)
+            setAdminOpen(false)
+            setGalleryOpen(true)
+          }}
+          onPlayScene={(key) => {
+            beginScene(key)
+          }}
+          onPreviewWake={() => {
+            engine.previewWake()
+            publish(engine.snapshot())
+          }}
+          onPreviewGlance={() => {
+            engine.previewGlance(1)
+            publish(engine.snapshot())
+          }}
+          onPreviewReaction={(kind) => {
+            engine.previewReaction(kind)
+            publish(engine.snapshot())
           }}
         />
       ) : null}

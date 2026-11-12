@@ -1,6 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import type { Presence, Selection } from '../logic/engine.ts'
-import type { SceneKey } from '../logic/scenes.ts'
 import { POSE_IDS, type PoseId, type Profile } from '../logic/library.ts'
 import type { ReactionKind, Sensitivity } from '../logic/reactions.ts'
 import { ACCENTS, type AccentId } from './accents.ts'
@@ -48,8 +47,8 @@ export function Controls({
   wakeLock,
   reduced,
   onClose,
-  onOpenClips,
-  onPlayScene,
+  showAdmin,
+  onOpenAdmin,
   onPresence,
   onProfile,
   onCarNeutral,
@@ -70,9 +69,6 @@ export function Controls({
   soundOn,
   soundAvailable,
   onToggleSound,
-  onPreviewWake,
-  onPreviewGlance,
-  onPreviewReaction,
   onToggleWakeLock,
   weatherOn,
   onToggleWeather,
@@ -91,8 +87,8 @@ export function Controls({
   wakeLock: WakeLockUi
   reduced: boolean
   onClose: () => void
-  onOpenClips: () => void
-  onPlayScene: (key: SceneKey) => void
+  showAdmin: boolean
+  onOpenAdmin: () => void
   onPresence: (presence: Presence) => void
   onProfile: (profile: Profile) => void
   onCarNeutral: () => void
@@ -109,9 +105,6 @@ export function Controls({
   soundOn: boolean
   soundAvailable: boolean
   onToggleSound: () => void
-  onPreviewWake: () => void
-  onPreviewGlance: () => void
-  onPreviewReaction: (kind: ReactionKind) => void
   onToggleWakeLock: () => void
   weatherOn: boolean
   onToggleWeather: () => void
@@ -147,6 +140,7 @@ export function Controls({
         role="dialog"
         aria-modal="true"
         aria-labelledby="controls-title"
+        data-menu-panel
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => trapTab(event, panelRef.current)}
       >
@@ -160,10 +154,12 @@ export function Controls({
           </button>
         </div>
 
-        <fieldset>
-          <legend>Clips</legend>
-          <button type="button" onClick={onOpenClips}>Clips</button>
-        </fieldset>
+        {showAdmin ? (
+          <fieldset>
+            <legend>Testing</legend>
+            <button type="button" onClick={onOpenAdmin}>Admin</button>
+          </fieldset>
+        ) : null}
 
         <fieldset>
           <legend>Where it is</legend>
@@ -191,17 +187,6 @@ export function Controls({
               <p className="note">{carTiltStatus(motionStatus, reduced)}</p>
             </>
           ) : null}
-        </fieldset>
-
-        <fieldset>
-          <legend>Dress-up scenes</legend>
-          <div className="choice-row">
-            <button type="button" onClick={() => onPlayScene('ninja')}>Ninja peek</button>
-            <button type="button" onClick={() => onPlayScene('cord_hero')}>Rope hero</button>
-            <button type="button" onClick={() => onPlayScene('racer')}>Little racer</button>
-            <button type="button" onClick={() => onPlayScene('sheet_ghost')}>Sheet ghost</button>
-          </div>
-          <p className="note">Each scene plays through, then Buddy is plain again. Little racer is that short scene. Race turns on Car tilt and is not Little racer. Mute still silences a scene.</p>
         </fieldset>
 
         <fieldset>
@@ -296,17 +281,6 @@ export function Controls({
             </button>
           </div>
           <p className="note">Off until you turn it on. Location is rounded and used only for the weather reading.</p>
-        </fieldset>
-
-        <fieldset>
-          <legend>Simulation, not the sensor</legend>
-          <div className="choice-grid">
-            <button type="button" onClick={onPreviewGlance}>Simulated glance</button>
-            <button type="button" onClick={() => onPreviewReaction('startled')} disabled={!allowStartled}>Simulate worried</button>
-            <button type="button" onClick={() => onPreviewReaction('dizzy')} disabled={!allowDizzy}>Simulate dizzy</button>
-            <button type="button" onClick={onPreviewWake} disabled={presence !== 'rest'}>Preview wake</button>
-          </div>
-          <p className="note">These try the faces without a sensor. They do not mean motion is on.</p>
         </fieldset>
 
         <fieldset>
