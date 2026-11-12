@@ -9,14 +9,24 @@ import {
   CAR_TURN_LATERAL,
   CLIP_ROWS,
   TOUCH_SUPPRESS_MS,
+  IDLE_CLIP_WEIGHT,
+  IDLE_FIRST_DELAY_MS,
+  IDLE_GAP_DEFAULT_S,
+  advanceIdleWait,
   carClipFor,
+  chooseIdleAction,
   chooseScheduledClip,
+  clampIdleGapSeconds,
   classifyCarMotion,
   clipById,
   costumeClipId,
   driveWasReal,
   goodnightDue,
   idleBlocked,
+  idleGapMs,
+  idleGapSecondsFromStorage,
+  idleGapToStorage,
+  idleWaitMs,
   inDateWindow,
   jamDue,
   morningDue,
@@ -71,9 +81,13 @@ describe('batch clip table', () => {
     expect(uk.clips).toEqual(['teleport', 'uk-guard'])
     expect(uk.sceneAfter).toBe(false)
     expect(portalPlan('japan_bow', true)).toEqual({ clips: [], sceneAfter: true })
-    const idle = nextIdleClip(null, 0)
-    expect(idle).toBeTruthy()
-    expect(['superhero-idle', 'racer-idle', 'ninja-idle', 'ghost-idle']).not.toContain(idle)
+    const seen = new Set<string>()
+    for (let i = 0; i < 400; i += 1) seen.add(nextIdleClip(null, i / 400) ?? '')
+    expect(seen.has('superhero-idle')).toBe(true)
+    expect(seen.has('sneeze')).toBe(true)
+    expect(seen.has('racer-idle')).toBe(false)
+    expect(seen.has('ninja-idle')).toBe(false)
+    expect(seen.has('ghost-idle')).toBe(false)
   })
 
   it('ships the approved mp4 bytes and leaves the held-back names out', () => {
@@ -202,5 +216,61 @@ describe('batch clip table', () => {
     expect(chooseScheduledClip({ ...base, date, morningStored: null, guard: 'rush' })).toBeNull()
     expect(chooseScheduledClip({ ...base, date, morningStored: null, reduced: true })).toBeNull()
     expect(chooseScheduledClip({ ...base, date, morningStored: null })).toBe('good-morning')
+  })
+
+  it('weights idle picks toward clips and keeps reduced motion coded', () => {
+    expect(IDLE_CLIP_WEIGHT).toBe(0.8)
+    let clips = 0
+    const picks = 1_000
+    let previous: string | null = null
+    for (let i = 0; i < picks; i += 1) {
+      const action = chooseIdleAction(i / picks, false, previous, (i * 17) % 100 / 100)
+      if (action.kind === 'clip') {
+        clips += 1
+        expect(action.id).not.toBe(previous)
+        previous = action.id
+      } else previous = null
+    }
+    expect(clips).toBe(800)
+    for (let i = 0; i < 40; i += 1) {
+      expect(chooseIdleAction(i / 40, true, null, 0.2)).toEqual({ kind: 'coded' })
+    }
+    const first = chooseIdleAction(0, false, null, 0)
+    const second = chooseIdleAction(0, false, first.kind === 'clip' ? first.id : null, 0)
+    expect(first.kind).toBe('clip')
+    expect(second.kind).toBe('clip')
+    if (first.kind === 'clip' && second.kind === 'clip') expect(second.id).not.toBe(first.id)
+  })
+
+  it('defaults the idle gap to 5s, rejects bad values, and waits that long for both kinds', () => {
+    expect(IDLE_GAP_DEFAULT_S).toBe(5)
+    expect(clampIdleGapSeconds(undefined)).toBe(5)
+    expect(clampIdleGapSeconds('nope')).toBe(5)
+    expect(clampIdleGapSeconds(2)).toBe(5)
+    expect(clampIdleGapSeconds(61)).toBe(5)
+    expect(clampIdleGapSeconds(8)).toBe(8)
+    expect(idleGapSecondsFromStorage(null)).toBe(5)
+    expect(idleGapSecondsFromStorage('')).toBe(5)
+    expect(idleGapSecondsFromStorage('not-json')).toBe(5)
+    expect(idleGapSecondsFromStorage('{"seconds":2}')).toBe(5)
+    expect(idleGapSecondsFromStorage(idleGapToStorage(12))).toBe(12)
+    expect(idleGapSecondsFromStorage(idleGapToStorage(100))).toBe(5)
+    expect(idleGapMs(5)).toBe(5_000)
+    expect(idleWaitMs(5_000, false)).toBe(5_000)
+    expect(idleWaitMs(60_000, false)).toBe(60_000)
+    expect(idleWaitMs(60_000, true)).toBe(IDLE_FIRST_DELAY_MS)
+    expect(idleWaitMs(3_000, true)).toBe(3_000)
+    const gap = 12_000
+    expect(advanceIdleWait({ elapsed: 11_000, first: false }, 999, gap, 0, 20_000).due).toBe(false)
+    const clipWait = advanceIdleWait({ elapsed: 11_000, first: false }, 1_000, gap, 0, 20_000)
+    const codedWait = advanceIdleWait({ elapsed: 11_000, first: false }, 1_000, gap, 0, 20_000)
+    expect(clipWait.due).toBe(true)
+    expect(codedWait.due).toBe(true)
+    expect(chooseIdleAction(0.1, false, null, 0.3).kind).toBe('clip')
+    expect(chooseIdleAction(0.9, false, null, 0.3).kind).toBe('coded')
+    const cooled = advanceIdleWait({ elapsed: 9_000, first: false }, 1_000, gap, 20_000, 10_000)
+    expect(cooled).toEqual({ clock: { elapsed: 0, first: true }, due: false })
+    expect(advanceIdleWait(cooled.clock, IDLE_FIRST_DELAY_MS, 60_000, 0, 30_000).due).toBe(true)
+    expect(advanceIdleWait(cooled.clock, IDLE_FIRST_DELAY_MS - 1, 60_000, 0, 30_000).due).toBe(false)
   })
 })

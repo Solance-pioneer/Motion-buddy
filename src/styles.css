@@ -513,6 +513,29 @@ button:focus-visible {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
+.idle-gap {
+  display: grid;
+  gap: 4px;
+}
+
+.idle-gap label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.idle-gap input[type='range'] {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  accent-color: var(--sage);
+  touch-action: manipulation;
+}
+
 .note, .help {
   margin: 0;
   color: var(--muted);

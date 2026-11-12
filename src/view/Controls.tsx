@@ -7,6 +7,7 @@ import { ACCENTS, type AccentId } from './accents.ts'
 import type { FaceStyle } from './applyPose.ts'
 import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
+import { IDLE_GAP_MAX_S, IDLE_GAP_MIN_S } from '../logic/clip-table.ts'
 
 const EXPRESSION_LABEL: Record<PoseId, string> = {
   curious: 'Curious',
@@ -61,6 +62,8 @@ export function Controls({
   onToggleReaction,
   onEnableMotion,
   onStopMotion,
+  idleGapSeconds,
+  onIdleGap,
   soundOn,
   soundAvailable,
   onToggleSound,
@@ -108,6 +111,8 @@ export function Controls({
   onToggleWakeLock: () => void
   weatherOn: boolean
   onToggleWeather: () => void
+  idleGapSeconds: number
+  onIdleGap: (seconds: number) => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -310,6 +315,30 @@ export function Controls({
               </button>
             ))}
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Idle</legend>
+          <div className="idle-gap">
+            <label htmlFor="idle-gap">
+              Time between idle animations
+              <span>{idleGapSeconds} s</span>
+            </label>
+            <input
+              id="idle-gap"
+              type="range"
+              min={IDLE_GAP_MIN_S}
+              max={IDLE_GAP_MAX_S}
+              step={1}
+              value={idleGapSeconds}
+              aria-valuemin={IDLE_GAP_MIN_S}
+              aria-valuemax={IDLE_GAP_MAX_S}
+              aria-valuenow={idleGapSeconds}
+              aria-valuetext={`${idleGapSeconds} s`}
+              onChange={(event) => onIdleGap(Number(event.target.value))}
+            />
+          </div>
+          <p className="note">The first idle after the page opens, and the first one after a touch, still arrives within a few seconds.</p>
         </fieldset>
 
         <fieldset>

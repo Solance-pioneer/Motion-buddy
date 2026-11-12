@@ -18,23 +18,25 @@ import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
 import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
-import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, SCENE_GAP_MS, type SceneKey } from './logic/scenes.ts'
+import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, sceneClipMuted, type SceneClip } from './logic/scene-clip.ts'
-import { readMorningDay, readWeatherMoods, writeMorningDay, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readIdleGapSeconds, readMorningDay, readWeatherMoods, writeIdleGapSeconds, writeMorningDay, writeWeatherMoods } from './logic/clip-memory.ts'
 import {
   activeWeather,
   carClipFor,
+  advanceIdleWait,
+  chooseIdleAction,
   chooseScheduledClip,
+  clampIdleGapSeconds,
   classifyCarMotion,
   clipById,
   CLIP_ROWS,
   costumeClipId,
   driveWasReal,
-  idleBlocked,
+  idleGapMs,
   jamDue,
   localYmd,
-  nextIdleClip,
   nextRaceFilm,
   noteInteraction,
   portalPlan,
@@ -167,6 +169,9 @@ export function App() {
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
   const [soundOn, setSoundOn] = useState(true)
+  const [idleGapSeconds, setIdleGapSeconds] = useState(() => readIdleGapSeconds())
+  const idleGapRef = useRef(idleGapSeconds)
+  idleGapRef.current = idleGapSeconds
   const [soundReady, setSoundReady] = useState(false)
   const heard = useRef<SoundMemory>(initialSoundMemory())
   const moves = useRef<MoveClock>(initialMoveClock())
@@ -189,7 +194,7 @@ export function App() {
     carStillSince: 0,
     lastSchedule: 0,
     token: 0,
-    idleTurn: false,
+    idleFirst: true,
     raceTurn: 0,
     follow: null as null | { onEnd?: () => void; onFail?: () => void },
   })
@@ -542,27 +547,37 @@ export function App() {
           }
         }
       }
-      if (quiet) {
-        calmRef.current += dt
-        if (calmRef.current >= SCENE_GAP_MS) {
-          calmRef.current = 0
-          const now = performance.now()
-          const turnClip = hold.idleTurn
-          hold.idleTurn = !turnClip
-          if (turnClip && !engine.snapshot().reduced && !hold.guard && !idleBlocked(hold.suppressUntil, now)) {
-            const idleId = nextIdleClip(hold.lastIdle, Math.random())
-            if (idleId) {
-              startBatchRef.current(idleId)
+      if (quiet && !hold.guard) {
+        const now = performance.now()
+        const stepped = advanceIdleWait(
+          { elapsed: calmRef.current, first: hold.idleFirst },
+          dt,
+          idleGapMs(idleGapRef.current),
+          hold.suppressUntil,
+          now,
+        )
+        calmRef.current = stepped.clock.elapsed
+        hold.idleFirst = stepped.clock.first
+        if (stepped.due) {
+          const reduced = engine.snapshot().reduced
+          const action = chooseIdleAction(Math.random(), reduced, hold.lastIdle, Math.random())
+          if (action.kind === 'clip') {
+            const key = nextAmbientScene(lastScene.current)
+            const ok = startBatchRef.current(action.id, false, { onFail: () => beginScene(key) })
+            if (ok) {
+              hold.lastIdle = action.id
               return
             }
           }
           if (!hold.guard) {
             const key = nextAmbientScene(lastScene.current)
-            const clipId = engine.snapshot().reduced ? null : costumeClipId(key)
+            const clipId = reduced ? null : costumeClipId(key)
             if (clipId) {
               const started = startBatchRef.current(clipId, false, { onFail: () => beginScene(key) })
-              if (started) lastScene.current = key
-              else beginScene(key)
+              if (started) {
+                lastScene.current = key
+                hold.lastIdle = clipId
+              } else beginScene(key)
             } else beginScene(key)
           }
         }
@@ -1616,6 +1631,13 @@ onClick={() => {
             setWeatherOn(next)
             writeWeatherMoods(next)
             if (!next) setWeather(null)
+          }}
+          idleGapSeconds={idleGapSeconds}
+          onIdleGap={(seconds) => {
+            const next = clampIdleGapSeconds(seconds)
+            setIdleGapSeconds(next)
+            idleGapRef.current = next
+            writeIdleGapSeconds(next)
           }}
           soundOn={soundOn}
           soundAvailable={soundAvailable}

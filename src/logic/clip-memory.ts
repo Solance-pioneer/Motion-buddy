@@ -1,5 +1,10 @@
+import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
+
 const MORNING_KEY = 'mb-morning-day'
 const WEATHER_KEY = 'mb-weather-moods'
+
+/** JSON `{ seconds }` , same pattern as the remembered mute record. */
+export const IDLE_GAP_KEY = 'motion-buddy-idle-gap-v1'
 
 /** The only stored value is the local date, such as 2026-11-12. */
 export function readMorningDay(): string | null {
@@ -32,5 +37,21 @@ export function writeWeatherMoods(on: boolean): void {
     localStorage.setItem(WEATHER_KEY, on ? '1' : '0')
   } catch {
     // The switch still applies until the page closes.
+  }
+}
+
+export function readIdleGapSeconds(): number {
+  try {
+    return idleGapSecondsFromStorage(localStorage.getItem(IDLE_GAP_KEY))
+  } catch {
+    return IDLE_GAP_DEFAULT_S
+  }
+}
+
+export function writeIdleGapSeconds(seconds: number): void {
+  try {
+    localStorage.setItem(IDLE_GAP_KEY, idleGapToStorage(seconds))
+  } catch {
+    // The slider still applies until the page closes.
   }
 }

@@ -263,8 +263,36 @@ export function chooseScheduledClip(input: ScheduleInput): string | null {
   return null
 }
 
+/** Share of idle turns that play a clip. The rest are coded costumes. */
+export const IDLE_CLIP_WEIGHT = 0.8
+
+/** Seconds between successive idle animations. Invalid stored values fall back to this. */
+export const IDLE_GAP_DEFAULT_S = 5
+export const IDLE_GAP_MIN_S = 3
+export const IDLE_GAP_MAX_S = 60
+
+/**
+ * Cap on the wait before the first idle after load, and before the first idle
+ * after TOUCH_SUPPRESS_MS ends. The old wait was SCENE_GAP_MS (7000) for every
+ * gap, including the first. The wait used is min(the user's gap, this), so a
+ * 60s setting still shows an idle within 4s of load or of the cooldown ending.
+ */
+export const IDLE_FIRST_DELAY_MS = 4_000
+
+export type IdleAction = { kind: 'clip'; id: string } | { kind: 'coded' }
+
+export interface IdleWaitClock {
+  elapsed: number
+  first: boolean
+}
+
+/** Emotion and activity films, plus superhero-idle. Racer-idle stays on the coded racer turn. */
+function idleClipRows(): ClipRow[] {
+  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle'))
+}
+
 export function nextIdleClip(previous: string | null, random = 0): string | null {
-  const pool = CLIP_ROWS.filter((row) => row.trigger === 'idle' && rowOpen(row))
+  const pool = idleClipRows()
   if (pool.length === 0) return null
   const start = Math.abs(Math.floor(random * pool.length)) % pool.length
   for (let step = 0; step < pool.length; step += 1) {
@@ -272,6 +300,68 @@ export function nextIdleClip(previous: string | null, random = 0): string | null
     if (row.id !== previous) return row.id
   }
   return null
+}
+
+/** Reduced motion is always a coded idle, so the weight cannot leave a blank gap. */
+export function chooseIdleAction(weightRandom: number, reduced: boolean, previous: string | null, clipRandom = 0): IdleAction {
+  if (!reduced && weightRandom < IDLE_CLIP_WEIGHT) {
+    const id = nextIdleClip(previous, clipRandom)
+    if (id) return { kind: 'clip', id }
+  }
+  return { kind: 'coded' }
+}
+
+export function clampIdleGapSeconds(value: unknown): number {
+  const n = typeof value === 'number' ? value : typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN
+  if (!Number.isFinite(n)) return IDLE_GAP_DEFAULT_S
+  const rounded = Math.round(n)
+  if (rounded < IDLE_GAP_MIN_S || rounded > IDLE_GAP_MAX_S) return IDLE_GAP_DEFAULT_S
+  return rounded
+}
+
+/** Same shape as the remembered mute record: one JSON object. */
+export function idleGapToStorage(seconds: number): string {
+  return JSON.stringify({ seconds: clampIdleGapSeconds(seconds) })
+}
+
+export function idleGapSecondsFromStorage(raw: string | null): number {
+  if (!raw) return IDLE_GAP_DEFAULT_S
+  try {
+    const parsed = JSON.parse(raw) as { seconds?: unknown }
+    if (!parsed || typeof parsed !== 'object') return IDLE_GAP_DEFAULT_S
+    return clampIdleGapSeconds(parsed.seconds)
+  } catch {
+    return IDLE_GAP_DEFAULT_S
+  }
+}
+
+export function idleGapMs(seconds: number): number {
+  return clampIdleGapSeconds(seconds) * 1_000
+}
+
+/** Later idles use the full gap. The first one after load or a touch cooldown stays short. */
+export function idleWaitMs(gapMs: number, first: boolean): number {
+  const gap = idleGapMs(gapMs / 1_000)
+  if (!first) return gap
+  return Math.min(gap, IDLE_FIRST_DELAY_MS)
+}
+
+/**
+ * One clock for clip idles and coded idles. While a touch suppress is active the
+ * elapsed time stays at 0 and the next idle is treated as a first idle.
+ */
+export function advanceIdleWait(
+  clock: IdleWaitClock,
+  dt: number,
+  gapMs: number,
+  suppressUntil: number,
+  now: number,
+): { clock: IdleWaitClock; due: boolean } {
+  if (now < suppressUntil) return { clock: { elapsed: 0, first: true }, due: false }
+  const elapsed = clock.elapsed + dt
+  const wait = idleWaitMs(gapMs, clock.first)
+  if (elapsed >= wait) return { clock: { elapsed: 0, first: false }, due: true }
+  return { clock: { elapsed, first: clock.first }, due: false }
 }
 
 export function classifyCarMotion(magnitude: number, lateral: number): 'bump' | 'turn' | null {
