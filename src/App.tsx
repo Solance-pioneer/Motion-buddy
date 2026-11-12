@@ -58,7 +58,8 @@ import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipFadeMs, clipMayUnmute, cl
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
-import { DOUBLE_MS, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
+import { initialTouch, touchCancel, touchDown, touchMove, touchUp, type TouchClock } from './logic/touch.ts'
+import { CONTROLS_IDLE_MS } from './logic/controls-chrome.ts'
 
 function featureInset(svg: SVGSVGElement, size: number) {
   const glance = svg.querySelector('[data-part="glance"]') as SVGGraphicsElement | null
@@ -172,6 +173,9 @@ export function App() {
   const styleRef = useRef(style)
   const [coarse, setCoarse] = useState(() => window.matchMedia('(pointer: coarse)').matches)
   const [hintOn, setHintOn] = useState(true)
+  const [chromeOn, setChromeOn] = useState(true)
+  const [chromePulse, setChromePulse] = useState(0)
+  const wakeChrome = () => setChromePulse((n) => n + 1)
   const [soundOn, setSoundOn] = useState(true)
   const soundOnRef = useRef(soundOn)
   soundOnRef.current = soundOn
@@ -190,7 +194,6 @@ export function App() {
   const faceTaps = useRef<TapClock>(initialTapClock())
   const touch = useRef<TouchClock>(initialTouch())
   const originalArm = useRef<CueArm | null>(null)
-  const tapTimer = useRef(0)
   const pet = useRef({ x: 0, y: 0, sx: 1, sy: 1, ox: 0.5, oy: 0.5, tx: 0, ty: 0, tsx: 1, tsy: 1, tox: 0.5, toy: 0.5, nx: 0, ny: 0, px: 0, py: 0, squeeze: 1, wide: 1, onFace: false, mode: 'chase' as PetMode, dragging: false, downAt: 0, sounded: false, tucked: false, boopUntil: 0 })
   const sceneTickRef = useRef<(dt: number) => void>(() => {})
   const batchHold = useRef({
@@ -969,9 +972,6 @@ export function App() {
     }
   }, [soundOn])
   const confirmSingle = useCallback(() => {
-    const step = touchExpire(touch.current, performance.now())
-    touch.current = step.clock
-    if (!step.singleTap) return
     const status = soundStatus()
     const state = engine.snapshot()
     const tap = noteFaceTap(faceTaps.current, {
@@ -1301,6 +1301,13 @@ export function App() {
   }, [muteLit, soundOn])
 
   useEffect(() => {
+    if (open) return
+    setChromeOn(true)
+    const id = window.setTimeout(() => setChromeOn(false), CONTROLS_IDLE_MS)
+    return () => window.clearTimeout(id)
+  }, [chromePulse, open])
+
+  useEffect(() => {
     loadSoundPrefs()
     setSoundAvailable(soundStatus().available)
     setSoundOn(!soundStatus().muted)
@@ -1451,6 +1458,7 @@ export function App() {
         ref={rootRef}
         className="app"
         data-controls={open ? 'open' : 'closed'}
+        data-chrome={chromeOn ? 'on' : 'off'}
         data-motion={tilt.status}
         data-tilt={tilt.signals.tilt ? 'live' : 'off'}
         data-movement={tilt.signals.movement ? 'live' : 'off'}
@@ -1492,6 +1500,7 @@ export function App() {
         }}
         onPointerDown={(event) => {
           if (event.button !== 0) return
+          wakeChrome()
           primeClipVideo()
           heldRef.current = true
           if (sceneRef.current || waitRelease.current) return
@@ -1502,7 +1511,6 @@ export function App() {
           pet.current.tucked = false
           const step = touchDown(touch.current, event.clientX, event.clientY, performance.now())
           touch.current = step.clock
-          window.clearTimeout(tapTimer.current)
           event.currentTarget.setPointerCapture(event.pointerId)
         }}
         onPointerMove={(event) => {
@@ -1542,13 +1550,12 @@ export function App() {
           pet.current.tucked = false
           releasePet()
           engine.feedLook(0, 0)
+          if (step.singleTap) confirmSingle()
           if (step.openMenu) {
             setSeenControls(true)
             setHintOn(false)
             setOpen(true)
-            return
           }
-          if (step.clock.pendingTapAt > 0) tapTimer.current = window.setTimeout(confirmSingle, DOUBLE_MS)
         }}
         onPointerCancel={() => {
           heldRef.current = false
@@ -1587,12 +1594,16 @@ export function App() {
         ) : null}
       </button>
       {!open ? (
+        <div className="screen-chips">
         <button
           type="button"
-          className="portal-chip"
+          className="screen-chip portal-chip"
           aria-label="Teleport"
           aria-disabled={sceneOn}
-          onPointerDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            wakeChrome()
+          }}
           onClick={() => {
             if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion || batchHold.current.guard) return
             unlockQuiet()
@@ -1625,24 +1636,21 @@ export function App() {
             playAt(0)
           }}
         >
+          <svg className="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2" fill="none" stroke="currentColor" strokeWidth="2" />
+          </svg>
           <span>Teleport</span>
         </button>
-      ) : null}
-      {!open ? (
-        <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
-          <svg viewBox="0 0 100 100">
-            <path d="M58 8 L42 46 H54 L40 92 L70 42 H56 Z" fill="#7eb6ff" />
-            <path d="M24 30 L16 50 H22 L14 72 L36 46 H28 Z" fill="#9cc7ff" opacity="0.75" />
-          </svg>
-        </div>
-      ) : null}
-      {(muteLit || !soundOn || sceneOn) && !open ? (
         <button
           type="button"
-          className="mute-chip"
+          className="screen-chip mute-chip"
           aria-pressed={!soundOn}
           aria-label={soundOn ? 'Mute' : 'Unmute'}
-          onPointerDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            wakeChrome()
+          }}
           onClick={() => {
             unlockQuiet()
             const enable = !soundOn
@@ -1652,8 +1660,21 @@ export function App() {
             if (enable) playChirp()
           }}
         >
+          <svg className="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 10h3l4-4v12l-4-4H4z" fill="currentColor" />
+            {soundOn ? <path d="M16 9a5 5 0 0 1 0 6" fill="none" stroke="currentColor" strokeWidth="2" /> : <path d="M16 9l5 6M21 9l-5 6" fill="none" stroke="currentColor" strokeWidth="2" />}
+          </svg>
           <span>{soundOn ? 'Mute' : 'Unmute'}</span>
         </button>
+        </div>
+      ) : null}
+      {!open ? (
+        <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
+          <svg viewBox="0 0 100 100">
+            <path d="M58 8 L42 46 H54 L40 92 L70 42 H56 Z" fill="#7eb6ff" />
+            <path d="M24 30 L16 50 H22 L14 72 L36 46 H28 Z" fill="#9cc7ff" opacity="0.75" />
+          </svg>
+        </div>
       ) : null}
       {askForMotion && !open ? (
         <div className="launch">
@@ -1693,6 +1714,10 @@ onClick={() => {
           wakeLock={wakeLock.status}
           reduced={view.reduced}
           onClose={closeControls}
+          onOpenClips={() => {
+            setOpen(false)
+            setGalleryOpen(true)
+          }}
           onPlayScene={(key) => {
             beginScene(key)
           }}
@@ -1893,13 +1918,10 @@ onClick={() => {
           finishClip('end')
         }}
       />
-      {isUnlocked('clip-gallery') ? (
+      {isUnlocked('clip-gallery') && galleryOpen ? (
         <div className="clip-gallery" data-clip-gallery>
-          <button type="button" className="clip-gallery-open" aria-expanded={galleryOpen} onClick={() => setGalleryOpen((openNow) => !openNow)}>
-            Clips
-          </button>
-          {galleryOpen ? (
             <div className="clip-gallery-panel">
+              <button type="button" className="close" onClick={() => setGalleryOpen(false)}>Close</button>
               <p>Date</p>
               <div className="choice-row">
                 {(['normal', 'festive', 'new-year'] as const).map((mode) => (
@@ -1932,7 +1954,6 @@ onClick={() => {
                 })}
               </div>
             </div>
-          ) : null}
         </div>
       ) : null}
       <p className="sr-only" aria-live="polite">

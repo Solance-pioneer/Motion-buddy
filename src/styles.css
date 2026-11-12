@@ -218,50 +218,56 @@ body {
   color: #e8e8e8;
 }
 
-.mute-chip {
+.screen-chips {
   position: absolute;
   z-index: 4;
   top: max(8px, env(safe-area-inset-top));
   right: max(8px, env(safe-area-inset-right));
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.62);
-  font: 600 11px/1 system-ui, sans-serif;
-  opacity: 0.55;
-  touch-action: manipulation;
+  display: flex;
+  gap: 10px;
+  transition: opacity 220ms linear;
 }
 
-.mute-chip[aria-pressed='true'] {
-  opacity: 0.95;
-  color: #ffffff;
-}
-
-.portal-chip {
-  position: absolute;
-  z-index: 4;
-  top: max(8px, env(safe-area-inset-top));
-  right: calc(max(8px, env(safe-area-inset-right)) + 60px);
-  width: auto;
-  height: 48px;
-  min-width: 48px;
+.screen-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
   min-height: 44px;
-  padding: 0 10px;
-  border: 0;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
   border-radius: 999px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.78);
-  font: 600 12px/1 system-ui, sans-serif;
+  background: rgba(0, 0, 0, 0.62);
+  color: #ffffff;
+  font: 650 15px/1 system-ui, sans-serif;
   white-space: nowrap;
-  opacity: 0.72;
   touch-action: manipulation;
+}
+
+.chip-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 
 .portal-chip[aria-disabled='true'] {
-  opacity: 0.34;
+  opacity: 0.45;
+}
+
+.screen-chip[aria-pressed='true'] {
+  background: rgba(0, 0, 0, 0.72);
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.app[data-chrome='off'] .screen-chips {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.app[data-reduced='true'] .screen-chips {
+  transition: none;
 }
 
 .clip-gallery {
@@ -271,22 +277,11 @@ body {
   z-index: 6;
 }
 
-.clip-gallery-open {
-  min-width: 48px;
-  min-height: 32px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.55);
-  font: 600 11px/1 system-ui, sans-serif;
-  opacity: 0.7;
-}
-
 .clip-gallery-panel {
   position: fixed;
   left: 8px;
   right: 8px;
-  bottom: 48px;
+  bottom: max(8px, env(safe-area-inset-bottom));
   max-height: min(52vh, 420px);
   overflow: auto;
   z-index: 6;

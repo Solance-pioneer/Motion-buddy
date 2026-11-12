@@ -48,6 +48,7 @@ export function Controls({
   wakeLock,
   reduced,
   onClose,
+  onOpenClips,
   onPlayScene,
   onPresence,
   onProfile,
@@ -90,6 +91,7 @@ export function Controls({
   wakeLock: WakeLockUi
   reduced: boolean
   onClose: () => void
+  onOpenClips: () => void
   onPlayScene: (key: SceneKey) => void
   onPresence: (presence: Presence) => void
   onProfile: (profile: Profile) => void
@@ -157,6 +159,11 @@ export function Controls({
             Close
           </button>
         </div>
+
+        <fieldset>
+          <legend>Clips</legend>
+          <button type="button" onClick={onOpenClips}>Clips</button>
+        </fieldset>
 
         <fieldset>
           <legend>Where it is</legend>

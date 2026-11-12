@@ -74,15 +74,21 @@ export function touchUp(clock: TouchClock, now: number): TouchStep {
   if (clock.second) {
     return { clock: { ...clock, down: false, second: false, pendingTapAt: 0 }, openMenu: true, singleTap: false, chirp: false, dragging: false }
   }
-  return blank({ ...clock, down: false, pendingTapAt: now })
+  return {
+    clock: { ...clock, down: false, pendingTapAt: now },
+    openMenu: false,
+    singleTap: true,
+    chirp: true,
+    dragging: false,
+  }
 }
 
 export function touchCancel(clock: TouchClock): TouchStep {
   return blank({ ...initialTouch(), lastChirpAt: clock.lastChirpAt })
 }
 
-/** Confirm a waiting single tap once the double-tap window has passed. */
+/** The single tap already reacted on pointer-up. Expiry only forgets it so it cannot fire twice. */
 export function touchExpire(clock: TouchClock, now: number): TouchStep {
   if (clock.down || clock.pendingTapAt <= 0 || now - clock.pendingTapAt < DOUBLE_MS) return blank(clock)
-  return { clock: { ...clock, pendingTapAt: 0 }, openMenu: false, singleTap: true, chirp: true, dragging: false }
+  return { clock: { ...clock, pendingTapAt: 0 }, openMenu: false, singleTap: false, chirp: false, dragging: false }
 }

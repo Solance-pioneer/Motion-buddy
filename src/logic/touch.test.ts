@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { avoidFinger, DRAG_PX, initialTouch, touchCancel, touchDown, touchExpire, touchMove, touchUp } from './touch.ts'
 
 describe('touch gestures', () => {
-  it('waits, then treats one poke as a chirp and not a menu', () => {
+  it('treats one poke as a chirp immediately and does not repeat it later', () => {
     let clock = initialTouch()
     clock = touchDown(clock, 10, 10, 0).clock
     const up = touchUp(clock, 40)
     expect(up.openMenu).toBe(false)
-    expect(up.singleTap).toBe(false)
-    expect(up.chirp).toBe(false)
+    expect(up.singleTap).toBe(true)
+    expect(up.chirp).toBe(true)
     const done = touchExpire(up.clock, 400)
-    expect(done.singleTap).toBe(true)
-    expect(done.chirp).toBe(true)
+    expect(done.singleTap).toBe(false)
+    expect(done.chirp).toBe(false)
     expect(done.openMenu).toBe(false)
   })
 
