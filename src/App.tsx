@@ -25,7 +25,8 @@ import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITI
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readBeatFeel, readGenre, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
-import { genrePulse, type GenreId } from './logic/genres.ts'
+import { genreById, genrePulse, type GenreId } from './logic/genres.ts'
+import { playGenreSting } from './logic/genre-sound.ts'
 import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
 import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
@@ -797,6 +798,8 @@ export function App() {
   const [genre, setGenre] = useState<GenreId>(() => readGenre())
   const [genrePop, setGenrePop] = useState(false)
   const genreLast = useRef(0)
+  const genreRef = useRef(genre)
+  genreRef.current = genre
   const beatClock = useRef(initialBeatClock())
   const bopUntil = useRef(0)
   const bopSize = useRef(5)
@@ -1445,11 +1448,21 @@ export function App() {
       beatClock.current = step.clock
       const state = engine.snapshot()
       if (step.beat && !state.reduced && state.profile !== 'car') bopUntil.current = performance.now() + (beatFeel === 'party' ? 220 : 160)
-      const pop = genrePulse({ now: performance.now(), lastAt: genreLast.current, beat: step.beat, reduced: state.reduced, party: beatFeel === 'party' })
+      const look = genreById(genreRef.current)
+      const pop = genrePulse({
+        now: performance.now(),
+        lastAt: genreLast.current,
+        beat: step.beat,
+        reduced: state.reduced,
+        party: beatFeel === 'party',
+        scale: look?.beat.scale ?? 1,
+        partyScale: look?.beat.partyScale ?? 1,
+      })
       genreLast.current = pop.lastAt
       if (pop.pulse) {
         setGenrePop(true)
         window.setTimeout(() => setGenrePop(false), 160)
+        if (look) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
       }
     }).then((end) => {
       if (closed) end()

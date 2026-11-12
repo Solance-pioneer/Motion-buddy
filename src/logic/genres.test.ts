@@ -1,25 +1,39 @@
 import { describe, expect, it } from 'vitest'
-import { GENRE_LOOKS, GENRE_PULSE_MIN_MS, genreFromStorage, genrePulse } from './genres.ts'
+import { GENRE_ART } from '../view/genre-art.tsx'
+import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, genrePulse } from './genre-pack.ts'
 
-describe('genre looks', () => {
-  it('lists indie, hip-hop, country, disco, and rave as one entry each', () => {
-    expect(GENRE_LOOKS.map((look) => look.id)).toEqual(['indie', 'hip-hop', 'country', 'disco', 'rave-iator'])
-    expect(genreFromStorage('country')).toBe('country')
+describe('genre pack', () => {
+  it('gives every look one entry, a drawing, a bounce, and an original sting', () => {
+    const ids = GENRE_PACK.map((genre) => genre.id)
+    expect(ids).toEqual(['indie', 'hip-hop', 'country', 'disco', 'rave-iator'])
+    expect(new Set(ids).size).toBe(ids.length)
+    for (const genre of GENRE_PACK) {
+      expect(genre.feature).toBe('genre-looks')
+      expect(genre.tier).toBe('premium')
+      expect(genre.beat.partyScale).toBeGreaterThan(genre.beat.scale)
+      expect(GENRE_ART[genre.id]).toBeTypeOf('function')
+      const notes = genreNotes(genre.sound, false)
+      expect(notes.length).toBeGreaterThan(0)
+      expect(notes.every((note) => note.hz > 40 && note.dur < 2)).toBe(true)
+      expect(Math.max(...notes.map((note) => note.at + note.dur))).toBeLessThan(8)
+    }
+    expect(genreFromStorage('disco')).toBe('disco')
     expect(genreFromStorage('nope')).toBe('none')
+    expect(genreById('country')?.label).toBe('Country')
     expect(GENRE_PULSE_MIN_MS).toBeGreaterThan(333)
   })
 
-  it('bounces on a beat, harder in party mode, and never flashes in reduced motion or faster than the cap', () => {
-    const first = genrePulse({ now: 1_000, lastAt: 0, beat: true, reduced: false, party: false })
-    expect(first.pulse).toBe(true)
-    expect(first.scale).toBe(1.04)
-    const party = genrePulse({ now: 1_000, lastAt: 0, beat: true, reduced: false, party: true })
-    expect(party.scale).toBeGreaterThan(first.scale)
-    const soon = genrePulse({ now: 1_200, lastAt: first.lastAt, beat: true, reduced: false, party: true })
-    expect(soon.pulse).toBe(false)
-    expect(soon.scale).toBe(1)
-    const later = genrePulse({ now: first.lastAt + GENRE_PULSE_MIN_MS, lastAt: first.lastAt, beat: true, reduced: false, party: false })
-    expect(later.pulse).toBe(true)
-    expect(genrePulse({ now: 5_000, lastAt: 0, beat: true, reduced: true, party: true })).toEqual({ pulse: false, scale: 1, lastAt: 0 })
+  it('bounces from the genre amounts and refuses a fast or reduced flash', () => {
+    const indie = genreById('indie')
+    if (!indie) throw new Error('missing indie')
+    const first = genrePulse({ now: 1_000, lastAt: 0, beat: true, reduced: false, party: false, scale: indie.beat.scale, partyScale: indie.beat.partyScale })
+    expect(first).toMatchObject({ pulse: true, scale: indie.beat.scale })
+    const party = genrePulse({ now: 1_000, lastAt: 0, beat: true, reduced: false, party: true, scale: indie.beat.scale, partyScale: indie.beat.partyScale })
+    expect(party.scale).toBe(indie.beat.partyScale)
+    expect(genrePulse({ now: 1_200, lastAt: first.lastAt, beat: true, reduced: false, party: true, scale: 1.04, partyScale: 1.08 }).pulse).toBe(false)
+    expect(genrePulse({ now: 5_000, lastAt: 0, beat: true, reduced: true, party: true, scale: 1.04, partyScale: 1.08 })).toEqual({ pulse: false, scale: 1, lastAt: 0 })
+    const calm = genreNotes(indie.sound, false)
+    const faster = genreNotes(indie.sound, true)
+    expect(faster[faster.length - 1].at).toBeLessThan(calm[calm.length - 1].at)
   })
 })
