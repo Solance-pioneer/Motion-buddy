@@ -440,7 +440,7 @@ export function Controls({
               </button>
             ))}
           </div>
-          <p className="note">Genre looks are one premium set: indie, hip-hop, country, disco, and rave. They bounce on the beat. Reduced motion stays still, and the eyes stay visible.</p>
+          <p className="note">Each genre is one premium look, chosen here, with its own bounce and a short sound made on this device. Reduced motion stays still, and the eyes stay visible.</p>
         </fieldset>
 
         <fieldset>

@@ -5,6 +5,14 @@ export const GENRE_PACK = [
   { id: 'country', label: 'Country', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.07, tilt: 0 }, sound: { tempo: 104, rootHz: 196, waveform: 'triangle', scale: [0, 4, 7, 4], pattern: [1, 0, 1, 0, 1, 1, 0, 0] } },
   { id: 'disco', label: 'Disco', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 0 }, sound: { tempo: 118, rootHz: 247, waveform: 'square', scale: [0, 7, 12, 7], pattern: [1, 0, 1, 0, 1, 0, 1, 0] } },
   { id: 'rave-iator', label: 'Rave', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.1, tilt: 0 }, sound: { tempo: 140, rootHz: 330, waveform: 'sawtooth', scale: [0, 3, 7, 10], pattern: [1, 1, 0, 1, 1, 0, 1, 0] } },
+  { id: 'rock', label: 'Rock', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.1, tilt: 4 }, sound: { tempo: 124, rootHz: 165, waveform: 'sawtooth', scale: [0, 0, 7, 5], pattern: [1, 0, 1, 0, 1, 0, 0, 1] } },
+  { id: 'pop', label: 'Pop', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 0 }, sound: { tempo: 120, rootHz: 262, waveform: 'sine', scale: [0, 4, 7, 12], pattern: [1, 0, 1, 1, 0, 1, 0, 0] } },
+  { id: 'jazz', label: 'Jazz', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.06, tilt: 2 }, sound: { tempo: 96, rootHz: 196, waveform: 'triangle', scale: [0, 3, 5, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 1] } },
+  { id: 'blues', label: 'Blues', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.03, partyScale: 1.06, tilt: 0 }, sound: { tempo: 80, rootHz: 147, waveform: 'triangle', scale: [0, 3, 5, 6], pattern: [1, 0, 0, 1, 0, 0, 1, 0] } },
+  { id: 'classical', label: 'Classical', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.02, partyScale: 1.05, tilt: 0 }, sound: { tempo: 84, rootHz: 262, waveform: 'sine', scale: [0, 4, 7, 12], pattern: [1, 0, 1, 0, 0, 1, 0, 1] } },
+  { id: 'electronic', label: 'Electronic', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.04, partyScale: 1.09, tilt: 0 }, sound: { tempo: 128, rootHz: 220, waveform: 'square', scale: [0, 7, 0, 12], pattern: [1, 1, 0, 1, 0, 1, 0, 0] } },
+  { id: 'metal', label: 'Metal', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.06, partyScale: 1.12, tilt: 12 }, sound: { tempo: 160, rootHz: 98, waveform: 'sawtooth', scale: [0, 1, 6, 7], pattern: [1, 1, 0, 1, 1, 0, 1, 1] } },
+  { id: 'punk', label: 'Punk', tier: 'premium', feature: 'genre-looks', beat: { scale: 1.05, partyScale: 1.11, tilt: 6 }, sound: { tempo: 176, rootHz: 185, waveform: 'square', scale: [0, 0, 5, 7], pattern: [1, 1, 1, 0, 1, 0, 1, 0] } },
 ] as const
 
 export type GenreLook = (typeof GENRE_PACK)[number]['id']
