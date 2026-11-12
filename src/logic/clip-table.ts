@@ -84,6 +84,13 @@ export const FEATURE_ROWS: readonly FeatureRow[] = [
   { id: 'genre-latin', tier: 'premium' },
   { id: 'genre-punk', tier: 'premium' },
   { id: 'genre-indie', tier: 'premium' },
+  { id: 'genre-disco', tier: 'premium' },
+  { id: 'genre-funk', tier: 'premium' },
+  { id: 'genre-folk', tier: 'premium' },
+  { id: 'genre-lo-fi', tier: 'premium' },
+  { id: 'genre-synthwave', tier: 'premium' },
+  { id: 'genre-drum-and-bass', tier: 'premium' },
+  { id: 'genre-gospel', tier: 'premium' },
 ]
 
 const free = (row: Omit<ClipRow, 'tier' | 'file'> & { file?: string }): ClipRow => ({

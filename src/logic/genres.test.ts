@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { GENRE_ART } from '../view/genre-art.tsx'
 import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, spectralCentroid } from './genre-pack.ts'
 
-const SHORTLIST = ['pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'rave', 'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie', 'emo']
+const SHORTLIST = [
+  'pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'rave',
+  'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie',
+  'emo', 'disco', 'funk', 'folk', 'lo-fi', 'synthwave', 'drum-and-bass', 'gospel',
+]
 
 describe('genre pack', () => {
   it('lists the shortlist batch and gives each look a pack, a drawing, and a sting', () => {
     expect(GENRE_PACK.map((genre) => genre.id)).toEqual(SHORTLIST)
-    expect(GENRE_PACK).toHaveLength(17)
+    expect(GENRE_PACK).toHaveLength(24)
     expect(genreById('rave')).toMatchObject({ pack: 'rave', grid: 'kick', strobe: true })
     expect(genreById('emo')).toMatchObject({ pack: 'punk', feature: 'genre-punk' })
     expect(genreById('punk')?.feature).toBe('genre-punk')
@@ -25,7 +29,10 @@ describe('genre pack', () => {
     }
     expect(genreById('electronic')?.grid).toBe('kick')
     expect(genreById('classical')?.reaction).toBe('shiver')
-    expect(genreFromStorage('disco')).toBe('none')
+    expect(genreById('drum-and-bass')).toMatchObject({ grid: 'double', strobe: true })
+    expect(genreById('disco')?.strobe).toBe(true)
+    expect(genreById('gospel')?.feature).toBe('genre-gospel')
+    expect(genreFromStorage('nope')).toBe('none')
     expect(genreFromStorage('pop')).toBe('pop')
     expect(GENRE_PULSE_MIN_MS).toBeGreaterThan(333)
   })

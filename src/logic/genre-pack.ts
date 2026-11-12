@@ -47,6 +47,13 @@ export const GENRE_PACK: readonly GenreEntry[] = [
   pack('punk', 'Punk', 'punk', 'pogo', 'onset', 'pogo', { scale: 1.06, partyScale: 1.12, tilt: 0 }, { tempo: 176, rootHz: 185, waveform: 'square', scale: [0, 0, 5, 7], pattern: [1, 1, 1, 0, 1, 0, 1, 0] }),
   pack('indie', 'Indie', 'indie', 'shuffle', 'onset', 'double', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 96, rootHz: 220, waveform: 'sine', scale: [0, 2, 4, 7], pattern: [1, 0, 1, 0, 1, 0, 1, 0] }),
   pack('emo', 'Emo', 'punk', 'down', 'onset', 'flick', { scale: 1.04, partyScale: 1.08, tilt: 12 }, { tempo: 104, rootHz: 196, waveform: 'sine', scale: [0, 3, 7, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 0] }),
+  pack('disco', 'Disco', 'disco', 'sway', 'onset', 'flash', { scale: 1.04, partyScale: 1.09, tilt: 8 }, { tempo: 118, rootHz: 247, waveform: 'square', scale: [0, 7, 12, 7], pattern: [1, 0, 1, 0, 1, 0, 1, 0] }, true),
+  pack('funk', 'Funk', 'funk', 'nod', 'onset', 'squash', { scale: 1.05, partyScale: 1.1, tilt: 3 }, { tempo: 108, rootHz: 147, waveform: 'square', scale: [0, 5, 7, 10], pattern: [1, 0, 1, 1, 0, 1, 0, 1] }),
+  pack('folk', 'Folk', 'folk', 'sway', 'onset', 'ripple', { scale: 1.03, partyScale: 1.06, tilt: 0 }, { tempo: 100, rootHz: 196, waveform: 'triangle', scale: [0, 2, 4, 7], pattern: [1, 0, 1, 0, 1, 0, 0, 1] }),
+  pack('lo-fi', 'Lo-fi', 'lo-fi', 'nod', 'onset', 'puff', { scale: 1.03, partyScale: 1.05, tilt: 0 }, { tempo: 82, rootHz: 174, waveform: 'triangle', scale: [0, 3, 7, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 0] }),
+  pack('synthwave', 'Synthwave', 'synthwave', 'sway', 'onset', 'glow', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 100, rootHz: 247, waveform: 'sawtooth', scale: [0, 7, 3, 12], pattern: [1, 0, 1, 0, 1, 0, 0, 1] }),
+  pack('drum-and-bass', 'Drum and bass', 'drum-and-bass', 'bounce', 'double', 'jitter', { scale: 1.05, partyScale: 1.11, tilt: 6 }, { tempo: 174, rootHz: 110, waveform: 'square', scale: [0, 0, 7, 12], pattern: [1, 0, 1, 1, 0, 1, 0, 1] }, true),
+  pack('gospel', 'Gospel', 'gospel', 'sway', 'onset', 'clap', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 84, rootHz: 262, waveform: 'triangle', scale: [0, 4, 7, 12], pattern: [1, 0, 0, 1, 0, 1, 0, 1] }),
 ]
 
 export type GenreLook = (typeof GENRE_PACK)[number]['id']

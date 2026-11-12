@@ -151,4 +151,68 @@ export const GENRE_ART: Record<GenreLook, () => ReactNode> = {
       <circle data-flash cx="26" cy="52" r="0.7" fill="#d7e6ff" />
     </>
   ),
+  disco: () => (
+    <>
+      <circle cx="50" cy="10" r="6" fill="#d9dde6" stroke="#9aa3b5" strokeWidth="0.5" />
+      <path d="M47 7 L53 13 M53 7 L47 13 M50 5 V15" stroke="#ffffff" strokeWidth="0.4" />
+      <circle data-flash cx="18" cy="20" r="1" fill="#fff4c2" />
+      <circle data-flash cx="82" cy="18" r="1" fill="#d7f3ff" />
+      <path d="M18 36 l6 2 -4 5 2 -6 5 -1 -6 -1 z" fill="#f2f4f8" opacity="0.85" />
+      <path d="M70 36 l6 2 -4 5 2 -6 5 -1 -6 -1 z" fill="#f2f4f8" opacity="0.85" />
+      <ellipse cx="32" cy="40" rx="12" ry="7" fill="#1c2430" opacity="0.22" />
+      <ellipse cx="68" cy="40" rx="12" ry="7" fill="#1c2430" opacity="0.22" />
+    </>
+  ),
+  funk: () => (
+    <>
+      <path d="M16 34 l8 2 -6 6 3 -7 6 -1 -7 -1 z" fill="#ffd23a" />
+      <path d="M68 34 l8 2 -6 6 3 -7 6 -1 -7 -1 z" fill="#ffd23a" />
+      <ellipse cx="32" cy="40" rx="14" ry="8" fill="#1c2430" opacity="0.22" />
+      <ellipse cx="68" cy="40" rx="14" ry="8" fill="#1c2430" opacity="0.22" />
+      <path data-flash d="M24 78 h12 M64 78 h12" stroke="#fff1a8" strokeWidth="1.6" strokeLinecap="round" />
+    </>
+  ),
+  folk: () => (
+    <>
+      <circle cx="36" cy="12" r="2" fill="#f2a3b5" />
+      <circle cx="50" cy="9" r="2" fill="#f6d56a" />
+      <circle cx="64" cy="12" r="2" fill="#9fd0ff" />
+      <path d="M78 56 v20" stroke="#c9843a" strokeWidth="1.3" />
+      <ellipse cx="78" cy="78" rx="5" ry="3.2" fill="none" stroke="#c9843a" strokeWidth="1.1" />
+      <path data-flash d="M22 70 q6 2 8 -2" fill="none" stroke="#9dcc8a" strokeWidth="1" />
+    </>
+  ),
+  'lo-fi': () => (
+    <>
+      <path d="M12 40 h12 v12 h-12 z M76 40 h12 v12 h-12 z" fill="#3d4a5c" />
+      <path d="M24 46 H76" stroke="#3d4a5c" strokeWidth="2" />
+      <ellipse cx="22" cy="16" rx="8" ry="5" fill="#ffe08a" opacity="0.35" />
+      <path d="M80 70 h8 v6 h-8 z" fill="#efe7dc" />
+      <path d="M84 68 q2 -5 0 -7" fill="none" stroke="#d7dde6" strokeWidth="0.8" />
+      <path d="M90 24 v6 M94 30 v8 M90 42 v5" stroke="#9ec9e6" strokeWidth="0.7" strokeLinecap="round" />
+    </>
+  ),
+  synthwave: () => (
+    <>
+      <path d="M14 34 H46 V44 H14 Z M54 34 H86 V44 H54 Z" fill="#241433" stroke="#ff4fd8" strokeWidth="0.8" opacity="0.55" />
+      <path d="M18 38 H42 M22 34 V44 M58 38 H82 M70 34 V44" stroke="#39e7ff" strokeWidth="0.5" />
+      <path d="M16 82 H84" stroke="#ff4fd8" strokeWidth="1.2" />
+      <ellipse cx="50" cy="82" rx="18" ry="4" fill="#ff8a3d" opacity="0.28" />
+    </>
+  ),
+  'drum-and-bass': () => (
+    <>
+      <path d="M8 34 h16 v18 h-16 z M76 34 h16 v18 h-16 z" fill="#1d2430" />
+      <path d="M24 42 H76" stroke="#1d2430" strokeWidth="2.4" />
+      <path data-flash d="M90 24 h6 M92 32 h8 M90 40 h6" stroke="#7ec8ff" strokeWidth="1.1" strokeLinecap="round" />
+    </>
+  ),
+  gospel: () => (
+    <>
+      <path d="M38 4 L50 24 L62 4" fill="#ffe08a" opacity="0.4" />
+      <path d="M18 64 q6 -6 10 0 M72 64 q6 -6 10 0" fill="none" stroke="#fff6c2" strokeWidth="1.3" />
+      <circle data-flash cx="30" cy="22" r="1" fill="#fff6c2" />
+      <circle data-flash cx="70" cy="20" r="1" fill="#fff6c2" />
+    </>
+  ),
 }
