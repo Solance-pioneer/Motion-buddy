@@ -3,6 +3,7 @@ import { DISAPPROVE_OGG_BASE64 } from './disapprove-ogg.ts'
 import { CONTACT_WAV_BASE64 } from './contact-wavs.ts'
 import { SCENE_WAV_BASE64 } from './scene-wavs.ts'
 import { DRIVE_WAV_BASE64 } from './drive-wavs.ts'
+import { SOUNDZA_RACE_ACTIVATE_WAV_BASE64 } from './soundza-wavs.ts'
 import { COUNTRY_WAV_BASE64 } from './country-wavs.ts'
 import { COUNTRY_GAIN } from './countries.ts'
 import { BLEEP_WAV_BASE64 } from './bleep-wavs.ts'
@@ -841,6 +842,59 @@ export function playDriveCue(key: DriveCueKey): boolean {
     }
   }
   return true
+}
+
+let raceSource: AudioBufferSourceNode | null = null
+let raceGain: GainNode | null = null
+let raceToken = 0
+
+export function raceActivateActive(): boolean {
+  return raceSource !== null
+}
+
+/** Soundza Big Block V8, once, when Race turns on. A second call while it is sounding does not stack. */
+export function playRaceActivate(): boolean {
+  if (!context || gate.muted || !gate.unlocked || raceSource) return false
+  const clip = pcm16('soundza_big_block_race_activate', SOUNDZA_RACE_ACTIVATE_WAV_BASE64)
+  const buffer = context.createBuffer(1, clip.samples.length, clip.rate)
+  buffer.getChannelData(0).set(clip.samples)
+  const source = context.createBufferSource()
+  const gain = context.createGain()
+  source.buffer = buffer
+  source.loop = false
+  source.connect(gain)
+  gain.connect(context.destination)
+  fadeNode(gain, 0, 0.9, 0.02)
+  source.start()
+  raceSource = source
+  raceGain = gain
+  const token = raceToken
+  source.onended = () => {
+    if (token !== raceToken) return
+    if (raceSource === source) {
+      raceSource = null
+      raceGain = null
+    }
+  }
+  return true
+}
+
+export function stopRaceActivate(ms = 80): void {
+  const seconds = Math.max(0.04, Math.min(0.12, ms / 1000))
+  raceToken += 1
+  const source = raceSource
+  const gain = raceGain
+  raceSource = null
+  raceGain = null
+  if (source && gain) {
+    fadeNode(gain, 0.9, 0, seconds)
+    stopLater(source, seconds)
+  }
+}
+
+export function raceActivateMs(): number {
+  const clip = pcm16('soundza_big_block_race_activate', SOUNDZA_RACE_ACTIVATE_WAV_BASE64)
+  return (clip.samples.length / clip.rate) * 1000
 }
 
 export function stopDriveCue(ms = 80): void {

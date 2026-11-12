@@ -16,7 +16,7 @@ import { motionNeedsGesture, useTilt, type MotionUiStatus } from './view/useTilt
 import type { ReactionKind, Sensitivity } from './logic/reactions.ts'
 import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
-import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playSceneCue, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
+import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playRaceActivate, playSceneCue, raceActivateMs, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopRaceActivate, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
 import { choosePetNote, nextCodedIdle, noteOohRun, OOH_FACE_MS, oohIdleDue } from './logic/ooh.ts'
 import { classifyStroke } from './logic/pet-play.ts'
@@ -231,6 +231,7 @@ export function App() {
     idleFirst: true,
     raceTurn: 0,
     startMuted: true,
+    raceRevUntil: 0,
     follow: null as null | { onEnd?: () => void; onFail?: () => void },
   })
   const startBatchRef = useRef<(id: string, gallery?: boolean, follow?: { onEnd?: () => void; onFail?: () => void }) => boolean>(() => false)
@@ -919,7 +920,7 @@ export function App() {
     if (!carVisual) carTarget.current = { throttle: 0, bank: 0 }
     carShown.current = smoothCarTilt(carShown.current, carTarget.current, dt)
     const look = carFace(carShown.current).state
-    if (carVisual) {
+    if (carVisual && performance.now() >= batchHold.current.raceRevUntil) {
       const step = driveCueOnEntry(driveLook.current, look, performance.now(), driveClock.current)
       driveClock.current = step.clock
       driveLook.current = look
@@ -1285,7 +1286,7 @@ export function App() {
         }
       }
       if (!alive()) return
-      if (video.muted && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
+      if (video.muted && performance.now() >= batchHold.current.raceRevUntil && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
         try {
           prepare(false)
           if (video.paused) await video.play()
@@ -1821,6 +1822,8 @@ onClick={() => {
               setRaceMarks(false)
               window.clearTimeout(raceTimer.current)
               stopDriveCue(80)
+              stopRaceActivate(80)
+              batchHold.current.raceRevUntil = 0
               engine.setProfile(raceWas.current)
               publish(engine.snapshot())
               return
@@ -1832,6 +1835,8 @@ onClick={() => {
             setPromptDone(true)
             if (tilt.status !== 'active') void tilt.enable()
             driveClock.current = { ...driveClock.current, lastAny: performance.now() }
+            const revAt = performance.now()
+            if (playRaceActivate()) batchHold.current.raceRevUntil = revAt + raceActivateMs()
             const reducedNow = engine.snapshot().reduced
             const film = nextRaceFilm(batchHold.current.raceTurn)
             batchHold.current.raceTurn += 1
@@ -1850,7 +1855,7 @@ onClick={() => {
                 setClipDismiss('none')
                 setClipMuted(true)
                 setSceneClip(started.play)
-              } else if (reducedNow && !clipClock.current.playing && !batchHold.current.guard) playDriveCue('race_activate_rev')
+              }
             }
             if (film === 'race-start' && !reducedNow) {
               const row = clipById('race-start')

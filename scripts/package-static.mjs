@@ -136,7 +136,7 @@ writeFileSync(
     'The racer plays racer_accelerate_return_brake once from the start for 7 seconds. It replaces the wind cue and does not loop. The float master is not rewritten.',
     'Car tilt leans Buddy from a neutral you set: top toward you leans ahead, away eases off, left and right bank. It is phone tilt, not vehicle speed or brakes. A missing or denied sensor stays neutral.',
     'A pet gesture plays one finite note: squish, spring, squeak, chirp, or wobble. It does not loop and a repeated note waits. Masters are not rewritten.',
-    'Race plays the speed-rush clip once. That clip’s sound replaces race_activate_rev for that activation. Reduced motion skips the clip and plays race_activate_rev once. A brake lean plays the surprised clip once, then waits about 20 seconds. Reduced motion skips that clip too. Synthetic accelerate and brake cues still play when a clip does not start. They are not a recorded engine.',
+    'Race plays the Soundza Big Block V8 once when Race turns on. It does not loop. The speed-rush clip stays quiet until that rev has finished. Reduced motion skips the clip. A brake lean plays the surprised clip once, then waits about 20 seconds. Reduced motion skips that clip too. Synthetic accelerate and brake cues still play when a clip does not start and the V8 is not sounding. They are not the activation rev.',
     'Ambient costumes rotate through ninja, hero, racer, and ghost after 7 seconds of idle, and they wait out an active scene or gesture.',
     'Country cues uk_guard_march, france_cafe_waltz, usa_anthem_eagle, egypt_cinematic, japan_gentle_bow, and australia_hop_duet play once at gain 0.68. Masters are not rewritten.',
     'Four CoMiGo bleeps (tap, blink, idle, ack) are finite one-shots. They stay silent while muted and wait out their cooldowns. CC0, credit optional.',
@@ -199,7 +199,6 @@ copyFileSync(join('src/assets/scene-clips-v1', 'PROVENANCE.md'), join(clipDir, '
 const driveDir = join(dist, 'drive-audio-v1')
 mkdirSync(driveDir, { recursive: true })
 for (const name of [
-  'race_activate_rev_app_pcm16_48k.wav',
   'car_accel_rev_a_app_pcm16_48k.wav',
   'car_accel_rev_b_app_pcm16_48k.wav',
   'car_brake_soft_a_app_pcm16_48k.wav',

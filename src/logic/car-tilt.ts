@@ -80,7 +80,6 @@ export const DRIVE_SOUND_GAP_MS = 1_500
 export const DRIVE_NEUTRAL_REARM_MS = 300
 
 export type DriveCueName =
-  | 'race_activate_rev'
   | 'car_accel_rev_a'
   | 'car_accel_rev_b'
   | 'car_brake_soft_a'
