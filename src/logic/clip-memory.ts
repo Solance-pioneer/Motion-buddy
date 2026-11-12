@@ -1,10 +1,14 @@
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
+import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
 const MORNING_KEY = 'mb-morning-day'
 const WEATHER_KEY = 'mb-weather-moods'
 
 /** JSON `{ seconds }` , same pattern as the remembered mute record. */
 export const IDLE_GAP_KEY = 'motion-buddy-idle-gap-v1'
+
+/** JSON `{ enabled }`. Missing storage means bubbles are on. */
+export const SPEECH_KEY = 'motion-buddy-speech-v1'
 
 /** The only stored value is the local date, such as 2026-11-12. */
 export function readMorningDay(): string | null {
@@ -53,5 +57,21 @@ export function writeIdleGapSeconds(seconds: number): void {
     localStorage.setItem(IDLE_GAP_KEY, idleGapToStorage(seconds))
   } catch {
     // The slider still applies until the page closes.
+  }
+}
+
+export function readSpeechEnabled(): boolean {
+  try {
+    return speechEnabledFromStorage(localStorage.getItem(SPEECH_KEY))
+  } catch {
+    return true
+  }
+}
+
+export function writeSpeechEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(SPEECH_KEY, speechToStorage(enabled))
+  } catch {
+    // The switch still applies until the page closes.
   }
 }

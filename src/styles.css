@@ -70,6 +70,48 @@ body {
   aspect-ratio: 1 / 1;
 }
 
+.speech-bubble {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  right: 8%;
+  max-width: 58%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: #f4f4f4;
+  color: #111111;
+  font: 650 0.95rem/1.25 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+  transform: translateY(-115%);
+  opacity: 0;
+}
+
+.speech-bubble[data-on='1'] {
+  opacity: 1;
+  animation: speech-life 2.2s linear forwards;
+}
+
+.speech-bubble[data-on='1'][data-reduced='1'] {
+  animation: none;
+  opacity: 1;
+}
+
+@keyframes speech-life {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speech-bubble[data-on='1'] {
+    animation: none;
+    opacity: 1;
+  }
+}
+
 .face {
   width: 100%;
   height: auto;

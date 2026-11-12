@@ -286,9 +286,9 @@ export interface IdleWaitClock {
   first: boolean
 }
 
-/** Emotion and activity films, plus superhero-idle. Racer-idle stays on the coded racer turn. */
+/** Emotion and activity films, plus superhero-idle and racer-idle. Both costumes still play on their coded turns. */
 function idleClipRows(): ClipRow[] {
-  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle'))
+  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle'))
 }
 
 export function nextIdleClip(previous: string | null, random = 0): string | null {

@@ -21,7 +21,8 @@ import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readIdleGapSeconds, readMorningDay, readWeatherMoods, writeIdleGapSeconds, writeMorningDay, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readIdleGapSeconds, readMorningDay, readSpeechEnabled, readWeatherMoods, writeIdleGapSeconds, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { initialSpeechClock, offerSpeech, SPEECH_VISIBLE_MS, type SpeechKind } from './logic/speech.ts'
 import {
   activeWeather,
   carClipFor,
@@ -175,6 +176,12 @@ export function App() {
   const [idleGapSeconds, setIdleGapSeconds] = useState(() => readIdleGapSeconds())
   const idleGapRef = useRef(idleGapSeconds)
   idleGapRef.current = idleGapSeconds
+  const [speechOn, setSpeechOn] = useState(() => readSpeechEnabled())
+  const speechOnRef = useRef(speechOn)
+  speechOnRef.current = speechOn
+  const speechClock = useRef(initialSpeechClock())
+  const speechTimer = useRef(0)
+  const [speechLine, setSpeechLine] = useState<string | null>(null)
   const [soundReady, setSoundReady] = useState(false)
   const heard = useRef<SoundMemory>(initialSoundMemory())
   const moves = useRef<MoveClock>(initialMoveClock())
@@ -338,6 +345,14 @@ export function App() {
     if (!inside(leave)) return false
     return was
   }
+  const say = (kind: SpeechKind) => {
+    const step = offerSpeech(speechClock.current, kind, performance.now(), speechOnRef.current, Math.random())
+    speechClock.current = step.clock
+    if (!step.line) return
+    setSpeechLine(step.line)
+    window.clearTimeout(speechTimer.current)
+    speechTimer.current = window.setTimeout(() => setSpeechLine(null), SPEECH_VISIBLE_MS)
+  }
   const stepPet = (dt: number) => {
     const p = pet.current
     if (p.dragging) aimPet(p.nx, p.ny, true)
@@ -354,6 +369,7 @@ export function App() {
       p.tucked = true
       p.sounded = true
       playPetNote(cueForGesture('tuck'))
+      say('pet')
     }
     const posMs = reduced ? 0 : p.dragging ? 70 : 280
     p.x = damp(p.x, reduced ? 0 : p.tx, dt, posMs)
@@ -974,6 +990,7 @@ export function App() {
     })
     faceTaps.current = tap.clock
     if (tap.frown && engine.requestScold()) {
+      say('shake')
       publish(engine.snapshot())
       if (tap.cue && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
       return
@@ -982,6 +999,7 @@ export function App() {
     if (!pet.current.sounded) {
       pet.current.sounded = true
       playPetNote(cueForGesture('tap'))
+      say('pet')
     }
     playBleep('tap')
     pet.current.boopUntil = performance.now() + 420
@@ -1016,7 +1034,9 @@ export function App() {
     })
     moves.current = next.clock
     if (next.cue === 'grumpy') {
-      if (engine.requestScold() && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
+      const scolded = engine.requestScold()
+      if (scolded) say('shake')
+      if (scolded && playCue('disapprove')) heard.current = { ...heard.current, voiceUntil: performance.now() + 120 }
       publish(engine.snapshot())
     } else if (next.cue === 'dizzy') {
       const already = state.reaction === 'dizzy'
@@ -1509,6 +1529,7 @@ export function App() {
             pet.current.mode = gesture === 'dodge' ? 'dodge' : 'chase'
             pet.current.sounded = true
             playPetNote(cueForGesture(gesture))
+            say('pet')
           }
           const dir = pet.current.mode === 'dodge' ? -1 : 1
           engine.feedLook(Math.max(-1, Math.min(1, nx * dir)), Math.max(-1, Math.min(1, ny * dir * 0.6)))
@@ -1560,6 +1581,9 @@ export function App() {
             </svg>
           ) : null}
           <Face onReady={onReady} />
+          <p className="speech-bubble" aria-live="polite" data-on={speechLine ? '1' : '0'} data-reduced={view.reduced ? '1' : '0'}>
+            {speechLine}
+          </p>
           <CountryEagle />
         </div>
         {showHint ? (
@@ -1820,6 +1844,17 @@ onClick={() => {
             setIdleGapSeconds(next)
             idleGapRef.current = next
             writeIdleGapSeconds(next)
+          }}
+          speechOn={speechOn}
+          onToggleSpeech={() => {
+            const next = !speechOn
+            setSpeechOn(next)
+            speechOnRef.current = next
+            writeSpeechEnabled(next)
+            if (!next) {
+              setSpeechLine(null)
+              window.clearTimeout(speechTimer.current)
+            }
           }}
           soundOn={soundOn}
           soundAvailable={soundAvailable}

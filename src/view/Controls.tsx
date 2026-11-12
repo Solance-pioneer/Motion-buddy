@@ -64,6 +64,8 @@ export function Controls({
   onStopMotion,
   idleGapSeconds,
   onIdleGap,
+  speechOn,
+  onToggleSpeech,
   soundOn,
   soundAvailable,
   onToggleSound,
@@ -113,6 +115,8 @@ export function Controls({
   onToggleWeather: () => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
+  speechOn: boolean
+  onToggleSpeech: () => void
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -339,6 +343,10 @@ export function Controls({
             />
           </div>
           <p className="note">The first idle after the page opens, and the first one after a touch, still arrives within a few seconds.</p>
+          <button type="button" aria-pressed={speechOn} onClick={onToggleSpeech}>
+            Speech bubbles
+          </button>
+          <p className="note">{speechOn ? 'On. Short lines appear near Buddy.' : 'Off.'}</p>
         </fieldset>
 
         <fieldset>
