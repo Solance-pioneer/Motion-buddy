@@ -1,6 +1,7 @@
 import { ADMIN_KEY, adminFromStorage, adminToStorage } from './admin-flag.ts'
 import { idlePrefsFromStorage, idlePrefsToStorage, IDLE_PREFS_KEY, type IdlePrefs } from './idle-prefs.ts'
 import { themeFromStorage, type ThemeId } from './themes.ts'
+import type { BeatFeel } from './beat.ts'
 import { idleGapSecondsFromStorage, idleGapToStorage, IDLE_GAP_DEFAULT_S } from './clip-table.ts'
 import { speechEnabledFromStorage, speechToStorage } from './speech.ts'
 
@@ -110,6 +111,46 @@ export function readTheme(): ThemeId {
     return themeFromStorage(localStorage.getItem(THEME_KEY))
   } catch {
     return 'plain'
+  }
+}
+
+export const BEAT_KEY = 'motion-buddy-beat-v1'
+export const GENRE_KEY = 'motion-buddy-genre-v1'
+
+export function readBeatFeel(): { on: boolean; feel: BeatFeel } {
+  try {
+    const raw = localStorage.getItem(BEAT_KEY)
+    if (!raw) return { on: false, feel: 'steady' }
+    const parsed = JSON.parse(raw) as { on?: unknown; feel?: unknown }
+    return { on: parsed.on === true, feel: parsed.feel === 'party' ? 'party' : 'steady' }
+  } catch {
+    return { on: false, feel: 'steady' }
+  }
+}
+
+export function writeBeatFeel(on: boolean, feel: BeatFeel): void {
+  try {
+    localStorage.setItem(BEAT_KEY, JSON.stringify({ on, feel }))
+  } catch {
+    // The switch still applies until the page closes.
+  }
+}
+
+export function readGenre(): 'none' | 'indie' | 'hip-hop' {
+  try {
+    const raw = localStorage.getItem(GENRE_KEY)
+    if (raw === 'indie' || raw === 'hip-hop') return raw
+    return 'none'
+  } catch {
+    return 'none'
+  }
+}
+
+export function writeGenre(id: 'none' | 'indie' | 'hip-hop'): void {
+  try {
+    localStorage.setItem(GENRE_KEY, id)
+  } catch {
+    // The choice still applies until the page closes.
   }
 }
 

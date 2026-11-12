@@ -39,6 +39,7 @@ describe('privacy and scope', () => {
       const haystack = files
         .filter((path) => !((term === 'localStorage' || term === 'AudioContext') && path.endsWith(`${join('logic', 'sfx.ts')}`)))
         .filter((path) => !(term === 'localStorage' && path.endsWith(`${join('logic', 'clip-memory.ts')}`)))
+        .filter((path) => !((term === 'getUserMedia' || term === 'mediaDevices') && path.endsWith(`${join('logic', 'mic-beat.ts')}`)))
         .filter((path) => !(path.includes(`${join('logic', 'weather')}${join('/', '')}`) || path.includes(`${join('logic', 'weather')}/`)) || !['geolocation', 'fetch(', 'sessionStorage'].includes(term))
         .map((path) => readFileSync(path, 'utf8'))
         .join('\n')

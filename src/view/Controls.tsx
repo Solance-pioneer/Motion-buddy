@@ -82,6 +82,13 @@ export function Controls({
   theme,
   themeOpen,
   onTheme,
+  beatOn,
+  beatFeel,
+  onToggleBeat,
+  onBeatFeel,
+  genre,
+  genreOpen,
+  onGenre,
 }: {
   presence: Presence
   selection: Selection
@@ -121,6 +128,13 @@ export function Controls({
   theme: ThemeId
   themeOpen: (id: ThemeId) => boolean
   onTheme: (id: ThemeId) => void
+  beatOn: boolean
+  beatFeel: 'steady' | 'party'
+  onToggleBeat: () => void
+  onBeatFeel: (feel: 'steady' | 'party') => void
+  genre: 'none' | 'indie' | 'hip-hop'
+  genreOpen: boolean
+  onGenre: (id: 'none' | 'indie' | 'hip-hop') => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
   idleChoices: readonly IdleChoice[]
@@ -407,6 +421,24 @@ export function Controls({
             ))}
           </div>
           <p className="note">Race uses the kerb while it is on. Night drive and neon city are stubs.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Music</legend>
+          <button type="button" aria-pressed={beatOn} onClick={onToggleBeat}>Beat</button>
+          <div className="choice-row">
+            <button type="button" aria-pressed={beatFeel === 'steady'} onClick={() => onBeatFeel('steady')}>Steady</button>
+            <button type="button" aria-pressed={beatFeel === 'party'} onClick={() => onBeatFeel('party')}>Party mode</button>
+          </div>
+          <p className="note">Beat listens only while it is on, after you tap. Nothing is saved or sent. The head nods in Desk. Reduced motion stays still.</p>
+          <div className="choice-row">
+            {(['none', 'indie', 'hip-hop'] as const).map((id) => (
+              <button key={id} type="button" aria-pressed={genre === id} disabled={!genreOpen && id !== 'none'} onClick={() => onGenre(id)}>
+                {id === 'none' ? 'No look' : id === 'indie' ? 'Indie' : 'Hip-hop'}
+              </button>
+            ))}
+          </div>
+          <p className="note">Genre looks are a separate premium set. Indie is a beanie and scarf. Hip-hop is gold chains.</p>
         </fieldset>
 
         <fieldset>

@@ -23,7 +23,9 @@ import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readAdminEnabled, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readAdminEnabled, readBeatFeel, readGenre, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
+import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
+import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
 import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
 import { adminFromSearch } from './logic/admin-flag.ts'
@@ -421,9 +423,10 @@ export function App() {
     p.oy = damp(p.oy, p.toy, dt, squMs)
     const showSx = Math.max(0.76, p.sx * p.wide)
     const showSy = Math.max(0.72, p.sy * p.squeeze * (p.tucked && !p.dragging && !reduced ? 0.92 : 1))
+    const nod = !reduced && engine.snapshot().profile !== 'car' && performance.now() < bopUntil.current ? bopSize.current : 0
     const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
     if (svg) {
-      svg.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) scale(${showSx.toFixed(3)}, ${showSy.toFixed(3)})`
+      svg.style.transform = `translate(${p.x.toFixed(1)}px, ${(p.y + nod).toFixed(1)}px) scale(${showSx.toFixed(3)}, ${showSy.toFixed(3)})`
       svg.style.transformOrigin = `${(p.ox * 100).toFixed(1)}% ${(p.oy * 100).toFixed(1)}%`
     }
     const root = rootRef.current
@@ -788,6 +791,12 @@ export function App() {
   const [promptDone, setPromptDone] = useState(false)
   const [raceOn, setRaceOn] = useState(false)
   const [chosenTheme, setChosenTheme] = useState<ThemeId>(() => readTheme())
+  const [beatOn, setBeatOn] = useState(() => readBeatFeel().on)
+  const [beatFeel, setBeatFeel] = useState<BeatFeel>(() => readBeatFeel().feel)
+  const [genre, setGenre] = useState<'none' | 'indie' | 'hip-hop'>(() => readGenre())
+  const beatClock = useRef(initialBeatClock())
+  const bopUntil = useRef(0)
+  const bopSize = useRef(5)
   const [calNote, setCalNote] = useState<string | null>(null)
   const pendingCal = useRef(false)
   const [raceMarks, setRaceMarks] = useState(false)
@@ -1422,6 +1431,28 @@ export function App() {
   }, [])
 
   useEffect(() => {
+    if (!beatOn) return
+    let stop = () => {}
+    let closed = false
+    bopSize.current = beatFeel === 'party' ? 8 : 5
+    void openBeatMic((bins, sampleRate, fftSize) => {
+      const normal = new Float32Array(bins.length)
+      for (let i = 0; i < bins.length; i += 1) normal[i] = bins[i] / 255
+      const step = stepBeat(beatClock.current, bassEnergy(normal, sampleRate, fftSize), performance.now(), beatFeel)
+      beatClock.current = step.clock
+      const state = engine.snapshot()
+      if (step.beat && !state.reduced && state.profile !== 'car') bopUntil.current = performance.now() + (beatFeel === 'party' ? 220 : 160)
+    }).then((end) => {
+      if (closed) end()
+      else stop = end
+    })
+    return () => {
+      closed = true
+      stop()
+    }
+  }, [beatOn, beatFeel, engine])
+
+  useEffect(() => {
     if (!calNote) return
     const id = window.setTimeout(() => setCalNote(null), CALIBRATE_NOTE_MS)
     return () => window.clearTimeout(id)
@@ -1743,7 +1774,7 @@ export function App() {
               <g className="race-confetti" dangerouslySetInnerHTML={{ __html: confettiRaw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '') }} />
             </svg>
           ) : null}
-          <Face onReady={onReady} />
+          <Face onReady={onReady} genre={isUnlocked('genre-looks') ? genre : 'none'} />
           <p className="speech-bubble" aria-live="polite" data-on={speechLine ? '1' : '0'} data-reduced={view.reduced ? '1' : '0'}>
             {speechLine}
           </p>
@@ -2047,6 +2078,25 @@ onClick={() => {
           onTheme={(id) => {
             setChosenTheme(id)
             writeTheme(id)
+          }}
+          beatOn={beatOn}
+          beatFeel={beatFeel}
+          onToggleBeat={() => {
+            unlockQuiet()
+            const next = !beatOn
+            setBeatOn(next)
+            writeBeatFeel(next, beatFeel)
+          }}
+          onBeatFeel={(feel) => {
+            setBeatFeel(feel)
+            writeBeatFeel(beatOn, feel)
+          }}
+          genre={genre}
+          genreOpen={isUnlocked('genre-looks')}
+          onGenre={(id) => {
+            if (id !== 'none' && !isUnlocked('genre-looks')) return
+            setGenre(id)
+            writeGenre(id)
           }}
           idleGapSeconds={idleGapSeconds}
           onIdleGap={(seconds) => {

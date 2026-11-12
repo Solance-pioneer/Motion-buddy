@@ -3,7 +3,7 @@ import type { FaceHandles } from './applyPose.ts'
 import { Costumes } from './costumes.tsx'
 import { CountryOverlays } from './country-art.tsx'
 
-export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
+export function Face({ onReady, genre = 'none' }: { onReady: (handles: FaceHandles) => void; genre?: 'none' | 'indie' | 'hip-hop' }) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useLayoutEffect(() => {
@@ -37,6 +37,7 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
       <g transform="scale(0.277778)">
         <CountryOverlays />
       </g>
+      <GenreWear genre={genre} />
       <g data-part="glance">
         <g data-part="eye-l" fill="#ffffff" stroke="none"><path data-part="eye-l-path" /></g>
         <g data-part="eye-r" fill="#ffffff" stroke="none"><path data-part="eye-r-path" /></g>
@@ -61,5 +62,28 @@ export function Face({ onReady }: { onReady: (handles: FaceHandles) => void }) {
         <path d="M16 58 L84 58 L86 78 Q78 72 70 86 Q62 76 50 90 Q38 76 30 86 Q22 72 14 78 Z" fill="#edece5" />
       </g>
     </svg>
+  )
+}
+
+/** Wear sits behind the live eyes and mouth. */
+function GenreWear({ genre }: { genre: 'none' | 'indie' | 'hip-hop' }) {
+  if (genre === 'none') return null
+  if (genre === 'indie') {
+    return (
+      <g data-part="genre" data-genre="indie" pointerEvents="none">
+        <ellipse cx="50" cy="16" rx="26" ry="8" fill="#2f3d55" />
+        <path d="M24 16 Q50 8 76 16 L74 20 Q50 14 26 20 Z" fill="#243044" />
+        <path d="M18 62 Q22 78 28 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
+        <path d="M82 62 Q78 78 72 84" fill="none" stroke="#8d3b3b" strokeWidth="4" strokeLinecap="round" />
+      </g>
+    )
+  }
+  return (
+    <g data-part="genre" data-genre="hip-hop" pointerEvents="none">
+      <path d="M22 74 Q30 86 38 76" fill="none" stroke="#e2c56a" strokeWidth="3" strokeLinecap="round" />
+      <path d="M78 74 Q70 86 62 76" fill="none" stroke="#e2c56a" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="30" cy="80" r="1.6" fill="#f3e2a2" />
+      <circle cx="70" cy="80" r="1.6" fill="#f3e2a2" />
+    </g>
   )
 }

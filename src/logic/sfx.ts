@@ -378,6 +378,10 @@ export function soundStatus(): { muted: boolean; unlocked: boolean; available: b
 const voicePcm = new Map<string, { samples: Float32Array; rate: number }>()
 let voicePrepare: Promise<void> | null = null
 
+export function audioContext(): AudioContext | null {
+  return context
+}
+
 export function unlockSound(): boolean {
   if (typeof AudioContext === 'undefined') return false
   if (!context) context = new AudioContext()
