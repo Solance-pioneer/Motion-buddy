@@ -34,6 +34,16 @@ export const GENRE_PACK: readonly GenreEntry[] = [
   pack('electronic', 'Electronic', 'electronic', 'bounce', 'kick', 'kick', { scale: 1.06, partyScale: 1.12, tilt: 0 }, { tempo: 128, rootHz: 220, waveform: 'square', scale: [0, 7, 0, 12], pattern: [1, 0, 1, 0, 1, 0, 1, 0] }),
   pack('k-pop', 'K-pop', 'k-pop', 'choreo', 'onset', 'point', { scale: 1.04, partyScale: 1.09, tilt: 0 }, { tempo: 126, rootHz: 294, waveform: 'sine', scale: [0, 4, 7, 11], pattern: [1, 0, 1, 1, 0, 1, 0, 1] }),
   pack('classical', 'Classical', 'classical', 'breath', 'onset', 'shiver', { scale: 1.03, partyScale: 1.05, tilt: 0 }, { tempo: 72, rootHz: 262, waveform: 'sine', scale: [0, 4, 7, 12], pattern: [1, 0, 0, 1, 0, 1, 0, 0] }),
+  pack('reggae', 'Reggae', 'reggae', 'sway', 'offbeat', 'offbeat', { scale: 1.04, partyScale: 1.08, tilt: 3 }, { tempo: 78, rootHz: 196, waveform: 'sine', scale: [0, 0, 5, 7], pattern: [1, 0, 0, 1, 0, 0, 1, 0] }),
+  pack('soul', 'R&B / soul', 'soul', 'sway', 'onset', 'glow', { scale: 1.03, partyScale: 1.06, tilt: 0 }, { tempo: 86, rootHz: 220, waveform: 'sine', scale: [0, 3, 7, 10], pattern: [1, 0, 1, 0, 0, 1, 0, 0] }),
+  pack('country', 'Country', 'country', 'step', 'onset', 'tip', { scale: 1.03, partyScale: 1.07, tilt: -8 }, { tempo: 104, rootHz: 196, waveform: 'triangle', scale: [0, 4, 7, 4], pattern: [1, 0, 1, 0, 1, 1, 0, 0] }),
+  pack('jazz', 'Jazz', 'jazz', 'lean', 'onset', 'snap', { scale: 1.03, partyScale: 1.06, tilt: 2 }, { tempo: 96, rootHz: 196, waveform: 'triangle', scale: [0, 3, 5, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 1] }),
+  pack('blues', 'Blues', 'blues', 'rock', 'onset', 'puff', { scale: 1.03, partyScale: 1.06, tilt: 0 }, { tempo: 76, rootHz: 147, waveform: 'triangle', scale: [0, 3, 5, 6], pattern: [1, 0, 0, 1, 0, 0, 1, 0] }),
+  pack('metal', 'Metal', 'metal', 'headbang', 'onset', 'headbang', { scale: 1.06, partyScale: 1.12, tilt: 14 }, { tempo: 160, rootHz: 98, waveform: 'sawtooth', scale: [0, 1, 6, 7], pattern: [1, 1, 0, 1, 1, 0, 1, 1] }),
+  pack('latin', 'Latin', 'latin', 'sway', 'onset', 'spin', { scale: 1.05, partyScale: 1.1, tilt: 12 }, { tempo: 168, rootHz: 220, waveform: 'square', scale: [0, 4, 7, 9], pattern: [1, 0, 1, 1, 0, 1, 0, 1] }),
+  pack('punk', 'Punk', 'punk', 'pogo', 'onset', 'pogo', { scale: 1.06, partyScale: 1.12, tilt: 0 }, { tempo: 176, rootHz: 185, waveform: 'square', scale: [0, 0, 5, 7], pattern: [1, 1, 1, 0, 1, 0, 1, 0] }),
+  pack('indie', 'Indie', 'indie', 'shuffle', 'onset', 'double', { scale: 1.04, partyScale: 1.08, tilt: 0 }, { tempo: 96, rootHz: 220, waveform: 'sine', scale: [0, 2, 4, 7], pattern: [1, 0, 1, 0, 1, 0, 1, 0] }),
+  pack('emo', 'Emo', 'punk', 'down', 'onset', 'flick', { scale: 1.04, partyScale: 1.08, tilt: 12 }, { tempo: 104, rootHz: 196, waveform: 'sine', scale: [0, 3, 7, 10], pattern: [1, 0, 0, 1, 0, 1, 0, 0] }),
 ]
 
 export type GenreLook = (typeof GENRE_PACK)[number]['id']

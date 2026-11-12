@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { GENRE_ART } from '../view/genre-art.tsx'
 import { GENRE_PACK, GENRE_PULSE_MIN_MS, genreById, genreFromStorage, genreNotes, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, spectralCentroid } from './genre-pack.ts'
 
-const BATCH_A = ['pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical']
+const SHORTLIST = ['pop', 'rock', 'hip-hop', 'electronic', 'k-pop', 'classical', 'reggae', 'soul', 'country', 'jazz', 'blues', 'metal', 'latin', 'punk', 'indie', 'emo']
 
 describe('genre pack', () => {
   it('lists the shortlist batch and gives each look a pack, a drawing, and a sting', () => {
-    expect(GENRE_PACK.map((genre) => genre.id)).toEqual(BATCH_A)
+    expect(GENRE_PACK.map((genre) => genre.id)).toEqual(SHORTLIST)
+    expect(GENRE_PACK).toHaveLength(16)
+    expect(genreById('emo')).toMatchObject({ pack: 'punk', feature: 'genre-punk' })
+    expect(genreById('punk')?.feature).toBe('genre-punk')
+    expect(genreById('reggae')?.grid).toBe('offbeat')
+    expect(genreById('metal')?.reaction).toBe('headbang')
     for (const genre of GENRE_PACK) {
       expect(genre.feature).toBe(`genre-${genre.pack}`)
       expect(genre.tier).toBe('premium')

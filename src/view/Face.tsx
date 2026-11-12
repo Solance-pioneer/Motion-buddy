@@ -48,6 +48,7 @@ export function Face({ onReady, genre = 'none', pulse = false, party = false, re
         <path data-part="brow-r" d="M58 31 Q68 25 78 31" fill="none" stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round" opacity="0" />
         <path data-part="mouth" fill="#ffffff" stroke="none" />
         <ellipse data-part="genre-mouth" cx="50" cy="70" rx="8" ry="5.5" fill="#ffffff" opacity={wide && !reduced ? 1 : 0} />
+        {genre === 'emo' && pulse && !reduced ? <path data-part="genre-squeeze" d="M22 36 Q32 42 42 36 M58 36 Q68 42 78 36" fill="none" stroke="#ffffff" strokeWidth="1.3" opacity="0.4" /> : null}
         <ellipse data-part="blush-l" cx="22" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
         <ellipse data-part="blush-r" cx="78" cy="58" rx="4.2" ry="2.2" fill="#ff8fa3" opacity="0" />
         <path data-part="sweat" d="M74 30 q2 4 0 6 q-2-2 0-6z" fill="#ffffff" opacity="0" />
