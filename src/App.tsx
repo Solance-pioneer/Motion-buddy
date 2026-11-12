@@ -52,6 +52,8 @@ import type { WeatherOverride } from './logic/weather/conditions.ts'
 import { requestRoundedFix } from './logic/weather/locate.ts'
 import type { WeatherConditions } from './logic/weather/types.ts'
 import { loadClipUrl } from './view/clip-urls.ts'
+import { CLIP_WIDTHS } from 'virtual:clip-widths'
+import { clipDefinition } from './logic/clip-definition.ts'
 import { CLIP_PLAY_TIMEOUT_MS, afterPlayRejection, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-v1/buddy-brake-surprised-v1.mp4'
@@ -1915,14 +1917,19 @@ onClick={() => {
                 ))}
               </div>
               <div className="clip-gallery-list">
-                {CLIP_ROWS.map((row) => (
+                {CLIP_ROWS.map((row) => {
+                  const width = row.file ? CLIP_WIDTHS[row.file] : undefined
+                  const definition = width ? clipDefinition(width) : null
+                  return (
                   <button key={row.id} type="button" disabled={!row.file} onClick={() => {
                     primeClipVideo()
                     startBatchRef.current(row.id, true)
                   }}>
+                    {definition ? <span className="clip-badge" data-def={definition}>{definition}</span> : null}
                     {row.number}. {row.label ?? row.id.replaceAll('-', ' ')}{row.file ? '' : ' unavailable'}
                   </button>
-                ))}
+                  )
+                })}
               </div>
             </div>
           ) : null}

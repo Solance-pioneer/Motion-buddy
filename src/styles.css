@@ -322,6 +322,28 @@ body {
   padding: 6px 8px;
 }
 
+.clip-gallery-list button {
+  position: relative;
+  padding-right: 40px;
+}
+
+.clip-badge {
+  position: absolute;
+  top: 7px;
+  right: 6px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: 700 10px/1 system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.clip-badge[data-def='HD'] {
+  background: rgba(255, 255, 255, 0.32);
+}
+
 .clip-gallery-list button:disabled {
   opacity: 0.45;
 }
