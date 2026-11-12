@@ -49,6 +49,7 @@ export interface ClipRow {
   weather?: 'rain' | 'snow' | 'clearing' | 'hot' | 'windy'
   scene?: CostumeClipScene
   country?: CountryClip
+  label?: string
 }
 
 export interface FeatureRow {
@@ -128,6 +129,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'egypt-pyramids', number: 49, trigger: 'country', cooldownMs: 0, country: 'egypt_pharaoh' }),
   free({ id: 'japan-fuji', number: 50, trigger: 'country', cooldownMs: 0, country: 'japan_bow', file: 'japan-fuji-v2.mp4' }),
   free({ id: 'australia-kangaroo', number: 51, trigger: 'country', cooldownMs: 0, country: 'australia_hop' }),
+  free({ id: 'leaf-catch-hd', number: 52, trigger: 'idle', cooldownMs: 0, file: 'leaf-catch-hd-v1.mp4', label: 'leaf-catch (HD test)' }),
 ]
 
 export type ClipGuard = 'rush' | 'brake' | 'batch' | null

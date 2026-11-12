@@ -53,9 +53,9 @@ const base = {
 }
 
 describe('batch clip table', () => {
-  it('lists clips 1 to 51', () => {
-    expect(CLIP_ROWS).toHaveLength(51)
-    expect(CLIP_ROWS.map((row) => row.number)).toEqual(Array.from({ length: 51 }, (_, index) => index + 1))
+  it('lists clips 1 to 52', () => {
+    expect(CLIP_ROWS).toHaveLength(52)
+    expect(CLIP_ROWS.map((row) => row.number)).toEqual(Array.from({ length: 52 }, (_, index) => index + 1))
     expect(CLIP_ROWS.every((row) => row.tier === 'free' || row.tier === 'premium')).toBe(true)
     expect(CLIP_ROWS.find((row) => row.id === 'birthday-cake')?.trigger).toBe('none')
     expect(clipById('sneeze')?.file).toBe('sneeze-v1.mp4')
@@ -64,6 +64,7 @@ describe('batch clip table', () => {
     expect(clipById('proud-sparkle')?.file).toBe('proud-sparkle-v2.mp4')
     expect(clipById('ninja-idle')).toMatchObject({ number: 42, trigger: 'none', file: '' })
     expect(clipById('ghost-idle')).toMatchObject({ number: 45, trigger: 'none', file: '' })
+    expect(clipById('leaf-catch-hd')).toMatchObject({ number: 52, trigger: 'idle', tier: 'free', file: 'leaf-catch-hd-v1.mp4', label: 'leaf-catch (HD test)' })
   })
 
   it('plays the new films on the matching event and keeps a coded fallback', () => {
@@ -85,6 +86,7 @@ describe('batch clip table', () => {
     for (let i = 0; i < 400; i += 1) seen.add(nextIdleClip(null, i / 400) ?? '')
     expect(seen.has('superhero-idle')).toBe(true)
     expect(seen.has('racer-idle')).toBe(true)
+    expect(seen.has('leaf-catch-hd')).toBe(true)
     expect(seen.has('sneeze')).toBe(true)
     expect(seen.has('ninja-idle')).toBe(false)
     expect(seen.has('ghost-idle')).toBe(false)
@@ -93,6 +95,7 @@ describe('batch clip table', () => {
   it('ships the approved mp4 bytes and leaves the held-back names out', () => {
     const hash = (path: string) => createHash('sha256').update(readFileSync(path)).digest('hex')
     expect(hash('src/assets/scene-clips-batch1-v1/proud-sparkle-v2.mp4')).toBe('7cd914fdbb5d79f811313a3a5cd53733eaf25a011fa8783819f585319490be47')
+    expect(hash('src/assets/hd-test/leaf-catch-hd-v1.mp4')).toBe('957aef5b2b536b73e0b4303deffe53ddbf678e87ccd33e213877664cb9736426')
     expect(hash('src/assets/scene-clips-batch1-v1/sneeze-v1.mp4')).toBe('1d2cc9b7327e3fb734c61c6d958485ee3b7028c9aa6b91a3949e4a644787de18')
     expect(existsSync('src/assets/scene-clips-batch1-v1/proud-sparkle-v1.mp4')).toBe(false)
     const shipped: Record<string, string> = {

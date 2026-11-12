@@ -742,14 +742,6 @@ export function App() {
   weatherRef.current = weather
   weatherOnRef.current = weatherOn
   const releaseClip = () => {
-    const video = clipVideo.current
-    if (video) {
-      try {
-        video.currentTime = 0
-      } catch {
-        // A clip that has not loaded yet has nothing to rewind.
-      }
-    }
     clipClock.current = endSceneClip(clipClock.current)
     setSceneClip(null)
     setBatchId(null)
@@ -1928,7 +1920,7 @@ onClick={() => {
                     primeClipVideo()
                     startBatchRef.current(row.id, true)
                   }}>
-                    {row.number}. {row.id.replaceAll('-', ' ')}{row.file ? '' : ' unavailable'}
+                    {row.number}. {row.label ?? row.id.replaceAll('-', ' ')}{row.file ? '' : ' unavailable'}
                   </button>
                 ))}
               </div>

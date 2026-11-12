@@ -1,5 +1,5 @@
 const loaders = import.meta.glob(
-  ['../assets/scene-clips-batch1-v1/*.mp4', '../assets/scene-clips-batch2-v1/*.mp4'],
+  ['../assets/scene-clips-batch1-v1/*.mp4', '../assets/scene-clips-batch2-v1/*.mp4', '../assets/hd-test/*.mp4'],
   {
     query: '?url',
     import: 'default',
