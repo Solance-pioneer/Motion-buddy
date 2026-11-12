@@ -185,8 +185,12 @@ function ghost(ms: number, reduced: boolean): ScenePose {
   return pose
 }
 
-export function nextAmbientScene(previous: SceneKey | null): SceneKey {
-  if (!previous) return SCENE_ORDER[0]
-  const index = SCENE_ORDER.indexOf(previous)
-  return SCENE_ORDER[(index + 1) % SCENE_ORDER.length]
+/** Allowed set limits coded idle. An empty set plays nothing. Omit it to use every scene. */
+export function nextAmbientScene(previous: SceneKey | null, allowed?: ReadonlySet<string> | null): SceneKey | null {
+  const order = allowed ? SCENE_ORDER.filter((key) => allowed.has(key)) : [...SCENE_ORDER]
+  if (order.length === 0) return null
+  if (!previous) return order[0]
+  const index = order.indexOf(previous)
+  if (index < 0) return order[0]
+  return order[(index + 1) % order.length]
 }

@@ -22,7 +22,8 @@ import { classifyStroke, cueForGesture } from './logic/pet-play.ts'
 import { heroCapePath, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
-import { readAdminEnabled, readIdleGapSeconds, readMorningDay, readSpeechEnabled, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { readAdminEnabled, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readWeatherMoods, writeAdminEnabled, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeWeatherMoods } from './logic/clip-memory.ts'
+import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
 import { adminFromSearch } from './logic/admin-flag.ts'
 import { initialSpeechClock, offerSpeech, SPEECH_VISIBLE_MS, type SpeechKind } from './logic/speech.ts'
 import {
@@ -183,6 +184,9 @@ export function App() {
     return decided.on
   })
   const [adminOpen, setAdminOpen] = useState(false)
+  const [idlePrefs, setIdlePrefs] = useState(() => readIdlePrefs())
+  const idlePrefsRef = useRef(idlePrefs)
+  idlePrefsRef.current = idlePrefs
   const [chromeOn, setChromeOn] = useState(true)
   const [chromePulse, setChromePulse] = useState(0)
   const wakeChrome = () => setChromePulse((n) => n + 1)
@@ -610,25 +614,28 @@ export function App() {
             if (started) return
             batteryRef.current = { ...battery.clock, pending: true }
           }
-          const action = chooseIdleAction(Math.random(), reduced, hold.lastIdle, Math.random())
+          const clipsOn = enabledClipIds(idlePrefsRef.current)
+          const codedOn = enabledCodedIds(idlePrefsRef.current)
+          const action = chooseIdleAction(Math.random(), reduced, hold.lastIdle, Math.random(), clipsOn)
           if (action.kind === 'clip') {
-            const key = nextAmbientScene(lastScene.current)
-            const ok = startBatchRef.current(action.id, false, { onFail: () => beginScene(key) })
+            const key = nextAmbientScene(lastScene.current, codedOn)
+            const ok = startBatchRef.current(action.id, false, { onFail: () => { if (key) beginScene(key) } })
             if (ok) {
               hold.lastIdle = action.id
               return
             }
           }
           if (!hold.guard) {
-            const key = nextAmbientScene(lastScene.current)
-            const clipId = reduced ? null : costumeClipId(key)
-            if (clipId) {
+            const key = nextAmbientScene(lastScene.current, codedOn)
+            const film = key && !reduced ? costumeClipId(key) : null
+            const clipId = film && clipsOn.has(film) ? film : null
+            if (key && clipId) {
               const started = startBatchRef.current(clipId, false, { onFail: () => beginScene(key) })
               if (started) {
                 lastScene.current = key
                 hold.lastIdle = clipId
               } else beginScene(key)
-            } else beginScene(key)
+            } else if (key) beginScene(key)
           }
         }
       }
@@ -1881,6 +1888,23 @@ onClick={() => {
             setIdleGapSeconds(next)
             idleGapRef.current = next
             writeIdleGapSeconds(next)
+          }}
+          idleChoices={idleChoices()}
+          idleOn={enabledIdleIds(idlePrefs)}
+          onToggleIdle={(id, on) => {
+            const next = toggleIdlePref(idlePrefs, id, on)
+            setIdlePrefs(next)
+            writeIdlePrefs(next)
+          }}
+          onSelectAllIdle={() => {
+            const next = allIdleOn()
+            setIdlePrefs(next)
+            writeIdlePrefs(next)
+          }}
+          onResetIdle={() => {
+            const next = allIdleOn()
+            setIdlePrefs(next)
+            writeIdlePrefs(next)
           }}
           speechOn={speechOn}
           onToggleSpeech={() => {

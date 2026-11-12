@@ -7,6 +7,7 @@ import type { FaceStyle } from './applyPose.ts'
 import type { MotionUiStatus, SensorSignals } from './useTilt.ts'
 import type { WakeLockUi } from './useWakeLock.ts'
 import { IDLE_GAP_MAX_S, IDLE_GAP_MIN_S } from '../logic/clip-table.ts'
+import { idleGroups, type IdleChoice } from '../logic/idle-prefs.ts'
 
 const EXPRESSION_LABEL: Record<PoseId, string> = {
   curious: 'Curious',
@@ -64,6 +65,11 @@ export function Controls({
   onStopMotion,
   idleGapSeconds,
   onIdleGap,
+  idleChoices,
+  idleOn,
+  onToggleIdle,
+  onSelectAllIdle,
+  onResetIdle,
   speechOn,
   onToggleSpeech,
   soundOn,
@@ -110,6 +116,11 @@ export function Controls({
   onToggleWeather: () => void
   idleGapSeconds: number
   onIdleGap: (seconds: number) => void
+  idleChoices: readonly IdleChoice[]
+  idleOn: ReadonlySet<string>
+  onToggleIdle: (id: string, on: boolean) => void
+  onSelectAllIdle: () => void
+  onResetIdle: () => void
   speechOn: boolean
   onToggleSpeech: () => void
 }) {
@@ -304,6 +315,32 @@ export function Controls({
 
         <fieldset>
           <legend>Idle</legend>
+          <p className="note">Choose which idle animations play. Touch reactions stay on. At least one idle stays on.</p>
+          <div className="choice-row">
+            <button type="button" onClick={onSelectAllIdle}>Select all</button>
+            <button type="button" onClick={onResetIdle}>Reset</button>
+          </div>
+          {idleGroups(idleChoices).map((group) => (
+            <div key={group}>
+              <p className="note">{group}</p>
+              <div className="choice-grid">
+                {idleChoices.filter((choice) => choice.group === group).map((choice) => {
+                  const on = idleOn.has(choice.id)
+                  return (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      aria-pressed={on}
+                      disabled={on && idleOn.size === 1}
+                      onClick={() => onToggleIdle(choice.id, !on)}
+                    >
+                      {choice.label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
           <div className="idle-gap">
             <label htmlFor="idle-gap">
               Time between idle animations

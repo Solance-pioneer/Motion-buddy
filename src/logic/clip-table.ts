@@ -289,12 +289,12 @@ export interface IdleWaitClock {
 }
 
 /** Emotion and activity films, plus superhero-idle and racer-idle. Both costumes still play on their coded turns. */
-function idleClipRows(): ClipRow[] {
-  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle'))
+function idleClipRows(allowed?: ReadonlySet<string> | null): ClipRow[] {
+  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle') && (!allowed || allowed.has(row.id)))
 }
 
-export function nextIdleClip(previous: string | null, random = 0): string | null {
-  const pool = idleClipRows()
+export function nextIdleClip(previous: string | null, random = 0, allowed?: ReadonlySet<string> | null): string | null {
+  const pool = idleClipRows(allowed)
   if (pool.length === 0) return null
   const start = Math.abs(Math.floor(random * pool.length)) % pool.length
   for (let step = 0; step < pool.length; step += 1) {
@@ -305,9 +305,9 @@ export function nextIdleClip(previous: string | null, random = 0): string | null
 }
 
 /** Reduced motion is always a coded idle, so the weight cannot leave a blank gap. */
-export function chooseIdleAction(weightRandom: number, reduced: boolean, previous: string | null, clipRandom = 0): IdleAction {
+export function chooseIdleAction(weightRandom: number, reduced: boolean, previous: string | null, clipRandom = 0, allowed?: ReadonlySet<string> | null): IdleAction {
   if (!reduced && weightRandom < IDLE_CLIP_WEIGHT) {
-    const id = nextIdleClip(previous, clipRandom)
+    const id = nextIdleClip(previous, clipRandom, allowed)
     if (id) return { kind: 'clip', id }
   }
   return { kind: 'coded' }
