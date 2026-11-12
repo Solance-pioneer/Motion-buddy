@@ -3,7 +3,7 @@
 Original clips by Mochi, the team's animation director. Approved by Michael Dicker on 12 Nov 2026.
 The zip SHA256 is 555efaa4369daed2dc1e6df56e50161cb9d10ac385863bf55653762059b4eb46.
 Rush and brake stay in scene-clips-v1. These films load only when one is played.
-Clip 7 proud-sparkle is the v2 file. Clips 2 sneeze, 4 giggle-fit, and 9 wink-kiss stay on their v1 files.
+Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app copy (12 Nov 2026, via Solance): stream-copied from master sneeze-v2.mp4 (SHA256 9b6474a51361812a5ccdf2b1209a6899e11320e57798f7e7a1be63ae2f0ec83f) with only the embedded cover-image stream dropped, not re-encoded. Clips 4 giggle-fit and 9 wink-kiss stay on their v1 files.
 
 | File | SHA256 |
 | --- | --- |
@@ -35,7 +35,7 @@ Clip 7 proud-sparkle is the v2 file. Clips 2 sneeze, 4 giggle-fit, and 9 wink-ki
 | sharp-turn-wobble-v1.mp4 | f243806494c53452902dc42e5f827426cfafa53cfbb0a6833dc802632283ce00 |
 | shy-peek-v1.mp4 | ffba64e749b57239fdce9ac34822feabd4caaf0dd43d2cb79c821f611d3ee0ca |
 | sleepy-doze-v1.mp4 | a5f64fb9d43e2df903d864f6b5ca3b64733547539b9c719ee3496ab63d49db16 |
-| sneeze-v1.mp4 | 1d2cc9b7327e3fb734c61c6d958485ee3b7028c9aa6b91a3949e4a644787de18 |
+| sneeze-v2-app.mp4 | df8375a642a5c804773a08b7569d56eb99ed8e774eb70a6b9d0ff2f97b24aa2c |
 | snow-day-v1.mp4 | 6f7a9a098d0e01d05b30643adc826d7e9b1c2d34a4723c9e640c7838991dc12c |
 | soap-bubbles-v1.mp4 | 7f2d368365b29c208fec31500959b88c89d88a442a7d77617d78c24c435eaf36 |
 | speed-bump-bounce-v1.mp4 | 8ef3f4eda21404c5406e9b1ecf7159f5590f78f80b506bb7e80ca2f65a16b3d1 |

@@ -79,7 +79,7 @@ const premium = (row: Omit<ClipRow, 'tier' | 'file'> & { file?: string }): ClipR
 
 export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'sleepy-doze', number: 1, trigger: 'sleepy', cooldownMs: 480_000 }),
-  free({ id: 'sneeze', number: 2, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'sneeze', number: 2, trigger: 'idle', cooldownMs: 0, file: 'sneeze-v2-app.mp4' }),
   free({ id: 'hiccups', number: 3, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'giggle-fit', number: 4, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'love-hearts', number: 5, trigger: 'idle', cooldownMs: 0 }),

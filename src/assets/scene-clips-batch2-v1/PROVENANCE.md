@@ -3,7 +3,7 @@
 Original clips by Mochi, approved by Michael Dicker on 12 Nov 2026.
 These films load only when one is played.
 
-Held back, and not in this repo: sneeze-v2, giggle-fit-v2, wink-kiss-v2, ninja-idle-v2, ghost-idle-v2.
+Held back, and not in this repo: the master sneeze-v2.mp4, giggle-fit-v2, wink-kiss-v2, ninja-idle-v2, ghost-idle-v2. Clip 2 uses the approved app copy sneeze-v2-app.mp4.
 Clips 42 ninja-idle and 45 ghost-idle keep their numbers and have no film. Ninja and ghost stay on the coded costumes.
 
 | File | Number | SHA256 |
