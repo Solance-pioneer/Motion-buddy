@@ -378,6 +378,15 @@ body {
   font-size: 16px;
 }
 
+.chip-note {
+  margin: 0;
+  max-width: 16rem;
+  color: rgba(255, 255, 255, 0.82);
+  font: 500 11px/1.3 system-ui, sans-serif;
+  text-align: right;
+  pointer-events: none;
+}
+
 .cal-note {
   position: static;
   margin: 0;

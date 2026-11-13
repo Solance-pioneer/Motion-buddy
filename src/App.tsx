@@ -1983,6 +1983,7 @@ export function App() {
           </button>
         ) : null}
         </div>
+        <p className="chip-note">On iPhone, other music may pause while listening.</p>
         {calNote ? <p className="cal-note" role="status">{calNote}</p> : null}
         </div>
       ) : null}

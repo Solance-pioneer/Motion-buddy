@@ -1,3 +1,4 @@
+import { beginCaptureSession, pageAudioSession } from './audio-session.ts'
 import { audioContext, unlockSound } from './sfx.ts'
 
 /**
@@ -8,9 +9,16 @@ export async function openBeatMic(onMagnitudes: (bins: Uint8Array, sampleRate: n
   if (!unlockSound()) return () => {}
   const audio = audioContext()
   if (!audio || !navigator.mediaDevices?.getUserMedia) return () => {}
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-  })
+  const releaseSession = beginCaptureSession(pageAudioSession())
+  let stream: MediaStream
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    })
+  } catch (error) {
+    releaseSession()
+    throw error
+  }
   const source = audio.createMediaStreamSource(stream)
   const analyser = audio.createAnalyser()
   analyser.fftSize = 1024
@@ -24,5 +32,6 @@ export async function openBeatMic(onMagnitudes: (bins: Uint8Array, sampleRate: n
     window.clearInterval(timer)
     source.disconnect()
     for (const track of stream.getTracks()) track.stop()
+    releaseSession()
   }
 }
