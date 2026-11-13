@@ -118,12 +118,18 @@ export function readTheme(): ThemeId {
 export const BEAT_KEY = 'motion-buddy-beat-v1'
 export const GENRE_KEY = 'motion-buddy-genre-v1'
 
+/** Chill is stored as steady. Hype is stored as party. Older saves use those same words. */
+export function beatFeelFromStored(raw: unknown): BeatFeel {
+  if (raw === 'party' || raw === 'hype') return 'party'
+  return 'steady'
+}
+
 export function readBeatFeel(): { on: boolean; feel: BeatFeel } {
   try {
     const raw = localStorage.getItem(BEAT_KEY)
     if (!raw) return { on: false, feel: 'steady' }
     const parsed = JSON.parse(raw) as { on?: unknown; feel?: unknown }
-    return { on: parsed.on === true, feel: parsed.feel === 'party' ? 'party' : 'steady' }
+    return { on: parsed.on === true, feel: beatFeelFromStored(parsed.feel) }
   } catch {
     return { on: false, feel: 'steady' }
   }

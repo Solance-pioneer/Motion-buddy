@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { IDLE_GAP_KEY, readIdleGapSeconds, readSpeechEnabled, SPEECH_KEY, writeIdleGapSeconds, writeSpeechEnabled } from './clip-memory.ts'
+import { BEAT_KEY, beatFeelFromStored, IDLE_GAP_KEY, readBeatFeel, readIdleGapSeconds, readSpeechEnabled, SPEECH_KEY, writeBeatFeel, writeIdleGapSeconds, writeSpeechEnabled } from './clip-memory.ts'
 
 describe('idle gap memory', () => {
   const store = new Map<string, string>()
@@ -41,5 +41,29 @@ describe('idle gap memory', () => {
     expect(readSpeechEnabled()).toBe(true)
     store.set(SPEECH_KEY, 'nope')
     expect(readSpeechEnabled()).toBe(true)
+  })
+
+  it('keeps chill and hype when an older steady or party value is stored', () => {
+    expect(beatFeelFromStored('steady')).toBe('steady')
+    expect(beatFeelFromStored('chill')).toBe('steady')
+    expect(beatFeelFromStored('party')).toBe('party')
+    expect(beatFeelFromStored('hype')).toBe('party')
+    expect(beatFeelFromStored('nope')).toBe('steady')
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(key, value)
+      },
+    })
+    store.set(BEAT_KEY, JSON.stringify({ on: true, feel: 'party' }))
+    expect(readBeatFeel()).toEqual({ on: true, feel: 'party' })
+    store.set(BEAT_KEY, JSON.stringify({ on: true, feel: 'hype' }))
+    expect(readBeatFeel()).toEqual({ on: true, feel: 'party' })
+    store.set(BEAT_KEY, JSON.stringify({ on: false, feel: 'chill' }))
+    expect(readBeatFeel()).toEqual({ on: false, feel: 'steady' })
+    writeBeatFeel(true, 'party')
+    expect(store.get(BEAT_KEY)).toBe('{"on":true,"feel":"party"}')
+    writeBeatFeel(false, 'steady')
+    expect(readBeatFeel()).toEqual({ on: false, feel: 'steady' })
   })
 })

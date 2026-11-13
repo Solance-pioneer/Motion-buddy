@@ -203,7 +203,7 @@ export function headbangFromStorage(raw: string | null): HeadbangSpeed {
   return 'medium'
 }
 
-/** Metal only. Party mode nods harder. Reduced motion is handled by the caller. */
+/** Metal only. Hype nods harder. Reduced motion is handled by the caller. */
 export function headbangTilt(base: number, speed: HeadbangSpeed, party: boolean): number {
   const mul = speed === 'slow' ? 0.55 : speed === 'fast' ? 1.45 : 1
   return base * mul * (party ? 1.25 : 1)

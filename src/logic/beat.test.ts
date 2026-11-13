@@ -15,7 +15,7 @@ describe('beat listening', () => {
     }
   })
 
-  it('marks an onset and estimates tempo, and party mode is easier', () => {
+  it('marks an onset and estimates tempo, and hype is easier than chill', () => {
     let clock = { ...initialBeatClock(), floor: 0.2, primed: true }
     const quiet = stepBeat(clock, 0.22, 1_000, 'steady')
     expect(quiet.beat).toBe(false)

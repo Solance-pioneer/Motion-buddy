@@ -434,10 +434,10 @@ export function Controls({
           <legend>Music</legend>
           <button type="button" aria-pressed={beatOn} onClick={onToggleBeat}>Beat</button>
           <div className="choice-row">
-            <button type="button" aria-pressed={beatFeel === 'steady'} onClick={() => onBeatFeel('steady')}>Steady</button>
-            <button type="button" aria-pressed={beatFeel === 'party'} onClick={() => onBeatFeel('party')}>Party mode</button>
+            <button type="button" aria-pressed={beatFeel === 'steady'} onClick={() => onBeatFeel('steady')}>Chill</button>
+            <button type="button" aria-pressed={beatFeel === 'party'} onClick={() => onBeatFeel('party')}>Hype</button>
           </div>
-          <p className="note">Beat listens only while it is on, after you tap. Nothing is saved or sent. The head nods in Desk. Reduced motion stays still.</p>
+          <p className="note">Chill is the quieter threshold. Hype sits closer to the noise floor. Beat listens only while it is on, after you tap. Nothing is saved or sent. The head nods in Desk. Reduced motion stays still, and a mute silences the genre sounds.</p>
           <div className="choice-grid">
             <button type="button" aria-pressed={genre === 'none'} onClick={() => onGenre('none')}>No look</button>
             {GENRE_LOOKS.map((look) => (

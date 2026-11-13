@@ -25,7 +25,7 @@ import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITI
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readBeatFeel, readGenre, readHeadbang, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeHeadbang, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
-import { genreById, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, shownGenre, spectralCentroid, type GenreId, type HeadbangSpeed } from './logic/genres.ts'
+import { GENRE_LOOKS, genreById, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, shownGenre, spectralCentroid, type GenreId, type HeadbangSpeed } from './logic/genres.ts'
 import { playGenreSting } from './logic/genre-sound.ts'
 import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
@@ -1680,6 +1680,20 @@ export function App() {
       // The element stays primed. Idle clips still start muted.
     })
   }
+  const toggleBeat = () => {
+    unlockQuiet()
+    const next = !beatOn
+    setBeatOn(next)
+    writeBeatFeel(next, beatFeel)
+  }
+  const chooseGenre = (id: string) => {
+    if (id !== 'none' && !genreById(id)) return
+    const look = id === 'none' ? undefined : genreById(id)
+    if (look && (!isUnlocked('genre-looks') || !isUnlocked(look.feature))) return
+    const next = id as GenreId
+    setGenre(next)
+    writeGenre(next)
+  }
   return (
       <main
         ref={rootRef}
@@ -1831,6 +1845,7 @@ export function App() {
         ) : null}
       </button>
       {!menuOpen ? (
+        <div className="screen-dock">
         <div className="screen-chips" data-car={view.profile === 'car' ? '1' : '0'}>
         <button
           type="button"
@@ -1879,6 +1894,38 @@ export function App() {
           </svg>
           <span>Teleport</span>
         </button>
+        <button
+          type="button"
+          className="screen-chip"
+          aria-pressed={beatOn}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            wakeChrome()
+          }}
+          onClick={toggleBeat}
+        >
+          <span>Party mode</span>
+        </button>
+        <select
+          className="genre-select"
+          aria-label="Genre"
+          value={genre}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            wakeChrome()
+          }}
+          onChange={(event) => {
+            unlockQuiet()
+            chooseGenre(event.target.value)
+          }}
+        >
+          <option value="none">No look</option>
+          {GENRE_LOOKS.map((look) => (
+            <option key={look.id} value={look.id} disabled={!isUnlocked('genre-looks') || !isUnlocked(look.feature)}>
+              {look.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           className="screen-chip mute-chip"
@@ -1936,8 +1983,9 @@ export function App() {
           </button>
         ) : null}
         </div>
+        {calNote ? <p className="cal-note" role="status">{calNote}</p> : null}
+        </div>
       ) : null}
-      {calNote ? <p className="cal-note" role="status">{calNote}</p> : null}
       {!menuOpen ? (
         <div className="portal-bolt" data-part="portal-bolt" data-on="0" data-reduced="0" aria-hidden="true">
           <svg viewBox="0 0 100 100">
@@ -2125,12 +2173,7 @@ onClick={() => {
           }}
           beatOn={beatOn}
           beatFeel={beatFeel}
-          onToggleBeat={() => {
-            unlockQuiet()
-            const next = !beatOn
-            setBeatOn(next)
-            writeBeatFeel(next, beatFeel)
-          }}
+          onToggleBeat={toggleBeat}
           onBeatFeel={(feel) => {
             setBeatFeel(feel)
             writeBeatFeel(beatOn, feel)
@@ -2138,12 +2181,7 @@ onClick={() => {
           genre={genre}
           genreOpen={isUnlocked('genre-looks')}
           packOpen={(feature) => isUnlocked(feature)}
-          onGenre={(id) => {
-            const look = id === 'none' ? undefined : genreById(id)
-            if (look && (!isUnlocked('genre-looks') || !isUnlocked(look.feature))) return
-            setGenre(id)
-            writeGenre(id)
-          }}
+          onGenre={chooseGenre}
           headbang={headbang}
           onHeadbang={(speed) => {
             setHeadbang(speed)
