@@ -109,7 +109,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'sleepy-doze', number: 1, trigger: 'sleepy', cooldownMs: 480_000 }),
   free({ id: 'sneeze', number: 2, trigger: 'idle', cooldownMs: 0, file: 'sneeze-v2-app.mp4' }),
   free({ id: 'hiccups', number: 3, trigger: 'idle', cooldownMs: 0 }),
-  free({ id: 'giggle-fit', number: 4, trigger: 'idle', cooldownMs: 0 }),
+  free({ id: 'giggle-fit', number: 4, trigger: 'idle', cooldownMs: 0, file: 'giggle-fit-v4a-chirpy-app.mp4' }),
   free({ id: 'love-hearts', number: 5, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'sulky-pout', number: 6, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'proud-sparkle', number: 7, trigger: 'idle', cooldownMs: 0, file: 'proud-sparkle-v2.mp4' }),

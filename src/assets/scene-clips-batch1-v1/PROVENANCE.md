@@ -3,7 +3,7 @@
 Original clips by Mochi, the team's animation director. Approved by Michael Dicker on 12 Nov 2026.
 The zip SHA256 is 555efaa4369daed2dc1e6df56e50161cb9d10ac385863bf55653762059b4eb46.
 Rush and brake stay in scene-clips-v1. These films load only when one is played.
-Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app copy (12 Nov 2026, via Solance): stream-copied from master sneeze-v2.mp4 (SHA256 9b6474a51361812a5ccdf2b1209a6899e11320e57798f7e7a1be63ae2f0ec83f) with only the embedded cover-image stream dropped, not re-encoded. Clips 4 giggle-fit and 9 wink-kiss stay on their v1 files.
+Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app copy (12 Nov 2026, via Solance): stream-copied from master sneeze-v2.mp4 (SHA256 9b6474a51361812a5ccdf2b1209a6899e11320e57798f7e7a1be63ae2f0ec83f) with only the embedded cover-image stream dropped, not re-encoded. Clip 4 giggle-fit is the owner-approved app copy giggle-fit-v4a-chirpy-app.mp4 (720x1280, H.264+AAC, 6.04s): the cover image was dropped from the master (SHA fcb2b2aa…cd6). App copy SHA256 0d5498cd68591e513ec5aa1d3f7c19927562c319c30bf27fe038cf05a614bab4. The giggle v4b and v4c variants, ghost-idle-v4, and glass-squish-v5 stay out. Clip 9 wink-kiss stays on its v1 file.
 
 | File | SHA256 |
 | --- | --- |
@@ -15,7 +15,7 @@ Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app cop
 | christmas-hat-v1.mp4 | a76960c82b4770816cbda0f19a282f093baf4e61a6dff77ddf70bfd551c3158b |
 | cool-shades-v1.mp4 | 8b967aff640ff3e9b8dff9ea26c00b98caa09bea0a0a570faebf2c4c3fe9bc0c |
 | dance-groove-v1.mp4 | 0ff9f1e43560346035d6baf6cfc5c380476ec8c22d19c8dacb10b1b4cabddf6d |
-| giggle-fit-v1.mp4 | d8beaf452a2fd62d3eb85465171370a6f6dcbb6c58534e5635abbeb5f157881f |
+| giggle-fit-v4a-chirpy-app.mp4 | 0d5498cd68591e513ec5aa1d3f7c19927562c319c30bf27fe038cf05a614bab4 |
 | good-morning-v1.mp4 | b903bd30885cfd5afc2352fa77b946e0787b890d7bdde9159db1a0eb75b398ae |
 | goodnight-v1.mp4 | 7ddd4eef28c81f0c3e9088dec3f4c602af68e0145e7e0508ad54cc7a2eac37df |
 | halloween-pumpkin-boo-v1.mp4 | 1ba627ced97d5bf19972c0c171a9ee2f2df54889fbbb1a5c3477eb739487fb72 |

@@ -21,6 +21,8 @@ describe('clip definition badges', () => {
     expect(clipDefinition(widths['sneeze-v2-app.mp4'] ?? 0)).toBe('SD')
     expect(widths['leaf-catch-hd-v1.mp4']).toBe(1152)
     expect(clipDefinition(widths['leaf-catch-hd-v1.mp4'] ?? 0)).toBe('HD')
+    expect(widths['giggle-fit-v4a-chirpy-app.mp4']).toBe(720)
+    expect(clipDefinition(widths['giggle-fit-v4a-chirpy-app.mp4'] ?? 0)).toBe('HD')
   })
 
   it('parses a width for every gallery file and keeps the stored reading honest', () => {
