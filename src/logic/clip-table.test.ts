@@ -53,9 +53,9 @@ const base = {
 }
 
 describe('batch clip table', () => {
-  it('lists clips 1 to 52', () => {
-    expect(CLIP_ROWS).toHaveLength(52)
-    expect(CLIP_ROWS.map((row) => row.number)).toEqual(Array.from({ length: 52 }, (_, index) => index + 1))
+  it('lists clips 1 to 53', () => {
+    expect(CLIP_ROWS).toHaveLength(53)
+    expect(CLIP_ROWS.map((row) => row.number)).toEqual(Array.from({ length: 53 }, (_, index) => index + 1))
     expect(CLIP_ROWS.every((row) => row.tier === 'free' || row.tier === 'premium')).toBe(true)
     expect(CLIP_ROWS.find((row) => row.id === 'birthday-cake')?.trigger).toBe('none')
     expect(clipById('sneeze')?.file).toBe('sneeze-v2-app.mp4')
@@ -65,6 +65,7 @@ describe('batch clip table', () => {
     expect(clipById('ninja-idle')).toMatchObject({ number: 42, trigger: 'none', file: '' })
     expect(clipById('ghost-idle')).toMatchObject({ number: 45, trigger: 'none', file: '' })
     expect(clipById('leaf-catch-hd')).toMatchObject({ number: 52, trigger: 'idle', tier: 'free', file: 'leaf-catch-hd-v1.mp4', label: 'leaf-catch (HD test)' })
+    expect(clipById('glass-squish')).toMatchObject({ number: 53, trigger: 'none', tier: 'free', file: 'glass-squish-v5-app.mp4' })
   })
 
   it('plays the new films on the matching event and keeps a coded fallback', () => {
@@ -98,6 +99,10 @@ describe('batch clip table', () => {
     expect(hash('src/assets/hd-test/leaf-catch-hd-v1.mp4')).toBe('957aef5b2b536b73e0b4303deffe53ddbf678e87ccd33e213877664cb9736426')
     expect(hash('src/assets/scene-clips-batch1-v1/sneeze-v2-app.mp4')).toBe('df8375a642a5c804773a08b7569d56eb99ed8e774eb70a6b9d0ff2f97b24aa2c')
     expect(hash('src/assets/scene-clips-batch1-v1/giggle-fit-v4a-chirpy-app.mp4')).toBe('0d5498cd68591e513ec5aa1d3f7c19927562c319c30bf27fe038cf05a614bab4')
+    expect(hash('src/assets/scene-clips-batch1-v1/glass-squish-v5-app.mp4')).toBe('8efcfc7aac09171383dbb729b6c3d39da3ee717ceae539f8cafa73ed1893f49e')
+    const app = readFileSync('src/App.tsx', 'utf8')
+    expect(app.includes("scene-clips-batch1-v1/glass-squish-v5-app.mp4")).toBe(true)
+    expect(app.includes('buddy-brake-surprised-v1.mp4')).toBe(false)
     expect(existsSync('src/assets/scene-clips-batch1-v1/giggle-fit-v1.mp4')).toBe(false)
     expect(existsSync('src/assets/scene-clips-batch1-v1/sneeze-v1.mp4')).toBe(false)
     expect(existsSync('src/assets/scene-clips-batch1-v1/proud-sparkle-v1.mp4')).toBe(false)
@@ -117,7 +122,7 @@ describe('batch clip table', () => {
     for (const [name, sum] of Object.entries(shipped)) {
       expect(hash(`src/assets/scene-clips-batch2-v1/${name}`)).toBe(sum)
     }
-    for (const name of ['sneeze-v2.mp4', 'giggle-fit-v2.mp4', 'giggle-fit-v4b.mp4', 'giggle-fit-v4c.mp4', 'wink-kiss-v2.mp4', 'ninja-idle-v2.mp4', 'ghost-idle-v2.mp4', 'ghost-idle-v4.mp4', 'glass-squish-v5.mp4']) {
+    for (const name of ['sneeze-v2.mp4', 'giggle-fit-v2.mp4', 'giggle-fit-v4b.mp4', 'giggle-fit-v4c.mp4', 'wink-kiss-v2.mp4', 'ninja-idle-v2.mp4', 'ghost-idle-v2.mp4', 'ghost-idle-v4.mp4', 'glass-squish-v4.mp4', 'glass-squish-v5.mp4']) {
       expect(existsSync(`src/assets/scene-clips-batch1-v1/${name}`)).toBe(false)
       expect(existsSync(`src/assets/scene-clips-batch2-v1/${name}`)).toBe(false)
     }

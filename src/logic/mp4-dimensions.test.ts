@@ -22,6 +22,8 @@ describe('clip definition badges', () => {
     expect(widths['leaf-catch-hd-v1.mp4']).toBe(1152)
     expect(clipDefinition(widths['leaf-catch-hd-v1.mp4'] ?? 0)).toBe('HD')
     expect(widths['giggle-fit-v4a-chirpy-app.mp4']).toBe(720)
+    expect(widths['glass-squish-v5-app.mp4']).toBe(720)
+    expect(clipDefinition(widths['glass-squish-v5-app.mp4'] ?? 0)).toBe('HD')
     expect(clipDefinition(widths['giggle-fit-v4a-chirpy-app.mp4'] ?? 0)).toBe('HD')
   })
 

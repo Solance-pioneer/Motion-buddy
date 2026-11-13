@@ -158,6 +158,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'japan-fuji', number: 50, trigger: 'country', cooldownMs: 0, country: 'japan_bow', file: 'japan-fuji-v2.mp4' }),
   free({ id: 'australia-kangaroo', number: 51, trigger: 'country', cooldownMs: 0, country: 'australia_hop' }),
   free({ id: 'leaf-catch-hd', number: 52, trigger: 'idle', cooldownMs: 0, file: 'leaf-catch-hd-v1.mp4', label: 'leaf-catch (HD test)' }),
+  free({ id: 'glass-squish', number: 53, trigger: 'none', cooldownMs: 0, file: 'glass-squish-v5-app.mp4', label: 'glass squish' }),
 ]
 
 export type ClipGuard = 'rush' | 'brake' | 'batch' | null

@@ -3,7 +3,7 @@
 Original clips by Mochi, the team's animation director. Approved by Michael Dicker on 12 Nov 2026.
 The zip SHA256 is 555efaa4369daed2dc1e6df56e50161cb9d10ac385863bf55653762059b4eb46.
 Rush and brake stay in scene-clips-v1. These films load only when one is played.
-Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app copy (12 Nov 2026, via Solance): stream-copied from master sneeze-v2.mp4 (SHA256 9b6474a51361812a5ccdf2b1209a6899e11320e57798f7e7a1be63ae2f0ec83f) with only the embedded cover-image stream dropped, not re-encoded. Clip 4 giggle-fit is the owner-approved app copy giggle-fit-v4a-chirpy-app.mp4 (720x1280, H.264+AAC, 6.04s): the cover image was dropped from the master (SHA fcb2b2aa…cd6). App copy SHA256 0d5498cd68591e513ec5aa1d3f7c19927562c319c30bf27fe038cf05a614bab4. The giggle v4b and v4c variants, ghost-idle-v4, and glass-squish-v5 stay out. Clip 9 wink-kiss stays on its v1 file.
+Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app copy (12 Nov 2026, via Solance): stream-copied from master sneeze-v2.mp4 (SHA256 9b6474a51361812a5ccdf2b1209a6899e11320e57798f7e7a1be63ae2f0ec83f) with only the embedded cover-image stream dropped, not re-encoded. Clip 4 giggle-fit is the owner-approved app copy giggle-fit-v4a-chirpy-app.mp4 (720x1280, H.264+AAC, 6.04s): the cover image was dropped from the master (SHA fcb2b2aa…cd6). App copy SHA256 0d5498cd68591e513ec5aa1d3f7c19927562c319c30bf27fe038cf05a614bab4. The giggle v4b and v4c variants, ghost-idle-v4, and glass-squish-v4 stay out. Clip 9 wink-kiss stays on its v1 file. Car-mode hard brake plays glass-squish-v5-app.mp4 (720x1280, 7.04s, H.264+AAC). The cover image was dropped from the master (SHA 74ddd1a5…b3b1). App copy SHA256 8efcfc7aac09171383dbb729b6c3d39da3ee717ceae539f8cafa73ed1893f49e. It replaces buddy-brake-surprised on that trigger. The 20s cooldown, mute, reduced motion, cross-fade, and touch-wins stay. The surprised film remains in scene-clips-v1 and was not a gallery row.
 
 | File | SHA256 |
 | --- | --- |
@@ -45,3 +45,4 @@ Clip 7 proud-sparkle is the v2 file. Clip 2 sneeze is the owner-approved app cop
 | tunnel-peek-v1.mp4 | a549c120afd7abe4885979d655111a51832e70f57c4fe7dce18816c50846e97e |
 | windy-gust-v1.mp4 | 6805b8c93cbc70144fdfafa67024da7925b3506ee877513dc8c3549663638901 |
 | wink-kiss-v1.mp4 | edb24fbd946f279ee1d2a29891931335d77f4dbf1aea30baa47db1397749e356 |
+| glass-squish-v5-app.mp4 | 8efcfc7aac09171383dbb729b6c3d39da3ee717ceae539f8cafa73ed1893f49e |
