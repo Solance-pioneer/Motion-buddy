@@ -5,7 +5,7 @@ These films load only when one is played.
 
 Held back, and not in this repo: the master sneeze-v2.mp4, giggle-fit-v2, wink-kiss-v2, wink-kiss-v3, ninja-idle-v2, ninja-idle-v3, ghost-idle-v2, ghost-idle-v4, glass-squish-v4, glass-squish-gentle, and the giggle v4b/v4c variants. Clip 2 uses the approved app copy sneeze-v2-app.mp4.
 Clip 42 ninja-idle keeps its number and has no film. Ninja stays on the coded costume.
-Clip 45 ghost-idle is the owner-approved app copy ghost-idle-v3b-notail-app.mp4 (720x1280, H.264+AAC, 6.04s), an original Buddy asset, owner-approved 14 Nov 2026. Master ghost-idle-v3b-notail.mp4 SHA256 e422752a0bc96cd37a699970ed6d019becb838d2f415ff6eb50fac34f26021f2. App copy SHA256 9c3afa3559eb5c7e13f284e79d77888011a62f677db0ca0a046660db7fd412f5. The row stays trigger none and cooldown 0. Mute, reduced motion, and touch-wins are unchanged. The coded sheet-ghost costume is unchanged. ghost-idle-v4 stays out.
+Clip 45 ghost-idle is the owner-approved app copy ghost-idle-v3b-notail-app.mp4 (720x1280, H.264+AAC, 6.04s), an original Buddy asset, owner-approved 14 Nov 2026. Master ghost-idle-v3b-notail.mp4 SHA256 e422752a0bc96cd37a699970ed6d019becb838d2f415ff6eb50fac34f26021f2. App copy SHA256 9c3afa3559eb5c7e13f284e79d77888011a62f677db0ca0a046660db7fd412f5. The row trigger is costume for scene sheet_ghost, and the cooldown stays 0. It plays when Ghost is chosen and during idle while Ghost is on, the same way racer-idle plays for the racer. Mute, reduced motion, touch-wins, and the 4s cooldown are unchanged. Reduced motion keeps the coded sheet-ghost costume. ghost-idle-v4 stays out.
 
 | File | Number | SHA256 |
 | --- | --- | --- |

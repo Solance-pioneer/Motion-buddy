@@ -63,7 +63,7 @@ describe('batch clip table', () => {
     expect(clipById('wink-kiss')?.file).toBe('wink-kiss-v1.mp4')
     expect(clipById('proud-sparkle')?.file).toBe('proud-sparkle-v2.mp4')
     expect(clipById('ninja-idle')).toMatchObject({ number: 42, trigger: 'none', file: '' })
-    expect(clipById('ghost-idle')).toMatchObject({ number: 45, trigger: 'none', cooldownMs: 0, file: 'ghost-idle-v3b-notail-app.mp4' })
+    expect(clipById('ghost-idle')).toMatchObject({ number: 45, trigger: 'costume', cooldownMs: 0, scene: 'sheet_ghost', file: 'ghost-idle-v3b-notail-app.mp4' })
     expect(clipById('leaf-catch-hd')).toMatchObject({ number: 52, trigger: 'idle', tier: 'free', file: 'leaf-catch-hd-v1.mp4', label: 'leaf-catch (HD test)' })
     expect(clipById('glass-squish')).toMatchObject({ number: 53, trigger: 'none', tier: 'free', file: 'glass-squish-v5-app.mp4' })
   })
@@ -73,7 +73,7 @@ describe('batch clip table', () => {
     expect(nextRaceFilm(1)).toBe('race-start')
     expect(nextRaceFilm(2)).toBe('rush')
     expect(costumeClipId('ninja')).toBeNull()
-    expect(costumeClipId('sheet_ghost')).toBeNull()
+    expect(costumeClipId('sheet_ghost')).toBe('ghost-idle')
     expect(costumeClipId('cord_hero')).toBe('superhero-idle')
     expect(costumeClipId('racer')).toBe('racer-idle')
     expect(carClipFor('accel', {}, 50_000, 0, 0)).toBe('car-accelerate')
@@ -90,7 +90,8 @@ describe('batch clip table', () => {
     expect(seen.has('leaf-catch-hd')).toBe(true)
     expect(seen.has('sneeze')).toBe(true)
     expect(seen.has('ninja-idle')).toBe(false)
-    expect(seen.has('ghost-idle')).toBe(false)
+    expect(seen.has('ghost-idle')).toBe(true)
+    expect(chooseIdleAction(0, true, null, 0).kind).toBe('coded')
   })
 
   it('ships the approved mp4 bytes and leaves the held-back names out', () => {

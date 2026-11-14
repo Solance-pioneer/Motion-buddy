@@ -12,6 +12,8 @@ describe('idle expression prefs', () => {
     expect(enabled.has('shy-peek')).toBe(false)
     expect(enabled.has('leaf-catch-hd')).toBe(true)
     expect(enabled.has('ninja')).toBe(true)
+    expect(choices.find((choice) => choice.id === 'ghost-idle')).toMatchObject({ group: 'Dress-up', kind: 'clip' })
+    expect(choices.find((choice) => choice.id === 'racer-idle')?.group).toBe('Dress-up')
     const cleared = idlePrefsFromStorage(JSON.stringify({ off: choices.map((choice) => choice.id) }))
     expect(cleared.off).toEqual([])
     expect(enabledIdleIds(cleared).size).toBe(choices.length)

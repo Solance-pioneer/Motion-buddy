@@ -150,7 +150,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'ninja-idle', number: 42, trigger: 'none', cooldownMs: 0, file: '' }),
   free({ id: 'superhero-idle', number: 43, trigger: 'costume', cooldownMs: 0, scene: 'cord_hero' }),
   free({ id: 'racer-idle', number: 44, trigger: 'costume', cooldownMs: 0, scene: 'racer', file: 'racer-idle-v2.mp4' }),
-  free({ id: 'ghost-idle', number: 45, trigger: 'none', cooldownMs: 0, file: 'ghost-idle-v3b-notail-app.mp4' }),
+  free({ id: 'ghost-idle', number: 45, trigger: 'costume', cooldownMs: 0, scene: 'sheet_ghost', file: 'ghost-idle-v3b-notail-app.mp4' }),
   free({ id: 'uk-guard', number: 46, trigger: 'country', cooldownMs: 0, country: 'uk_guard' }),
   free({ id: 'usa-eagle', number: 47, trigger: 'country', cooldownMs: 0, country: 'usa_eagle' }),
   free({ id: 'france-eiffel', number: 48, trigger: 'country', cooldownMs: 0, country: 'france_cafe' }),
@@ -317,9 +317,9 @@ export interface IdleWaitClock {
   first: boolean
 }
 
-/** Emotion and activity films, plus superhero-idle and racer-idle. Both costumes still play on their coded turns. */
+/** Emotion and activity films, plus the costume idles that have a film. Those costumes still play on their coded turns. */
 function idleClipRows(allowed?: ReadonlySet<string> | null): ClipRow[] {
-  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle') && (!allowed || allowed.has(row.id)))
+  return CLIP_ROWS.filter((row) => row.file && rowOpen(row) && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle' || row.id === 'ghost-idle') && (!allowed || allowed.has(row.id)))
 }
 
 export function nextIdleClip(previous: string | null, random = 0, allowed?: ReadonlySet<string> | null): string | null {
@@ -433,7 +433,7 @@ export function nextRaceFilm(turn: number): 'rush' | 'race-start' {
   return turn % 2 === 0 ? 'rush' : 'race-start'
 }
 
-/** Costume-cycle film for this scene. Ninja and ghost stay on the coded costume. */
+/** Costume-cycle film for this scene. Ninja stays on the coded costume. */
 export function costumeClipId(scene: CostumeClipScene): string | null {
   const row = CLIP_ROWS.find((item) => item.trigger === 'costume' && item.scene === scene && item.file && rowOpen(item))
   return row?.id ?? null

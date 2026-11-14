@@ -50,7 +50,7 @@ const PLAY = new Set([
   'soap-bubbles',
 ])
 
-const DRESS = new Set(['superhero-idle', 'racer-idle'])
+const DRESS = new Set(['superhero-idle', 'racer-idle', 'ghost-idle'])
 
 const GROUP_ORDER = ['Feelings', 'Play', 'Dress-up', 'More']
 
@@ -70,7 +70,7 @@ function groupOf(id: string): string {
 
 /** Idle clips plus the four coded dress-up scenes. Touch reactions are not in this list. */
 export function idleChoices(): IdleChoice[] {
-  const clips = CLIP_ROWS.filter((row) => row.file && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle')).map((row) => ({
+  const clips = CLIP_ROWS.filter((row) => row.file && (row.trigger === 'idle' || row.id === 'superhero-idle' || row.id === 'racer-idle' || row.id === 'ghost-idle')).map((row) => ({
     id: row.id,
     label: row.label ?? titleOf(row.id),
     group: groupOf(row.id),
