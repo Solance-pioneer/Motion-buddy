@@ -150,7 +150,7 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'ninja-idle', number: 42, trigger: 'none', cooldownMs: 0, file: '' }),
   free({ id: 'superhero-idle', number: 43, trigger: 'costume', cooldownMs: 0, scene: 'cord_hero' }),
   free({ id: 'racer-idle', number: 44, trigger: 'costume', cooldownMs: 0, scene: 'racer', file: 'racer-idle-v2.mp4' }),
-  free({ id: 'ghost-idle', number: 45, trigger: 'none', cooldownMs: 0, file: '' }),
+  free({ id: 'ghost-idle', number: 45, trigger: 'none', cooldownMs: 0, file: 'ghost-idle-v3b-notail-app.mp4' }),
   free({ id: 'uk-guard', number: 46, trigger: 'country', cooldownMs: 0, country: 'uk_guard' }),
   free({ id: 'usa-eagle', number: 47, trigger: 'country', cooldownMs: 0, country: 'usa_eagle' }),
   free({ id: 'france-eiffel', number: 48, trigger: 'country', cooldownMs: 0, country: 'france_cafe' }),
