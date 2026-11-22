@@ -141,9 +141,9 @@ export const CLIP_ROWS: readonly ClipRow[] = [
   free({ id: 'low-battery-recharge', number: 33, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'brain-freeze', number: 34, trigger: 'idle', cooldownMs: 0 }),
   free({ id: 'birthday-cake', number: 35, trigger: 'none', cooldownMs: 0 }),
-  free({ id: 'christmas-hat', number: 36, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
+  free({ id: 'christmas-hat', number: 36, trigger: 'season', cooldownMs: 0, from: '12-01', to: '12-25' }),
   free({ id: 'new-year-fireworks', number: 37, trigger: 'season', cooldownMs: 0, from: '12-26', to: '01-07', wrap: true }),
-  free({ id: 'halloween-pumpkin-boo', number: 38, trigger: 'season', cooldownMs: 0, from: '2026-11-12', to: '2026-12-25' }),
+  free({ id: 'halloween-pumpkin-boo', number: 38, trigger: 'season', cooldownMs: 0, from: '10-20', to: '11-01' }),
   free({ id: 'teleport', number: 39, trigger: 'teleport', cooldownMs: 0 }),
   free({ id: 'car-accelerate', number: 40, trigger: 'car-accel', cooldownMs: 45_000 }),
   free({ id: 'race-start', number: 41, trigger: 'race', cooldownMs: 0 }),
@@ -182,9 +182,13 @@ export function minutesOf(date: Date): number {
   return date.getHours() * 60 + date.getMinutes()
 }
 
-/** Inclusive. wrap uses month-day and crosses 1 January. */
+/**
+ * Inclusive. A 5-character MM-DD pair repeats every year.
+ * wrap still crosses 1 January, which is how new-year-fireworks spans December into January.
+ */
 export function inDateWindow(date: Date, from: string, to: string, wrap = false): boolean {
-  if (!wrap) {
+  const monthDay = from.length === 5 && to.length === 5
+  if (!wrap && !monthDay) {
     const key = localYmd(date)
     return key >= from && key <= to
   }

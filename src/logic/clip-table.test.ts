@@ -140,10 +140,28 @@ describe('batch clip table', () => {
     expect(inDateWindow(new Date(2027, 0, 8, 0), '12-26', '01-07', true)).toBe(false)
     expect(inDateWindow(new Date(2026, 6, 1), '12-26', '01-07', true)).toBe(false)
     const festive = previewDate(new Date(2026, 6, 1), 'festive')
+    expect(festive.getMonth()).toBe(11)
+    expect(festive.getDate()).toBe(1)
     expect(seasonDue(festive, [])).toBe('christmas-hat')
-    expect(seasonDue(festive, ['christmas-hat'])).toBe('halloween-pumpkin-boo')
-    expect(seasonDue(festive, ['christmas-hat', 'halloween-pumpkin-boo'])).toBeNull()
-    expect(seasonDue(previewDate(new Date(), 'new-year'), [])).toBe('new-year-fireworks')
+    expect(seasonDue(festive, ['christmas-hat'])).toBeNull()
+    const newYear = previewDate(new Date(2026, 6, 1), 'new-year')
+    expect(newYear.getMonth()).toBe(11)
+    expect(newYear.getDate()).toBe(28)
+    expect(seasonDue(newYear, [])).toBe('new-year-fireworks')
+    expect(seasonDue(newYear, ['new-year-fireworks'])).toBeNull()
+  })
+
+  it('keeps halloween, christmas, and new year on separate yearly days', () => {
+    for (const year of [2024, 2026, 2028]) {
+      const on = (month: number, day: number) => seasonDue(new Date(year, month, day, 12), [])
+      expect(on(9, 25)).toBe('halloween-pumpkin-boo')
+      expect(seasonDue(new Date(year, 9, 25, 12), ['halloween-pumpkin-boo'])).toBeNull()
+      expect(on(10, 15)).toBeNull()
+      expect(on(11, 10)).toBe('christmas-hat')
+      expect(seasonDue(new Date(year, 11, 10, 12), ['christmas-hat'])).toBeNull()
+      expect(on(11, 27)).toBe('new-year-fireworks')
+      expect(seasonDue(new Date(year, 11, 27, 12), ['new-year-fireworks'])).toBeNull()
+    }
   })
 
   it('plays morning once a day, goodnight once a session, and sleepy at night', () => {
