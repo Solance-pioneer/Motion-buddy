@@ -1,26 +1,52 @@
 import { describe, expect, it } from 'vitest'
 import { CAR_CAP_DEG, CAR_DEADZONE_DEG, carFace, carTiltFromDevice, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt } from './car-tilt.ts'
+import { screenTurnAngle } from './motion.ts'
 
 describe('car tilt prototype', () => {
-  it('maps toward, away, left, and right from a neutral deadzone', () => {
+  it('maps toward and away from a neutral deadzone', () => {
     const toward = carTiltFromDevice(0, CAR_CAP_DEG, 0)
     const away = carTiltFromDevice(0, -CAR_CAP_DEG, 0)
-    const right = carTiltFromDevice(CAR_CAP_DEG, 0, 0)
-    const left = carTiltFromDevice(-CAR_CAP_DEG, 0, 0)
     expect(toward.throttle).toBe(1)
     expect(toward.bank).toBe(0)
     expect(away.throttle).toBe(-1)
-    expect(right.bank).toBe(1)
-    expect(left.bank).toBe(-1)
     expect(carTiltFromDevice(CAR_DEADZONE_DEG - 1, CAR_DEADZONE_DEG - 1, 0)).toEqual({ throttle: 0, bank: 0 })
   })
 
-  it('keeps the same screen lean after the phone is turned sideways', () => {
-    const portrait = carTiltFromDevice(0, 12, 0)
-    const landscape = carTiltFromDevice(-12, 0, 90)
-    expect(portrait.throttle).toBeGreaterThan(0.4)
-    expect(landscape.throttle).toBeGreaterThan(0.4)
-    expect(carTiltFromDevice(0, 12, 90).bank).toBeGreaterThan(0.4)
+  it('leans into a left or right turn in portrait and both landscapes', () => {
+    const bank = (gamma: number, beta: number, angle: number) => carTiltFromDevice(gamma, beta, angle).bank
+    // A right turn rolls the cabin down on the screen's left. Buddy leans right.
+    const portraitRight = carTiltFromDevice(-CAR_CAP_DEG, 0, 0)
+    const portraitLeft = carTiltFromDevice(CAR_CAP_DEG, 0, 0)
+    expect(portraitRight.bank).toBe(1)
+    expect(portraitLeft.bank).toBe(-1)
+    expect(carFace(portraitRight).state).toBe('right')
+    expect(carFace(portraitLeft).state).toBe('left')
+    expect(carFace(portraitRight).rotate).toBeGreaterThan(0)
+    expect(carFace(portraitLeft).rotate).toBeLessThan(0)
+
+    // Angle 90: device turned counter-clockwise. Screen-left down is +beta.
+    expect(bank(0, CAR_CAP_DEG, 90)).toBe(1)
+    expect(bank(0, -CAR_CAP_DEG, 90)).toBe(-1)
+    expect(carFace(carTiltFromDevice(0, CAR_CAP_DEG, 90)).rotate).toBeGreaterThan(0)
+    expect(carFace(carTiltFromDevice(0, -CAR_CAP_DEG, 90)).rotate).toBeLessThan(0)
+
+    // Angle 270 and legacy window.orientation -90: device turned clockwise. Screen-left down is -beta.
+    expect(bank(0, -CAR_CAP_DEG, 270)).toBe(1)
+    expect(bank(0, CAR_CAP_DEG, 270)).toBe(-1)
+    expect(bank(0, -CAR_CAP_DEG, -90)).toBe(1)
+    expect(bank(0, CAR_CAP_DEG, -90)).toBe(-1)
+    expect(carFace(carTiltFromDevice(0, -CAR_CAP_DEG, 270)).rotate).toBeGreaterThan(0)
+    expect(carFace(carTiltFromDevice(0, CAR_CAP_DEG, -90)).rotate).toBeLessThan(0)
+
+    // iOS 16.4 reported screen.orientation.angle 90 for the clockwise pose (window.orientation -90).
+    const clockwise = screenTurnAngle(90, -90)
+    expect(bank(0, -CAR_CAP_DEG, clockwise)).toBe(1)
+    expect(bank(0, CAR_CAP_DEG, clockwise)).toBe(-1)
+
+    expect(carTiltFromDevice(0, 12, 0).throttle).toBeGreaterThan(0.4)
+    expect(carTiltFromDevice(12, 0, 90).throttle).toBeGreaterThan(0.4)
+    expect(carTiltFromDevice(-12, 0, 270).throttle).toBeGreaterThan(0.4)
+    expect(carTiltFromDevice(-12, 0, -90).throttle).toBeGreaterThan(0.4)
   })
 
   it('drops to neutral when the sensor is denied, missing, or the lean is reset', () => {

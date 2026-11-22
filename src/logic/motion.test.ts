@@ -4,6 +4,7 @@ import {
   lookFromDegrees,
   orientedDelta,
   resolveMotionPermission,
+  screenTurnAngle,
   smoothToward,
   WAKE_CAP_DEG,
   WAKE_DEADBAND_DEG,
@@ -34,13 +35,29 @@ describe('screen direction', () => {
     expect(orientedDelta(12, 0, 0).x).toBeGreaterThan(0)
     expect(orientedDelta(-12, 0, 0).x).toBeLessThan(0)
     expect(orientedDelta(12, 0, 180).x).toBeLessThan(0)
-    expect(orientedDelta(0, 9, 90).x).toBeGreaterThan(0)
-    expect(orientedDelta(0, 9, 270).x).toBeLessThan(0)
+    // Angle 90: device turned counter-clockwise. Positive beta drops the screen's left side.
+    expect(orientedDelta(0, 9, 90).x).toBeLessThan(0)
+    expect(orientedDelta(0, -9, 90).x).toBeGreaterThan(0)
+    // Angle 270 and legacy window.orientation -90: device turned clockwise.
+    expect(orientedDelta(0, 9, 270).x).toBeGreaterThan(0)
+    expect(orientedDelta(0, -9, 270).x).toBeLessThan(0)
+    expect(orientedDelta(0, 9, -90).x).toBeGreaterThan(0)
     expect(lateralFromAccel(3, 0, 0)).toBeGreaterThan(0.8)
     expect(lateralFromAccel(-3, 0, 0)).toBeLessThan(-0.8)
     expect(Math.sign(lateralFromAccel(3, 0, 0))).not.toBe(Math.sign(lateralFromAccel(-3, 0, 0)))
-    expect(lateralFromAccel(0, 3, 90)).toBeGreaterThan(0.8)
-    expect(lateralFromAccel(0, 3, 270)).toBeLessThan(-0.8)
+    expect(lateralFromAccel(0, 3, 90)).toBeLessThan(-0.8)
+    expect(lateralFromAccel(0, -3, 90)).toBeGreaterThan(0.8)
+    expect(lateralFromAccel(0, 3, 270)).toBeGreaterThan(0.8)
+  })
+
+  it('trusts window.orientation when iOS 16.4 reports the opposite landscape angle', () => {
+    expect(screenTurnAngle(90, -90)).toBe(270)
+    expect(screenTurnAngle(270, -90)).toBe(270)
+    expect(screenTurnAngle(90, 90)).toBe(90)
+    expect(screenTurnAngle(0, 0)).toBe(0)
+    expect(screenTurnAngle(undefined, -90)).toBe(270)
+    expect(screenTurnAngle(90, undefined)).toBe(90)
+    expect(screenTurnAngle(undefined, undefined)).toBe(0)
   })
 })
 

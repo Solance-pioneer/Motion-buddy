@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { lateralFromAccel, lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, orientedDelta, resolveMotionPermission, wakeLevelFromDegrees } from '../logic/motion.ts'
+import { lateralFromAccel, lookFromDegrees, MOTION_EVENT_TIMEOUT_MS, orientedDelta, resolveMotionPermission, screenTurnAngle, wakeLevelFromDegrees } from '../logic/motion.ts'
 
 export type MotionUiStatus = 'idle' | 'waiting' | 'active' | 'denied' | 'unavailable' | 'no-events' | 'paused' | 'off'
 
@@ -189,9 +189,8 @@ function readMovement(
 
 function readAngle(): number {
   const modern = screen.orientation?.angle
-  if (typeof modern === 'number' && !Number.isNaN(modern)) return modern
   const legacy = (window as Window & { orientation?: number }).orientation
-  return typeof legacy === 'number' && !Number.isNaN(legacy) ? legacy : 0
+  return screenTurnAngle(typeof modern === 'number' ? modern : undefined, typeof legacy === 'number' ? legacy : undefined)
 }
 
 function axis(value: { x?: number | null; y?: number | null; z?: number | null } | null | undefined) {

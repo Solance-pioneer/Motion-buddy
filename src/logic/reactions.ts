@@ -1,3 +1,4 @@
+import { CAR_ANNOY_COOLDOWN_MS, CAR_ANNOY_FAST, CAR_ANNOY_FAST_HOLD_MS, CAR_ANNOY_GENTLE, CAR_ANNOY_HOLD_MS } from './car-annoyance.ts'
 import type { FacePose } from './expressions.ts'
 
 export type Sensitivity = 'low' | 'medium' | 'high'
@@ -31,9 +32,9 @@ export function initialReaction(): ReactionClock {
  * Gentle movement is a moderate acceleration. Fast is a quicker move, not a slam.
  * Low sensitivity asks for a clearer move. High sensitivity notices a smaller one.
  */
-export function motionBand(magnitude: number, sensitivity: Sensitivity): MotionBand {
-  const gentle = sensitivity === 'high' ? 0.7 : sensitivity === 'low' ? 1.25 : 0.9
-  const fast = sensitivity === 'high' ? 2.8 : sensitivity === 'low' ? 4.2 : 3.4
+export function motionBand(magnitude: number, sensitivity: Sensitivity, car = false): MotionBand {
+  const gentle = car ? CAR_ANNOY_GENTLE : sensitivity === 'high' ? 0.7 : sensitivity === 'low' ? 1.25 : 0.9
+  const fast = car ? CAR_ANNOY_FAST : sensitivity === 'high' ? 2.8 : sensitivity === 'low' ? 4.2 : 3.4
   if (magnitude >= fast) return 'fast'
   if (magnitude >= gentle) return 'gentle'
   return 'still'
@@ -42,8 +43,11 @@ export function motionBand(magnitude: number, sensitivity: Sensitivity): MotionB
 export function stepReaction(
   clock: ReactionClock,
   dt: number,
-  input: { band: MotionBand; allowStartled: boolean; allowDizzy: boolean },
+  input: { band: MotionBand; allowStartled: boolean; allowDizzy: boolean; car?: boolean },
 ): ReactionClock {
+  const gentleHold = input.car ? CAR_ANNOY_HOLD_MS : GENTLE_HOLD_MS
+  const fastHold = input.car ? CAR_ANNOY_FAST_HOLD_MS : FAST_HOLD_MS
+  const cooldown = input.car ? CAR_ANNOY_COOLDOWN_MS : COOLDOWN_MS
   const next: ReactionClock = { ...clock }
   if ((next.name === 'dizzy' || next.name === 'recovery') && !input.allowDizzy) {
     return { ...next, name: 'none', elapsed: 0, gentleMs: 0, fastMs: 0 }
@@ -61,14 +65,14 @@ export function stepReaction(
     } else if (next.name === 'startled' && next.elapsed >= STARTLED_MS) {
       next.name = 'none'
       next.elapsed = 0
-      next.cooldown = COOLDOWN_MS
+      next.cooldown = cooldown
     } else if (next.name === 'dizzy' && next.elapsed >= DIZZY_MS) {
       next.name = 'recovery'
       next.elapsed = 0
     } else if (next.name === 'recovery' && next.elapsed >= RECOVERY_MS) {
       next.name = 'none'
       next.elapsed = 0
-      next.cooldown = COOLDOWN_MS
+      next.cooldown = cooldown
     }
     return next
   }
@@ -83,7 +87,7 @@ export function stepReaction(
   if (input.band === 'fast' && input.allowDizzy) {
     next.fastMs += dt
     next.gentleMs = 0
-    if (next.fastMs >= FAST_HOLD_MS) {
+    if (next.fastMs >= fastHold) {
       next.name = 'dizzy'
       next.elapsed = 0
       next.fastMs = 0
@@ -94,7 +98,7 @@ export function stepReaction(
   if (input.band === 'gentle' && input.allowStartled) {
     next.gentleMs += dt
     next.fastMs = 0
-    if (next.gentleMs >= GENTLE_HOLD_MS) {
+    if (next.gentleMs >= gentleHold) {
       next.name = 'worried'
       next.elapsed = 0
       next.gentleMs = 0

@@ -22,9 +22,13 @@ function unit(degrees: number): number {
   return Math.sign(degrees) * scaled
 }
 
-/** Screen axes after `orientedDelta`. Positive Y is toward the viewer. Positive X is screen-right. */
+/**
+ * Screen axes after `orientedDelta`. Positive Y is toward the viewer.
+ * Bank is flipped: a right turn rolls the cabin down on the screen's left,
+ * and Buddy leans right, into the turn. Deadzone and cap stay on the magnitude.
+ */
 export function carTiltFromScreen(deltaXDeg: number, deltaYDeg: number): CarTilt {
-  return { throttle: unit(deltaYDeg), bank: unit(deltaXDeg) }
+  return { throttle: unit(deltaYDeg), bank: unit(-deltaXDeg) }
 }
 
 /** Map a device reading through the current screen angle, then into the car lean. */

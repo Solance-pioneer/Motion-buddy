@@ -25,22 +25,53 @@ export function lookFromDegrees(degrees: number | null | undefined): number {
   return unitFromDegrees(degrees, LOOK_DEADBAND_DEG, LOOK_CAP_DEG)
 }
 
+function normTurn(angle: number): number {
+  return ((angle % 360) + 360) % 360
+}
+
+function finiteAngle(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || Number.isNaN(value)) return null
+  return value
+}
+
 /**
- * Map a device tilt into screen left/right. Sensors report device axes, not a
- * position on the page. Angle is `screen.orientation.angle` when the browser has it.
+ * Screen rotation for `orientedDelta`.
+ * Modern Safari's `screen.orientation.angle` matches other browsers: 90 is the
+ * device turned counter-clockwise, 270 (and legacy `window.orientation` -90)
+ * is turned clockwise. iOS 16.4 reported the opposite landscape angle from
+ * `window.orientation`. When the two disagree, the legacy value is the one
+ * this mapping was built for.
+ */
+export function screenTurnAngle(screenAngle: number | null | undefined, windowOrientation: number | null | undefined): number {
+  const modern = finiteAngle(screenAngle)
+  const legacy = finiteAngle(windowOrientation)
+  if (modern == null) return legacy == null ? 0 : normTurn(legacy)
+  if (legacy == null) return normTurn(modern)
+  const modernTurn = normTurn(modern)
+  const legacyTurn = normTurn(legacy)
+  if (modernTurn !== legacyTurn) return legacyTurn
+  return modernTurn
+}
+
+/**
+ * Map a device tilt into screen axes. Positive X is screen-right down.
+ * Positive Y is the top of the screen tipping toward the viewer.
+ * Gamma is positive when the device's right side drops. Beta is positive
+ * when the device's top tips toward the viewer. Both are device axes, so
+ * landscape has to swap them.
  */
 export function orientedDelta(gamma: number, beta: number, angle: number): { x: number; y: number } {
-  const turn = ((angle % 360) + 360) % 360
-  if (turn === 90) return { x: beta, y: -gamma }
-  if (turn === 270) return { x: -beta, y: gamma }
+  const turn = normTurn(angle)
+  if (turn === 90) return { x: -beta, y: gamma }
+  if (turn === 270) return { x: beta, y: -gamma }
   if (turn === 180) return { x: -gamma, y: -beta }
   return { x: gamma, y: beta }
 }
 
 /** Signed screen-left/right from a device acceleration sample. Positive is screen-right. */
 export function lateralFromAccel(x: number, y: number, angle: number): number {
-  const turn = ((angle % 360) + 360) % 360
-  const screenX = turn === 90 ? y : turn === 270 ? -y : turn === 180 ? -x : x
+  const turn = normTurn(angle)
+  const screenX = turn === 90 ? -y : turn === 270 ? y : turn === 180 ? -x : x
   return clamp(screenX / 2.2, -1, 1)
 }
 

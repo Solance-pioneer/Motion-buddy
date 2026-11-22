@@ -371,10 +371,12 @@ export class BuddyEngine {
   private advanceReaction(dt: number): void {
     this.accelLevel = smoothToward(this.accelLevel, this.accelTarget, dt, 140)
     const before = this.reaction.name
+    const car = this.profile === 'car'
     this.reaction = stepReaction(this.reaction, dt, {
-      band: motionBand(this.accelLevel, this.sensitivity),
+      band: motionBand(this.accelLevel, this.sensitivity, car),
       allowStartled: this.allowStartled,
       allowDizzy: this.allowDizzy,
+      car,
     })
     if (before === 'none' && this.reaction.name !== 'none') {
       this.resting = false

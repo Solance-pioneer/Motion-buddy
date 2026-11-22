@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CAR_ANNOY_COOLDOWN_MS, CAR_ANNOY_HOLD_MS } from './car-annoyance.ts'
 import { cueForHearState, encodeWav, gateCue, initialGate, initialMoveClock, initialTapClock, mutedFromStorage, noteFaceTap, noteMovement, renderCue, type MoveClock } from './sfx.ts'
 
 describe('sound cues', () => {
@@ -101,6 +102,46 @@ describe('movement chirps', () => {
     const released = shove(first.clock, 500, 0.1)
     const dropped = shove(released.clock, 2_000, 1.2, { busyUntil: 2_500 })
     expect(dropped.cue).toBeNull()
+  })
+
+  it('stays quiet through ordinary driving in car and frowns once for a sustained jolt', () => {
+    let clock = initialMoveClock()
+    const ordinary: Array<string | null> = []
+    for (let step = 0; step < 4; step += 1) {
+      const time = step * 1_200
+      clock = shove(clock, time, 0.1, { car: true }).clock
+      const up = shove(clock, time + 40, 1.1, { car: true })
+      clock = up.clock
+      ordinary.push(up.cue)
+    }
+    expect(ordinary).toEqual([null, null, null, null])
+    expect(shove(initialMoveClock(), 0, 4, { car: true }).cue).toBeNull()
+
+    const onset = shove(initialMoveClock(), 0, 4, { car: true })
+    const held = shove(onset.clock, CAR_ANNOY_HOLD_MS, 4, { car: true })
+    expect(held.cue).toBe('grumpy')
+    expect(shove(onset.clock, CAR_ANNOY_HOLD_MS, 4, { car: true, muted: true }).cue).toBeNull()
+    expect(shove(onset.clock, CAR_ANNOY_HOLD_MS, 4, { car: true, reduced: true }).cue).toBeNull()
+
+    let cooled = shove(held.clock, CAR_ANNOY_HOLD_MS + 40, 0.1, { car: true }).clock
+    cooled = shove(cooled, CAR_ANNOY_HOLD_MS + 80, 4, { car: true }).clock
+    const again = shove(cooled, CAR_ANNOY_HOLD_MS + 80 + CAR_ANNOY_HOLD_MS, 4, { car: true })
+    expect(again.cue).toBeNull()
+    const afterQuiet = CAR_ANNOY_HOLD_MS + CAR_ANNOY_COOLDOWN_MS
+    let rearmed = shove(again.clock, afterQuiet + 40, 0.1, { car: true }).clock
+    rearmed = shove(rearmed, afterQuiet + 80, 4, { car: true }).clock
+    expect(shove(rearmed, afterQuiet + 80 + CAR_ANNOY_HOLD_MS, 4, { car: true }).cue).toBe('grumpy')
+
+    let desk = initialMoveClock()
+    const deskCues: Array<string | null> = []
+    for (let step = 0; step < 4; step += 1) {
+      const time = step * 1_200
+      desk = shove(desk, time, 0.1).clock
+      const up = shove(desk, time + 40, 1.1)
+      desk = up.clock
+      deskCues.push(up.cue)
+    }
+    expect(deskCues).toEqual([null, 'chirp', null, 'grumpy'])
   })
 
   it('frowns after busy motion or repeated face taps, and ignores idle grumpy', () => {

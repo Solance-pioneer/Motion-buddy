@@ -13,6 +13,7 @@ import { VOICE_FREE_WAV_BASE64 } from './voice-free-wavs.ts'
 import { ORIGINAL_WAV_BASE64 } from './original-wavs.ts'
 import { oohCapFadeSeconds, oohClip, oohPlaybackCap, oohReleaseSeconds } from './ooh.ts'
 import { isSynthCue } from './synth-cues.ts'
+import { CAR_ANNOY_COOLDOWN_MS, CAR_ANNOY_GENTLE, CAR_ANNOY_HOLD_MS } from './car-annoyance.ts'
 
 export type ApprovedCue = 'scan' | 'giggle' | 'surprise' | 'yawn' | 'wink' | 'dizzy' | 'celebration_three_squeaks' | 'proud_rise_beeps' | 'disapprove' | 'sneeze_zip' | 'peek_pop' | 'pout_boop'
 export type Cue = ApprovedCue | 'blink' | 'curious' | 'chirp' | 'happy' | 'movement'
@@ -197,10 +198,12 @@ export interface MoveClock {
   moves: number
   recent: number[]
   quietUntil: number
+  /** Car mode: when the current jolt first crossed the car threshold. -1 if it has not. */
+  hotSince: number
 }
 
 export function initialMoveClock(): MoveClock {
-  return { armed: false, moves: 0, recent: [], quietUntil: 0 }
+  return { armed: false, moves: 0, recent: [], quietUntil: 0, hotSince: -1 }
 }
 
 const MOVE_NOTICE = 0.9
@@ -225,20 +228,45 @@ export function noteMovement(
     allowDizzy: boolean
     allowGrumpy: boolean
     busyUntil: number
+    car?: boolean
   },
 ): { clock: MoveClock; cue: 'chirp' | 'dizzy' | 'grumpy' | null } {
+  const car = input.car === true
+  const notice = car ? CAR_ANNOY_GENTLE : MOVE_NOTICE
+  const release = car ? CAR_ANNOY_GENTLE * 0.5 : MOVE_RELEASE
   const recent = clock.recent.filter((time) => input.now - time <= 6_000)
   let armed = clock.armed
-  if (input.magnitude < MOVE_RELEASE) armed = false
-  const rising = !clock.armed && input.magnitude >= MOVE_NOTICE
+  let hotSince = clock.hotSince ?? -1
+  if (input.magnitude < release) {
+    armed = false
+    hotSince = -1
+  }
+  let rising = false
+  if (car) {
+    if (input.magnitude < notice) hotSince = -1
+    else if (hotSince < 0) hotSince = input.now
+    rising = hotSince >= 0 && input.now - hotSince >= CAR_ANNOY_HOLD_MS && !clock.armed
+  } else {
+    rising = !clock.armed && input.magnitude >= notice
+    hotSince = -1
+  }
   let moves = clock.moves
   if (rising) {
     armed = true
     moves += 1
     recent.push(input.now)
   }
-  const rapid = recent.filter((time) => input.now - time <= RAPID_WINDOW_MS).length >= RAPID_MOVES
   const silent = input.reduced || input.muted || !input.unlocked || input.now < clock.quietUntil
+  if (car) {
+    let cue: 'chirp' | 'dizzy' | 'grumpy' | null = null
+    let quietUntil = clock.quietUntil
+    if (rising && !silent && input.allowGrumpy && input.now >= input.busyUntil) {
+      cue = 'grumpy'
+      quietUntil = input.now + CAR_ANNOY_COOLDOWN_MS
+    }
+    return { clock: { armed, moves, recent, quietUntil, hotSince }, cue }
+  }
+  const rapid = recent.filter((time) => input.now - time <= RAPID_WINDOW_MS).length >= RAPID_MOVES
   const busy = recent.length >= 4
   let cue: 'chirp' | 'dizzy' | 'grumpy' | null = null
   let quietUntil = clock.quietUntil
@@ -251,7 +279,7 @@ export function noteMovement(
   } else if (rising && !silent && input.now >= input.busyUntil && !rapid && moves % 2 === 0 && input.magnitude < MOVE_FAST) {
     cue = 'chirp'
   }
-  return { clock: { armed, moves, recent, quietUntil }, cue }
+  return { clock: { armed, moves, recent, quietUntil, hotSince }, cue }
 }
 
 export interface TapClock {

@@ -1131,6 +1131,7 @@ export function App() {
       allowDizzy: state.allowDizzy,
       allowGrumpy: state.autoSet.includes('grumpy'),
       busyUntil: heard.current.voiceUntil,
+      car: state.profile === 'car',
     })
     const distinct = next.clock.moves > movesBefore
     moves.current = next.clock
