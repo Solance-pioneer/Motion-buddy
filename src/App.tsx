@@ -18,6 +18,7 @@ import { sampleCandidate } from './logic/catalog.ts'
 import { stepOriginalCue, type CueArm } from './logic/originals.ts'
 import { advanceSound, beginContact, claimChirp, contactStatus, endContact, initialMoveClock, initialSoundMemory, initialTapClock, loadSoundPrefs, noteFaceTap, noteMovement, playBleep, playCountryMusic, playCountrySting, playCue, playDriveCue, playPetNote, playRaceActivate, playSceneCue, raceActivateMs, sceneAudioStatus, setSceneGuard, setSoundMuted, soundStatus, stopDriveCue, stopRaceActivate, stopSceneAudio, unlockSound, type MoveClock, type SoundMemory, type TapClock } from './logic/sfx.ts'
 import { carFace, carTiltLive, driveCueOnEntry, initialDriveSoundClock, smoothCarTilt, type CarLook, type CarTilt, type DriveSoundClock } from './logic/car-tilt.ts'
+import { applyCarVariant, codedVariantId, sampleCarVariantRun, type CarVariantRun } from './logic/car-variants.ts'
 import { choosePetNote, nextCodedIdle, noteOohRun, OOH_FACE_MS, oohIdleDue } from './logic/ooh.ts'
 import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
@@ -26,7 +27,6 @@ import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from '
 import { readAdminEnabled, readBeatFeel, readGenre, readHeadbang, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeHeadbang, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
 import { GENRE_LOOKS, genreById, headbangTilt, highBandEnergy, initialGenreHitClock, isHighNote, planGenreHit, shownGenre, spectralCentroid, type GenreId, type HeadbangSpeed } from './logic/genres.ts'
-import { playGenreSting } from './logic/genre-sound.ts'
 import { openBeatMic } from './logic/mic-beat.ts'
 import { activeTheme, themeOpen, type ThemeId } from './logic/themes.ts'
 import { allIdleOn, enabledClipIds, enabledCodedIds, enabledIdleIds, idleChoices, toggleIdlePref } from './logic/idle-prefs.ts'
@@ -265,6 +265,9 @@ export function App() {
   const countryCursor = useRef(0)
   const carTarget = useRef<CarTilt>({ throttle: 0, bank: 0 })
   const carShown = useRef<CarTilt>({ throttle: 0, bank: 0 })
+  const carSense = useRef<CarTilt>({ throttle: 0, bank: 0 })
+  const carVariant = useRef<CarVariantRun | null>(null)
+  const releaseRaceAudio = useRef<() => void>(() => {})
   const driveLook = useRef<CarLook>('neutral')
   const driveClock = useRef<DriveSoundClock>(initialDriveSoundClock())
   const raceWas = useRef<Profile>('desk')
@@ -444,6 +447,13 @@ export function App() {
       }
       root.dataset.car = carOn ? lean.state : 'off'
       root.dataset.carBank = carShown.current.bank.toFixed(2)
+      const variantState = engine.snapshot()
+      const variantRun = carVariant.current
+      const variantPose = sampleCarVariantRun(variantRun, performance.now())
+      const variantLive = Boolean(variantRun && variantPose && !variantPose.done && !variantState.hidden && variantState.profile === 'car')
+      if (!variantLive) carVariant.current = null
+      applyCarVariant(svg, variantLive ? variantPose : null)
+      root.dataset.carVariant = variantLive && variantRun ? variantRun.id : 'off'
       root.dataset.squeeze = p.squeeze.toFixed(2)
       root.dataset.contact = contactStatus().active ? 'on' : 'off'
     }
@@ -947,37 +957,43 @@ export function App() {
       root.dataset.sensitivity = state.sensitivity
       root.style.setProperty('--face', colors.face)
     }
-    const carVisual = state.profile === 'car' && !state.reduced && !sceneRef.current && tiltStatusRef.current === 'active'
+    const carSensors = state.profile === 'car' && !sceneRef.current && tiltStatusRef.current === 'active'
+    const carVisual = carSensors && !state.reduced
     if (!carVisual) carTarget.current = { throttle: 0, bank: 0 }
     carShown.current = smoothCarTilt(carShown.current, carTarget.current, dt)
-    const look = carFace(carShown.current).state
-    if (carVisual && performance.now() >= batchHold.current.raceRevUntil) {
+    const look = carFace(carVisual ? carShown.current : carSense.current).state
+    if (carSensors && !state.hidden && performance.now() >= batchHold.current.raceRevUntil) {
       const step = driveCueOnEntry(driveLook.current, look, performance.now(), driveClock.current)
       driveClock.current = step.clock
       driveLook.current = look
       if (step.key) {
         const filmBusy = Boolean(clipClock.current.playing) || batchHold.current.guard != null
         const brake = step.key === 'car_brake_soft_a' || step.key === 'car_brake_soft_b'
-        if (brake && !filmBusy) {
+        const accel = step.key === 'car_accel_rev_a' || step.key === 'car_accel_rev_b'
+        const cue = step.key
+        const startCoded = () => {
+          const id = codedVariantId(cue, false)
+          if (id) carVariant.current = { id, started: performance.now(), reduced: state.reduced }
+          playDriveCue(cue)
+        }
+        if (brake && !filmBusy && !state.reduced) {
           const started = beginSceneClip(clipClock.current, 'brake-surprise', performance.now(), state.reduced)
           clipClock.current = started.clock
           if (started.play) {
+            carVariant.current = null
             window.clearTimeout(clipFadeTimer.current)
             batchHold.current.guard = 'brake'
             batchHold.current.startMuted = true
             setClipShown(false)
             setClipDismiss('none')
             setSceneClip(started.play)
-          } else if (!clipClock.current.playing) playDriveCue(step.key)
-        } else if (!filmBusy && (step.key === 'car_accel_rev_a' || step.key === 'car_accel_rev_b')) {
-          const cue = step.key
+          } else if (!clipClock.current.playing) startCoded()
+        } else if (accel && !filmBusy && !state.reduced) {
           const now = performance.now()
           const accelId = carClipFor('accel', batchHold.current.readyAt, now, batchHold.current.lastCarAt, batchHold.current.suppressUntil)
-          const played = accelId ? startBatchRef.current(accelId, false, { onFail: () => playDriveCue(cue) }) : false
-          if (!played) playDriveCue(cue)
-        } else if (!filmBusy) {
-          playDriveCue(step.key)
-        }
+          const played = accelId ? startBatchRef.current(accelId, false, { onFail: startCoded }) : false
+          if (!played) startCoded()
+        } else if (!filmBusy) startCoded()
       }
     } else if (driveLook.current !== 'neutral') {
       driveLook.current = 'neutral'
@@ -1047,8 +1063,11 @@ export function App() {
       if (sceneRef.current?.kind === 'country' || (sceneRef.current?.kind === 'costume' && sceneRef.current.key === 'racer')) return
       const state = engine.snapshot()
       if (state.profile === 'car') {
-        const live = !state.reduced && !sceneRef.current && tiltStatusRef.current === 'active'
-        const command = carTiltLive(sample.tiltX, sample.tiltY, live)
+        const sensors = !sceneRef.current && tiltStatusRef.current === 'active'
+        const sensed = carTiltLive(sample.tiltX, sample.tiltY, sensors)
+        carSense.current = sensed
+        const live = sensors && !state.reduced
+        const command = live ? sensed : { throttle: 0, bank: 0 }
         carTarget.current = command
         engine.feedLook(command.bank, 0)
         engine.feedMotion(live ? sample.level : 0)
@@ -1179,6 +1198,14 @@ export function App() {
 
   const tilt = useTilt(onSample, onAcceleration)
   tiltStatusRef.current = tilt.status
+  useEffect(() => {
+    return () => {
+      stopRaceActivate(40)
+      releaseRaceAudio.current()
+      releaseRaceAudio.current = () => {}
+      carVariant.current = null
+    }
+  }, [])
   useEffect(() => {
     if (!pendingCal.current || tilt.status !== 'active') return
     pendingCal.current = false
@@ -1471,7 +1498,6 @@ export function App() {
           setGenreWide(false)
           setGenreFlash(false)
         }, look?.grid === 'breath' ? 900 : 160)
-        if (look && isUnlocked(look.feature)) playGenreSting(look.sound, beatFeel === 'party', { muted: soundStatus().muted || !soundOnRef.current, unlocked: soundStatus().unlocked, reduced: state.reduced })
       }
     }).then((end) => {
       if (closed) end()
@@ -2035,10 +2061,15 @@ onClick={() => {
               const drove = driveWasReal(now - batchHold.current.carOnAt, batchHold.current.carSawMotion)
               carTarget.current = { throttle: 0, bank: 0 }
               carShown.current = { throttle: 0, bank: 0 }
+              carSense.current = { throttle: 0, bank: 0 }
+              carVariant.current = null
               setRaceOn(false)
               setRaceMarks(false)
               window.clearTimeout(raceTimer.current)
               stopDriveCue(80)
+              stopRaceActivate(80)
+              releaseRaceAudio.current()
+              releaseRaceAudio.current = () => {}
               if (drove && !batchHold.current.guard && !sceneRef.current && !engine.snapshot().reduced) {
                 const arrived = carClipFor('arrived', batchHold.current.readyAt, now, batchHold.current.lastCarAt, batchHold.current.suppressUntil)
                 if (arrived) startBatchRef.current(arrived)
@@ -2060,6 +2091,9 @@ onClick={() => {
               window.clearTimeout(raceTimer.current)
               stopDriveCue(80)
               stopRaceActivate(80)
+              releaseRaceAudio.current()
+              releaseRaceAudio.current = () => {}
+              carVariant.current = null
               batchHold.current.raceRevUntil = 0
               batchHold.current.raceFilmSilent = false
               engine.setProfile(raceWas.current)
@@ -2074,7 +2108,17 @@ onClick={() => {
             if (tilt.status !== 'active') void tilt.enable()
             driveClock.current = { ...driveClock.current, lastAny: performance.now() }
             const revAt = performance.now()
-            if (playRaceActivate()) batchHold.current.raceRevUntil = revAt + raceActivateMs()
+            if (playRaceActivate()) {
+              releaseRaceAudio.current()
+              const release = beginClipSession(pageAudioSession())
+              releaseRaceAudio.current = release
+              window.setTimeout(() => {
+                if (releaseRaceAudio.current !== release) return
+                release()
+                releaseRaceAudio.current = () => {}
+              }, raceActivateMs() + 40)
+              batchHold.current.raceRevUntil = revAt + raceActivateMs()
+            }
             const reducedNow = engine.snapshot().reduced
             const film = nextRaceFilm(batchHold.current.raceTurn)
             batchHold.current.raceTurn += 1
