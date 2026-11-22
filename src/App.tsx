@@ -66,7 +66,9 @@ import type { WeatherConditions } from './logic/weather/types.ts'
 import { loadClipUrl } from './view/clip-urls.ts'
 import { CLIP_WIDTHS } from 'virtual:clip-widths'
 import { clipDefinition } from './logic/clip-definition.ts'
-import { CLIP_PLAY_TIMEOUT_MS, activationFilmMuted, afterPlayRejection, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
+import { CLIP_PLAY_TIMEOUT_MS, activationFilmMuted, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
+import { beginClipSession, pageAudioSession } from './logic/audio-session.ts'
+import { startClipMix } from './logic/clip-mix.ts'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-batch1-v1/glass-squish-v5-app.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -827,7 +829,7 @@ export function App() {
   const [clipShown, setClipShown] = useState(false)
   const clipShownRef = useRef(false)
   const [clipDismiss, setClipDismiss] = useState<'none' | 'cancel'>('none')
-  const [clipMuted, setClipMuted] = useState(true)
+  const stopClipMix = useRef<() => void>(() => {})
   clipShownRef.current = clipShown
   const endClipRef = useRef(() => {})
   dateModeRef.current = dateMode
@@ -841,7 +843,6 @@ export function App() {
     setBatchUrl(null)
     setClipShown(false)
     setClipDismiss('none')
-    setClipMuted(true)
     clipShownRef.current = false
     batchHold.current.raceFilmSilent = false
   }
@@ -853,9 +854,11 @@ export function App() {
     batchHold.current.follow = null
     batchHold.current.token += 1
     batchHold.current.guard = null
+    stopClipMix.current()
     const video = clipVideo.current
     if (video) {
       video.pause()
+      video.muted = true
       video.style.pointerEvents = 'none'
     }
     const reduced = engine.snapshot().reduced || window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -903,12 +906,10 @@ export function App() {
     setGalleryOpen(false)
     setBatchId(id)
     setClipShown(false)
-    setClipMuted(true)
     void loadClipUrl(row.file).then(
       (url) => {
         if (batchHold.current.token !== token) return
         setClipShown(false)
-        setClipMuted(true)
         setBatchUrl(url)
       },
       () => {
@@ -966,7 +967,6 @@ export function App() {
             batchHold.current.startMuted = true
             setClipShown(false)
             setClipDismiss('none')
-            setClipMuted(true)
             setSceneClip(started.play)
           } else if (!clipClock.current.playing) playDriveCue(step.key)
         } else if (!filmBusy && (step.key === 'car_accel_rev_a' || step.key === 'car_accel_rev_b')) {
@@ -1331,61 +1331,47 @@ export function App() {
       if (!alive() || revealed) return
       fail(sawStall ? 'stalled before a frame' : 'timed out before a frame')
     }, CLIP_PLAY_TIMEOUT_MS)
-    const prepare = (muted: boolean) => {
+    const prepareMuted = () => {
       video.playsInline = true
       video.setAttribute('playsinline', '')
       video.setAttribute('webkit-playsinline', 'true')
-      video.defaultMuted = muted
-      video.muted = muted
-      if (muted) video.setAttribute('muted', '')
-      else video.removeAttribute('muted')
-      setClipMuted(muted)
+      video.defaultMuted = true
+      video.muted = true
+      video.setAttribute('muted', '')
     }
-    const playWith = async (attempt: 'unmuted' | 'muted') => {
-      prepare(attempt === 'muted')
-      const pending = video.play()
-      if (pending) await pending
+    const releaseSession = beginClipSession(pageAudioSession())
+    let stopSound = () => {}
+    const stopAll = () => {
+      stopSound()
+      releaseSession()
     }
+    stopClipMix.current = stopAll
     const run = async () => {
-      let attempt: 'unmuted' | 'muted' = batchHold.current.startMuted ? 'muted' : 'unmuted'
+      prepareMuted()
       try {
-        await playWith(attempt)
+        const pending = video.play()
+        if (pending) await pending
       } catch (error) {
         if (!alive()) return
-        if (afterPlayRejection(attempt) === 'retry-muted') {
-          attempt = 'muted'
-          try {
-            await playWith('muted')
-          } catch (retryError) {
-            const detail = retryError instanceof Error ? retryError.message : 'play() rejected'
-            fail(detail)
-            return
-          }
-        } else {
-          const detail = error instanceof Error ? error.message : 'play() rejected'
-          fail(detail)
-          return
-        }
+        const detail = error instanceof Error ? error.message : 'play() rejected'
+        fail(detail)
+        return
       }
       if (!alive()) return
       const holdFilmMute = activationFilmMuted(batchHold.current.raceFilmSilent)
-      if (video.muted && !holdFilmMute && performance.now() >= batchHold.current.raceRevUntil && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })) {
-        try {
-          prepare(false)
-          if (video.paused) await video.play()
-        } catch {
-          if (!alive()) return
-          try {
-            await playWith('muted')
-          } catch {
-            // The muted playback already started.
-          }
-        }
+      const audible = !holdFilmMute && performance.now() >= batchHold.current.raceRevUntil && clipMayUnmute({ soundOn: soundOnRef.current, userMuted: soundStatus().muted, primed: clipPrimed.current })
+      if (!audible) return
+      const stop = await startClipMix(video.currentSrc || video.src, () => video.currentTime)
+      if (!alive()) {
+        stop()
+        return
       }
+      stopSound = stop
     }
     void run()
     return () => {
       stopped = true
+      stopAll()
       window.clearTimeout(timer)
       video.removeEventListener('timeupdate', onTime)
       video.removeEventListener('playing', onTime)
@@ -2101,7 +2087,6 @@ onClick={() => {
                 batchHold.current.startMuted = true
                 setClipShown(false)
                 setClipDismiss('none')
-                setClipMuted(true)
                 setSceneClip(started.play)
               }
             }
@@ -2287,7 +2272,7 @@ onClick={() => {
         style={{ ['--clip-fade' as string]: `${clipFadeMs(clipDismiss === 'cancel' ? 'cancel' : 'show', view.reduced || window.matchMedia('(prefers-reduced-motion: reduce)').matches)}ms` }}
         src={sceneClip === 'race-rush' ? raceRushUrl : sceneClip === 'brake-surprise' ? brakeSurpriseUrl : batchUrl ?? undefined}
         playsInline
-        muted={clipMuted}
+        muted
         preload="auto"
         onPointerDown={(event) => {
           if (!clipShown) return
