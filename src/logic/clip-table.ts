@@ -443,16 +443,22 @@ export function costumeClipId(scene: CostumeClipScene): string | null {
   return row?.id ?? null
 }
 
+export interface PortalPlan {
+  /** Teleport soundtrack. It plays with the short effect and does not block the country. */
+  effect: string | null
+  countryClip: string | null
+  coded: boolean
+}
+
 /**
- * One Teleport press. The teleport film plays first, then the country film.
- * Reduced motion skips both. A missing country film leaves the coded scene to follow.
+ * One Teleport press. The country film is optional and only plays if it is already warm.
+ * Reduced motion is the coded scene. A missing country film is the coded scene too.
  */
-export function portalPlan(country: CountryClip, reduced: boolean): { clips: string[]; sceneAfter: boolean } {
-  if (reduced) return { clips: [], sceneAfter: true }
-  const intro = CLIP_ROWS.find((item) => item.trigger === 'teleport' && item.file && rowOpen(item))
+export function portalPlan(country: CountryClip, reduced: boolean): PortalPlan {
+  const effect = CLIP_ROWS.find((item) => item.trigger === 'teleport' && item.file && rowOpen(item))
+  if (reduced) return { effect: null, countryClip: null, coded: true }
   const landed = CLIP_ROWS.find((item) => item.trigger === 'country' && item.country === country && item.file && rowOpen(item))
-  const clips = [intro?.id, landed?.id].filter((id): id is string => Boolean(id))
-  return { clips, sceneAfter: !landed }
+  return { effect: effect?.id ?? null, countryClip: landed?.id ?? null, coded: !landed }
 }
 
 export function tunnelRoll(random: number, stillMs: number): boolean {

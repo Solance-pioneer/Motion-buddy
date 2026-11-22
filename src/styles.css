@@ -562,7 +562,12 @@ body {
   opacity: 0.22;
 }
 
-.portal-bolt[data-on='1']:not([data-reduced='1']) {
+.portal-bolt[data-driven='1'] {
+  animation: none;
+  transition: none;
+}
+
+.portal-bolt[data-on='1']:not([data-reduced='1']):not([data-driven='1']) {
   transition: none;
   animation: portal-bolt 280ms linear 1;
 }

@@ -23,6 +23,7 @@ import { choosePetNote, nextCodedIdle, noteOohRun, OOH_FACE_MS, oohIdleDue } fro
 import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
+import { portalArrival, portalBackMs, portalBusy, portalOutMs, portalSoundAllowed, preloadTarget, samplePortalBack, samplePortalOut } from './logic/portal-sequence.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readBeatFeel, readGenre, readHeadbang, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeHeadbang, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
@@ -263,6 +264,11 @@ export function App() {
   const calmRef = useRef(0)
   const lastScene = useRef<SceneKey | null>(null)
   const countryCursor = useRef(0)
+  const portalRun = useRef<{ phase: 'out' | 'back'; started: number; key: CountryKey; reduced: boolean; stopSound: () => void } | null>(null)
+  const portalReturn = useRef(false)
+  const warmReady = useRef(new Set<string>())
+  const warmVideo = useRef<HTMLVideoElement | null>(null)
+  const releaseCountryAudio = useRef<() => void>(() => {})
   const carTarget = useRef<CarTilt>({ throttle: 0, bank: 0 })
   const carShown = useRef<CarTilt>({ throttle: 0, bank: 0 })
   const carSense = useRef<CarTilt>({ throttle: 0, bank: 0 })
@@ -486,7 +492,10 @@ export function App() {
         node.style.opacity = '0'
         node.setAttribute('opacity', '0')
       }
-      root.querySelector('[data-part="portal-bolt"]')?.setAttribute('data-on', '0')
+      const bolt = root.querySelector('[data-part="portal-bolt"]') as HTMLElement | null
+      bolt?.setAttribute('data-on', '0')
+      bolt?.setAttribute('data-driven', '0')
+      if (bolt) bolt.style.opacity = ''
       root.dataset.scene = ''
       root.dataset.sceneMs = '0'
       root.dataset.sceneHold = '0'
@@ -497,6 +506,10 @@ export function App() {
   }
   const finishScene = () => {
     sceneRef.current = null
+    portalRun.current?.stopSound()
+    portalRun.current = null
+    releaseCountryAudio.current()
+    releaseCountryAudio.current = () => {}
     setSceneGuard(false)
     stopSceneAudio(130)
     clearSceneMotion()
@@ -504,7 +517,7 @@ export function App() {
     setSceneOn(false)
   }
   cancelCountryRef.current = () => {
-    if (sceneRef.current?.kind === 'country') finishScene()
+    if (portalRun.current || sceneRef.current?.kind === 'country') finishScene()
   }
   const applyCountry = (pose: CountryPose) => {
     const root = rootRef.current
@@ -563,9 +576,10 @@ export function App() {
     setSceneOn(true)
     return true
   }
-  const beginCountry = (key: CountryKey) => {
+  const beginCountry = (key: CountryKey, leadMs?: number) => {
     if (sceneRef.current || contactStatus().active || waitRelease.current) return false
     const reduced = engine.snapshot().reduced
+    const lead = leadMs ?? (reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal)
     clearSceneMotion()
     sceneRef.current = {
       kind: 'country',
@@ -575,7 +589,7 @@ export function App() {
       paused: false,
       cueFired: false,
       stingFired: false,
-      leadUntil: performance.now() + (reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal),
+      leadUntil: performance.now() + lead,
       reduced,
     }
     setSceneGuard(true)
@@ -585,7 +599,7 @@ export function App() {
     setSceneOn(true)
     const root = rootRef.current
     if (root) {
-      root.dataset.lead = String(reduced ? TRANSITION_MS.reduced : TRANSITION_MS.normal)
+      root.dataset.lead = String(lead)
       root.dataset.portal = 'locked'
       root.dataset.country = key
       root.dataset.transition = '1'
@@ -593,8 +607,129 @@ export function App() {
     }
     return true
   }
+  const paintPortal = (pose: { scale: number; bolt: number }, reduced: boolean) => {
+    const svg = faceButtonRef.current?.querySelector('svg.face') as HTMLElement | null
+    const bolt = rootRef.current?.querySelector('[data-part="portal-bolt"]') as HTMLElement | null
+    if (svg) {
+      svg.style.transformOrigin = '50% 46%'
+      svg.style.transform = reduced ? '' : `scale(${pose.scale.toFixed(3)})`
+    }
+    if (bolt) {
+      bolt.setAttribute('data-driven', '1')
+      bolt.setAttribute('data-on', pose.bolt > 0.02 ? '1' : '0')
+      bolt.setAttribute('data-reduced', reduced ? '1' : '0')
+      bolt.style.opacity = pose.bolt.toFixed(3)
+    }
+  }
+  const beginPortalBack = (key: CountryKey, reduced: boolean) => {
+    portalReturn.current = false
+    sceneRef.current = null
+    stopSceneAudio(130)
+    releaseCountryAudio.current()
+    releaseCountryAudio.current = () => {}
+    clearSceneMotion()
+    setSceneGuard(true)
+    setSceneOn(true)
+    const root = rootRef.current
+    if (root) {
+      root.dataset.portal = 'locked'
+      root.dataset.country = key
+      root.dataset.transition = '1'
+      root.dataset.transitionReduced = reduced ? '1' : '0'
+      root.dataset.lead = String(portalBackMs(reduced))
+    }
+    portalRun.current = { phase: 'back', started: performance.now(), key, reduced, stopSound: () => {} }
+    paintPortal(samplePortalBack(0, reduced), reduced)
+  }
+  const warmFile = (file: string) => {
+    if (warmReady.current.has(file)) return
+    void loadClipUrl(file).then((url) => {
+      const video = warmVideo.current ?? document.createElement('video')
+      warmVideo.current = video
+      video.preload = 'auto'
+      video.muted = true
+      video.playsInline = true
+      if (video.getAttribute('src') !== url) {
+        video.src = url
+        video.load()
+      }
+      const token = String(Date.now())
+      video.dataset.warm = token
+      const mark = () => {
+        if (video.dataset.warm === token) warmReady.current.add(file)
+      }
+      if (video.readyState >= 2 && video.getAttribute('src') === url) mark()
+      else video.addEventListener('loadeddata', mark, { once: true })
+    }, () => {})
+  }
+  const warmNext = (cursor: number) => {
+    const next = preloadTarget(cursor)
+    if (next.file) warmFile(next.file)
+  }
+  const playPortalSound = () => {
+    const status = soundStatus()
+    if (!portalSoundAllowed({ muted: status.muted || !soundOnRef.current, unlocked: status.unlocked, soundOn: true })) return () => {}
+    const row = clipById('teleport')
+    if (!row?.file) return () => {}
+    let dead = false
+    let stopMix = () => {}
+    const release = beginClipSession(pageAudioSession())
+    const stop = () => {
+      if (dead) return
+      dead = true
+      stopMix()
+      release()
+    }
+    void loadClipUrl(row.file).then(async (url) => {
+      if (dead) return
+      stopMix = await startClipMix(url, () => 0)
+      if (dead) stopMix()
+    })
+    return stop
+  }
   sceneTickRef.current = (dt: number) => {
     const root = rootRef.current
+    const portal = portalRun.current
+    if (portal?.phase === 'out') {
+      const pose = samplePortalOut(performance.now() - portal.started, portal.reduced)
+      paintPortal(pose, portal.reduced)
+      if (root) {
+        root.dataset.portal = 'locked'
+        root.dataset.country = portal.key
+        root.dataset.transition = pose.arrived ? '0' : '1'
+        root.dataset.transitionReduced = portal.reduced ? '1' : '0'
+        root.dataset.lead = String(portalOutMs(portal.reduced))
+        root.dataset.scene = ''
+      }
+      if (!pose.arrived) return
+      const key = portal.key
+      const reduced = portal.reduced
+      portal.stopSound()
+      portalRun.current = null
+      const plan = portalPlan(key, reduced)
+      const file = plan.countryClip ? clipById(plan.countryClip)?.file ?? null : null
+      const choice = portalArrival(reduced, Boolean(file && warmReady.current.has(file)), plan.countryClip)
+      portalReturn.current = true
+      if (choice.countryClip) {
+        const started = startBatchRef.current(choice.countryClip, false, {
+          onEnd: () => beginPortalBack(key, reduced),
+          onFail: () => beginCountry(key, 0),
+        })
+        if (!started) beginCountry(key, 0)
+      } else beginCountry(key, 0)
+    } else if (portal?.phase === 'back') {
+      const pose = samplePortalBack(performance.now() - portal.started, portal.reduced)
+      paintPortal(pose, portal.reduced)
+      if (root) {
+        root.dataset.portal = 'locked'
+        root.dataset.transition = pose.done ? '0' : '1'
+        root.dataset.transitionReduced = portal.reduced ? '1' : '0'
+        root.dataset.lead = String(portalBackMs(portal.reduced))
+        root.dataset.country = pose.done ? '' : portal.key
+      }
+      if (pose.done) finishScene()
+      return
+    }
     const current = sceneRef.current
     if (!current) {
       const quiet = !heldRef.current && !openRef.current && !contactStatus().active
@@ -712,7 +847,10 @@ export function App() {
         current.started = now
         current.banked = 0
         const status = soundStatus()
-        if (!status.muted && status.unlocked) playCountryMusic(COUNTRY_MUSIC[current.key])
+        if (!status.muted && status.unlocked && soundOnRef.current && playCountryMusic(COUNTRY_MUSIC[current.key])) {
+          releaseCountryAudio.current()
+          releaseCountryAudio.current = beginClipSession(pageAudioSession())
+        }
       }
       const elapsedForSting = current.banked + (current.paused ? 0 : now - current.started)
       const stingDue = current.key === 'uk_guard' || (current.key === 'egypt_pharaoh' && elapsedForSting >= EGYPT_WONDER_S * 1000)
@@ -727,7 +865,8 @@ export function App() {
       const elapsed = current.banked + (current.paused ? 0 : now - current.started)
       const countryPose = sampleCountry(current.key, elapsed, current.reduced)
       if (countryPose.done) {
-        finishScene()
+        if (portalReturn.current) beginPortalBack(current.key, current.reduced)
+        else finishScene()
         if (heldRef.current) waitRelease.current = true
         return
       }
@@ -1199,6 +1338,11 @@ export function App() {
   const tilt = useTilt(onSample, onAcceleration)
   tiltStatusRef.current = tilt.status
   useEffect(() => {
+    warmNext(0)
+    const teleport = clipById('teleport')
+    if (teleport?.file) void loadClipUrl(teleport.file)
+  }, [])
+  useEffect(() => {
     return () => {
       stopRaceActivate(40)
       releaseRaceAudio.current()
@@ -1259,7 +1403,7 @@ export function App() {
       engine.feedLook(0, 0)
     }
     const stop = () => {
-      if (sceneRef.current?.kind === 'country') {
+      if (portalRun.current || sceneRef.current?.kind === 'country') {
         cancelCountryRef.current()
         loop.running = false
         engine.setHidden(true)
@@ -1281,7 +1425,7 @@ export function App() {
       cancelAnimationFrame(loop.raf)
     }
     const onBlur = () => {
-      if (sceneRef.current?.kind === 'country') {
+      if (portalRun.current || sceneRef.current?.kind === 'country') {
         cancelCountryRef.current()
         abandonGesture()
         return
@@ -1291,7 +1435,7 @@ export function App() {
       abandonGesture()
     }
     const onLeave = () => {
-      if (sceneRef.current?.kind === 'country') cancelCountryRef.current()
+      if (portalRun.current || sceneRef.current?.kind === 'country') cancelCountryRef.current()
       endClipRef.current()
       abandonGesture()
     }
@@ -1870,35 +2014,36 @@ export function App() {
             wakeChrome()
           }}
           onClick={() => {
-            if (sceneOn || sceneRef.current || waitRelease.current || contactStatus().active || askForMotion || batchHold.current.guard) return
+            const blocked = portalBusy({
+              scene: sceneOn || sceneRef.current != null,
+              waiting: waitRelease.current,
+              contact: contactStatus().active,
+              asking: askForMotion,
+              guard: batchHold.current.guard != null,
+              portaling: portalRun.current != null,
+            })
+            if (blocked) return
             unlockQuiet()
             const turn = takeCountryTurn(countryCursor.current, true)
             if (!turn.key) return
             const key = turn.key
-            const plan = portalPlan(key, engine.snapshot().reduced)
-            let accepted = false
-            const accept = () => {
-              if (accepted) return
-              accepted = true
-              countryCursor.current = turn.cursor
+            const reduced = engine.snapshot().reduced
+            const coming = portalPlan(key, reduced)
+            const file = coming.countryClip ? clipById(coming.countryClip)?.file ?? null : null
+            if (file && !warmReady.current.has(file)) warmFile(file)
+            countryCursor.current = turn.cursor
+            warmNext(turn.cursor)
+            setSceneOn(true)
+            portalRun.current = { phase: 'out', started: performance.now(), key, reduced, stopSound: playPortalSound() }
+            const root = rootRef.current
+            if (root) {
+              root.dataset.portal = 'locked'
+              root.dataset.country = key
+              root.dataset.transition = '1'
+              root.dataset.transitionReduced = reduced ? '1' : '0'
+              root.dataset.lead = String(portalOutMs(reduced))
             }
-            const playScene = () => {
-              if (beginCountry(key)) accept()
-            }
-            const playAt = (index: number) => {
-              if (index >= plan.clips.length) {
-                if (plan.sceneAfter) playScene()
-                else accept()
-                return
-              }
-              const ok = startBatchRef.current(plan.clips[index], false, {
-                onEnd: () => playAt(index + 1),
-                onFail: playScene,
-              })
-              if (ok) accept()
-              else playScene()
-            }
-            playAt(0)
+            paintPortal(samplePortalOut(0, reduced), reduced)
           }}
         >
           <svg className="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
