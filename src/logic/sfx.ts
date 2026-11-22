@@ -410,6 +410,13 @@ export function audioContext(): AudioContext | null {
   return context
 }
 
+/** Create the shared context so a clip can be decoded before the first gesture. Does not unlock playback. */
+export function prepareAudio(): AudioContext | null {
+  if (typeof AudioContext === 'undefined') return null
+  if (!context) context = new AudioContext()
+  return context
+}
+
 export function unlockSound(): boolean {
   if (typeof AudioContext === 'undefined') return false
   if (!context) context = new AudioContext()

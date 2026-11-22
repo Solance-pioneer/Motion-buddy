@@ -567,6 +567,25 @@ body {
   transition: none;
 }
 
+.portal-film {
+  position: fixed;
+  inset: 0;
+  z-index: 31;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  background: #000;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.portal-film[data-on='1'] {
+  opacity: 1;
+  visibility: visible;
+}
+
 .portal-bolt[data-on='1']:not([data-reduced='1']):not([data-driven='1']) {
   transition: none;
   animation: portal-bolt 280ms linear 1;

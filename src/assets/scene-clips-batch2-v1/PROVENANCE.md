@@ -10,6 +10,12 @@ Clip 45 ghost-idle is the owner-approved app copy ghost-idle-v3b-notail-app.mp4 
 | File | Number | SHA256 |
 | --- | --- | --- |
 | teleport-v1.mp4 | 39 | f6807f32f8ee03de584379266db05943d8ca222cb8c63e9798011b746db1424e |
+
+teleport-v1.mp4 stays the untouched master (480x848, 24fps, 6.042s, SHA-256 above). Per-frame YAVG peaks at frame 11 (0.458s, YAVG 42.05); the biggest frame-to-frame change is frame 13 (0.542s). The first zap is finished by about 1.33s, and the rest of the master is still.
+
+teleport-out-v1-trim.mp4 is a high-quality re-encode of source 0.083s–1.333s (frames 2 through 32), 480x848, 24fps, 1.250s, faststart, audio kept in sync. SHA-256 5c1076f9af2395a6e58712dd996552d8d651b16e181d54bb2ef69b9307f70d39. The country crosses at 0.375s into this file, which is the brightest source frame.
+
+teleport-back-v1-trim.mp4 is that approach reversed: source 0.083s–0.625s played backwards, 480x848, 24fps, 0.542s, faststart. SHA-256 62b46b8b454deb9d50d8be821c2cbb709b3490916bfbb7af56c00ec1eb6ec245. The reversed audio is kept. The loud part of the zap sits at the flash, so the return starts on that hit and falls away as the face comes back.
 | car-accelerate-v1.mp4 | 40 | 73c3d1a2580d787dbabb189a58083a5b471229e90bf890f2c7a50e9c99ebc997 |
 | race-start-v1.mp4 | 41 | 6aba3c10adcec3c553629a53bfce622f1130da642419e88759cf5f25d6336205 |
 | superhero-idle-v1.mp4 | 43 | 909e5edd51bff67ee750a64d2caf6f51c901678c50e053c55d4c37e23517da43 |

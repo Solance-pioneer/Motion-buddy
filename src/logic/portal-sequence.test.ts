@@ -5,13 +5,21 @@ import {
   PORTAL_BEFORE,
   PORTAL_OUT_MS,
   PORTAL_REDUCED_MS,
+  TELEPORT_BACK_DURATION_S,
+  TELEPORT_OUT_DURATION_S,
+  TELEPORT_OUT_PEAK_S,
+  TELEPORT_SOURCE_IN_S,
+  TELEPORT_SOURCE_OUT_S,
+  TELEPORT_SOURCE_PEAK_S,
   peekCountry,
   portalArrival,
   portalBackMs,
   portalBusy,
+  portalFilmSchedule,
   portalOutMs,
   portalSchedule,
   portalSoundAllowed,
+  portalVisual,
   preloadTarget,
   samplePortalBack,
   samplePortalOut,
@@ -30,6 +38,21 @@ describe('portal sequence', () => {
     expect(quiet.returnMs).toBe(PORTAL_REDUCED_MS)
     expect(full.countryStart).toBeLessThan(PORTAL_BEFORE.teleportFilmMs)
     expect(PORTAL_BEFORE.returnMs).toBe(0)
+    const film = portalFilmSchedule()
+    expect(film.effectStart).toBe(0)
+    expect(film.countryStart).toBe(film.peak)
+    expect(film.peak).toBe(Math.round(TELEPORT_OUT_PEAK_S * 1000))
+    expect(film.peak).toBe(375)
+    expect(film.returnMs).toBe(Math.round(TELEPORT_BACK_DURATION_S * 1000))
+    expect(TELEPORT_SOURCE_PEAK_S).toBeCloseTo(0.458333, 5)
+    expect(TELEPORT_OUT_PEAK_S).toBeCloseTo(TELEPORT_SOURCE_PEAK_S - TELEPORT_SOURCE_IN_S, 5)
+    expect(TELEPORT_OUT_DURATION_S).toBeCloseTo(TELEPORT_SOURCE_OUT_S - TELEPORT_SOURCE_IN_S, 5)
+    expect(TELEPORT_OUT_DURATION_S).toBeCloseTo(1.25, 5)
+    expect(TELEPORT_BACK_DURATION_S).toBeGreaterThan(0.5)
+    expect(TELEPORT_BACK_DURATION_S).toBeLessThan(0.6)
+    expect(portalVisual(false, true)).toBe('film')
+    expect(portalVisual(false, false)).toBe('bolt')
+    expect(portalVisual(true, true)).toBe('bolt')
 
     const flash = samplePortalOut(PORTAL_OUT_MS * 0.25, false)
     const gone = samplePortalOut(PORTAL_OUT_MS, false)

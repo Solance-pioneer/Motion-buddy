@@ -23,7 +23,7 @@ import { choosePetNote, nextCodedIdle, noteOohRun, OOH_FACE_MS, oohIdleDue } fro
 import { classifyStroke } from './logic/pet-play.ts'
 import { heroCapePath, menuCostumeAction, nextAmbientScene, sampleScene, SCENE_CUE, type SceneKey } from './logic/scenes.ts'
 import { COUNTRY_MUSIC, EGYPT_WONDER_S, sampleCountry, takeCountryTurn, TRANSITION_MS, type CountryKey, type CountryPose } from './logic/countries.ts'
-import { portalArrival, portalBackMs, portalBusy, portalOutMs, portalSoundAllowed, preloadTarget, samplePortalBack, samplePortalOut } from './logic/portal-sequence.ts'
+import { portalArrival, portalBackMs, portalBusy, portalOutMs, portalSoundAllowed, portalVisual, preloadTarget, samplePortalBack, samplePortalOut, TELEPORT_BACK_DURATION_S, TELEPORT_OUT_PEAK_S } from './logic/portal-sequence.ts'
 import { beginSceneClip, endSceneClip, initialClipClock, type SceneClip } from './logic/scene-clip.ts'
 import { readAdminEnabled, readBeatFeel, readGenre, readHeadbang, readIdleGapSeconds, readIdlePrefs, readMorningDay, readSpeechEnabled, readTheme, readWeatherMoods, writeAdminEnabled, writeBeatFeel, writeGenre, writeHeadbang, writeIdleGapSeconds, writeIdlePrefs, writeMorningDay, writeSpeechEnabled, writeTheme, writeWeatherMoods } from './logic/clip-memory.ts'
 import { bassEnergy, initialBeatClock, stepBeat, type BeatFeel } from './logic/beat.ts'
@@ -69,7 +69,9 @@ import { CLIP_WIDTHS } from 'virtual:clip-widths'
 import { clipDefinition } from './logic/clip-definition.ts'
 import { CLIP_PLAY_TIMEOUT_MS, activationFilmMuted, clipFadeMs, clipMayUnmute, clipOverlayRevealed, clipShouldStartMuted } from './logic/clip-playback.ts'
 import { beginClipSession, pageAudioSession } from './logic/audio-session.ts'
-import { startClipMix } from './logic/clip-mix.ts'
+import { playClipBuffer, startClipMix, warmClipBuffer } from './logic/clip-mix.ts'
+import teleportOutUrl from './assets/scene-clips-batch2-v1/teleport-out-v1-trim.mp4'
+import teleportBackUrl from './assets/scene-clips-batch2-v1/teleport-back-v1-trim.mp4'
 import raceRushUrl from './assets/scene-clips-v1/buddy-anime-speed-rush-v2.mp4'
 import brakeSurpriseUrl from './assets/scene-clips-batch1-v1/glass-squish-v5-app.mp4'
 import { clearControl, desiredTravel, placeFace, roomForFeatures, type FacePlace, type PetMode } from './logic/face-room.ts'
@@ -264,7 +266,12 @@ export function App() {
   const calmRef = useRef(0)
   const lastScene = useRef<SceneKey | null>(null)
   const countryCursor = useRef(0)
-  const portalRun = useRef<{ phase: 'out' | 'back'; started: number; key: CountryKey; reduced: boolean; stopSound: () => void } | null>(null)
+  const portalRun = useRef<{ phase: 'out' | 'back'; mode: 'film' | 'bolt'; started: number; key: CountryKey; reduced: boolean; stopSound: () => void } | null>(null)
+  const portalOutVideo = useRef<HTMLVideoElement | null>(null)
+  const portalBackVideo = useRef<HTMLVideoElement | null>(null)
+  const portalOutBuffer = useRef<AudioBuffer | null>(null)
+  const portalBackBuffer = useRef<AudioBuffer | null>(null)
+  const [portalFilm, setPortalFilm] = useState<'out' | 'back' | null>(null)
   const portalReturn = useRef(false)
   const warmReady = useRef(new Set<string>())
   const warmVideo = useRef<HTMLVideoElement | null>(null)
@@ -508,6 +515,7 @@ export function App() {
     sceneRef.current = null
     portalRun.current?.stopSound()
     portalRun.current = null
+    hidePortalFilm()
     releaseCountryAudio.current()
     releaseCountryAudio.current = () => {}
     setSceneGuard(false)
@@ -621,6 +629,41 @@ export function App() {
       bolt.style.opacity = pose.bolt.toFixed(3)
     }
   }
+  const filmIsReady = (video: HTMLVideoElement | null) => Boolean(video && video.readyState >= 2)
+  const hidePortalFilm = () => {
+    for (const video of [portalOutVideo.current, portalBackVideo.current]) {
+      if (!video) continue
+      video.pause()
+      video.dataset.on = '0'
+    }
+    setPortalFilm(null)
+  }
+  const playTrimSound = (buffer: AudioBuffer | null, seconds: number) => {
+    const status = soundStatus()
+    if (!buffer || !portalSoundAllowed({ muted: status.muted || !soundOnRef.current, unlocked: status.unlocked, soundOn: true })) return () => {}
+    const release = beginClipSession(pageAudioSession())
+    const stopNode = playClipBuffer(buffer, 0, seconds)
+    let dead = false
+    return () => {
+      if (dead) return
+      dead = true
+      stopNode()
+      release()
+    }
+  }
+  const openCountry = (key: CountryKey, reduced: boolean) => {
+    const plan = portalPlan(key, reduced)
+    const file = plan.countryClip ? clipById(plan.countryClip)?.file ?? null : null
+    const choice = portalArrival(reduced, Boolean(file && warmReady.current.has(file)), plan.countryClip)
+    portalReturn.current = true
+    if (choice.countryClip) {
+      const started = startBatchRef.current(choice.countryClip, false, {
+        onEnd: () => beginPortalBack(key, reduced),
+        onFail: () => beginCountry(key, 0),
+      })
+      if (!started) beginCountry(key, 0)
+    } else beginCountry(key, 0)
+  }
   const beginPortalBack = (key: CountryKey, reduced: boolean) => {
     portalReturn.current = false
     sceneRef.current = null
@@ -630,15 +673,25 @@ export function App() {
     clearSceneMotion()
     setSceneGuard(true)
     setSceneOn(true)
+    const video = portalBackVideo.current
+    const mode = portalVisual(reduced, filmIsReady(video))
     const root = rootRef.current
     if (root) {
       root.dataset.portal = 'locked'
       root.dataset.country = key
       root.dataset.transition = '1'
       root.dataset.transitionReduced = reduced ? '1' : '0'
-      root.dataset.lead = String(portalBackMs(reduced))
+      root.dataset.lead = String(mode === 'film' ? Math.round(TELEPORT_BACK_DURATION_S * 1000) : portalBackMs(reduced))
     }
-    portalRun.current = { phase: 'back', started: performance.now(), key, reduced, stopSound: () => {} }
+    if (mode === 'film' && video) {
+      video.currentTime = 0
+      video.dataset.on = '1'
+      setPortalFilm('back')
+      void video.play()
+      portalRun.current = { phase: 'back', mode, started: performance.now(), key, reduced, stopSound: playTrimSound(portalBackBuffer.current, TELEPORT_BACK_DURATION_S) }
+      return
+    }
+    portalRun.current = { phase: 'back', mode: 'bolt', started: performance.now(), key, reduced, stopSound: () => {} }
     paintPortal(samplePortalBack(0, reduced), reduced)
   }
   const warmFile = (file: string) => {
@@ -666,68 +719,49 @@ export function App() {
     const next = preloadTarget(cursor)
     if (next.file) warmFile(next.file)
   }
-  const playPortalSound = () => {
-    const status = soundStatus()
-    if (!portalSoundAllowed({ muted: status.muted || !soundOnRef.current, unlocked: status.unlocked, soundOn: true })) return () => {}
-    const row = clipById('teleport')
-    if (!row?.file) return () => {}
-    let dead = false
-    let stopMix = () => {}
-    const release = beginClipSession(pageAudioSession())
-    const stop = () => {
-      if (dead) return
-      dead = true
-      stopMix()
-      release()
-    }
-    void loadClipUrl(row.file).then(async (url) => {
-      if (dead) return
-      stopMix = await startClipMix(url, () => 0)
-      if (dead) stopMix()
-    })
-    return stop
-  }
   sceneTickRef.current = (dt: number) => {
     const root = rootRef.current
     const portal = portalRun.current
     if (portal?.phase === 'out') {
+      const video = portalOutVideo.current
+      const filmTime = video?.currentTime ?? 0
+      const stalled = portal.mode === 'film' && performance.now() - portal.started > 500 && filmTime < 0.04
+      const filmArrived = portal.mode === 'film' && (filmTime >= TELEPORT_OUT_PEAK_S || Boolean(video?.ended) || stalled)
       const pose = samplePortalOut(performance.now() - portal.started, portal.reduced)
-      paintPortal(pose, portal.reduced)
+      if (portal.mode === 'bolt') paintPortal(pose, portal.reduced)
       if (root) {
         root.dataset.portal = 'locked'
         root.dataset.country = portal.key
-        root.dataset.transition = pose.arrived ? '0' : '1'
+        root.dataset.transition = (portal.mode === 'film' ? filmArrived : pose.arrived) ? '0' : '1'
         root.dataset.transitionReduced = portal.reduced ? '1' : '0'
-        root.dataset.lead = String(portalOutMs(portal.reduced))
+        root.dataset.lead = String(portal.mode === 'film' ? Math.round(TELEPORT_OUT_PEAK_S * 1000) : portalOutMs(portal.reduced))
         root.dataset.scene = ''
       }
-      if (!pose.arrived) return
+      if (!(portal.mode === 'film' ? filmArrived : pose.arrived)) return
       const key = portal.key
       const reduced = portal.reduced
       portal.stopSound()
       portalRun.current = null
-      const plan = portalPlan(key, reduced)
-      const file = plan.countryClip ? clipById(plan.countryClip)?.file ?? null : null
-      const choice = portalArrival(reduced, Boolean(file && warmReady.current.has(file)), plan.countryClip)
-      portalReturn.current = true
-      if (choice.countryClip) {
-        const started = startBatchRef.current(choice.countryClip, false, {
-          onEnd: () => beginPortalBack(key, reduced),
-          onFail: () => beginCountry(key, 0),
-        })
-        if (!started) beginCountry(key, 0)
-      } else beginCountry(key, 0)
+      hidePortalFilm()
+      openCountry(key, reduced)
     } else if (portal?.phase === 'back') {
+      const video = portalBackVideo.current
+      const filmDone = portal.mode === 'film' && (Boolean(video?.ended) || (video?.currentTime ?? 0) >= Math.max(0, TELEPORT_BACK_DURATION_S - 0.04))
       const pose = samplePortalBack(performance.now() - portal.started, portal.reduced)
-      paintPortal(pose, portal.reduced)
+      if (portal.mode === 'bolt') paintPortal(pose, portal.reduced)
+      const done = portal.mode === 'film' ? filmDone : pose.done
       if (root) {
         root.dataset.portal = 'locked'
-        root.dataset.transition = pose.done ? '0' : '1'
+        root.dataset.transition = done ? '0' : '1'
         root.dataset.transitionReduced = portal.reduced ? '1' : '0'
-        root.dataset.lead = String(portalBackMs(portal.reduced))
-        root.dataset.country = pose.done ? '' : portal.key
+        root.dataset.lead = String(portal.mode === 'film' ? Math.round(TELEPORT_BACK_DURATION_S * 1000) : portalBackMs(portal.reduced))
+        root.dataset.country = done ? '' : portal.key
       }
-      if (pose.done) finishScene()
+      if (done) {
+        portal.stopSound()
+        hidePortalFilm()
+        finishScene()
+      }
       return
     }
     const current = sceneRef.current
@@ -1339,8 +1373,14 @@ export function App() {
   tiltStatusRef.current = tilt.status
   useEffect(() => {
     warmNext(0)
-    const teleport = clipById('teleport')
-    if (teleport?.file) void loadClipUrl(teleport.file)
+    portalOutVideo.current?.load()
+    portalBackVideo.current?.load()
+    void warmClipBuffer(teleportOutUrl).then((buffer) => {
+      portalOutBuffer.current = buffer
+    })
+    void warmClipBuffer(teleportBackUrl).then((buffer) => {
+      portalBackBuffer.current = buffer
+    })
   }, [])
   useEffect(() => {
     return () => {
@@ -2034,16 +2074,31 @@ export function App() {
             countryCursor.current = turn.cursor
             warmNext(turn.cursor)
             setSceneOn(true)
-            portalRun.current = { phase: 'out', started: performance.now(), key, reduced, stopSound: playPortalSound() }
+            const mode = portalVisual(reduced, filmIsReady(portalOutVideo.current))
+            const video = portalOutVideo.current
+            if (mode === 'film' && video) {
+              video.currentTime = 0
+              video.dataset.on = '1'
+              setPortalFilm('out')
+              void video.play()
+            }
+            portalRun.current = {
+              phase: 'out',
+              mode,
+              started: performance.now(),
+              key,
+              reduced,
+              stopSound: playTrimSound(portalOutBuffer.current, mode === 'film' ? TELEPORT_OUT_PEAK_S : portalOutMs(reduced) / 1000),
+            }
             const root = rootRef.current
             if (root) {
               root.dataset.portal = 'locked'
               root.dataset.country = key
               root.dataset.transition = '1'
               root.dataset.transitionReduced = reduced ? '1' : '0'
-              root.dataset.lead = String(portalOutMs(reduced))
+              root.dataset.lead = String(mode === 'film' ? Math.round(TELEPORT_OUT_PEAK_S * 1000) : portalOutMs(reduced))
             }
-            paintPortal(samplePortalOut(0, reduced), reduced)
+            if (mode === 'bolt') paintPortal(samplePortalOut(0, reduced), reduced)
           }}
         >
           <svg className="chip-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -2453,6 +2508,8 @@ onClick={() => {
           }}
         />
       ) : null}
+      <video ref={portalOutVideo} className="portal-film" data-on={portalFilm === 'out' ? '1' : '0'} src={teleportOutUrl} playsInline muted preload="auto" />
+      <video ref={portalBackVideo} className="portal-film" data-on={portalFilm === 'back' ? '1' : '0'} src={teleportBackUrl} playsInline muted preload="auto" />
       <video
         ref={clipVideo}
         className="scene-clip"

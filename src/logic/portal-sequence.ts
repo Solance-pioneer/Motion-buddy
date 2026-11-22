@@ -15,7 +15,20 @@ export const PORTAL_BEFORE = {
   returnMs: 0,
 } as const
 
-/** Shrink and flash. The country starts when this ends. */
+/**
+ * First zap in teleport-v1.mp4. Frame 11 at 24fps is the brightest (YAVG 42.05)
+ * and the motion peak is the next frames. The trim keeps that burst and cuts
+ * the still lead-in and the long still tail. The country crosses on the brightest frame.
+ */
+export const TELEPORT_SOURCE_IN_S = 2 / 24
+export const TELEPORT_SOURCE_PEAK_S = 11 / 24
+export const TELEPORT_SOURCE_OUT_S = 32 / 24
+export const TELEPORT_BACK_SOURCE_OUT_S = 15 / 24
+export const TELEPORT_OUT_PEAK_S = TELEPORT_SOURCE_PEAK_S - TELEPORT_SOURCE_IN_S
+export const TELEPORT_OUT_DURATION_S = TELEPORT_SOURCE_OUT_S - TELEPORT_SOURCE_IN_S
+export const TELEPORT_BACK_DURATION_S = TELEPORT_BACK_SOURCE_OUT_S - TELEPORT_SOURCE_IN_S
+
+/** Shrink and flash. Used only when the trimmed film is not ready yet. */
 export const PORTAL_OUT_MS = 220
 /** Grow back from a point after the country. */
 export const PORTAL_BACK_MS = 220
@@ -43,6 +56,23 @@ export function portalOutMs(reduced: boolean): number {
 
 export function portalBackMs(reduced: boolean): number {
   return reduced ? PORTAL_REDUCED_MS : PORTAL_BACK_MS
+}
+
+/** The film is the out visual. The coded bolt is only the not-ready fallback, or reduced motion. */
+export function portalVisual(reduced: boolean, filmReady: boolean): 'film' | 'bolt' {
+  return !reduced && filmReady ? 'film' : 'bolt'
+}
+
+/** Press is 0. The country frame is the brightest frame of the trimmed film. */
+export function portalFilmSchedule(): PortalSchedule {
+  const peak = Math.round(TELEPORT_OUT_PEAK_S * 1000)
+  return {
+    effectStart: 0,
+    peak,
+    countryStart: peak,
+    returnStartAfterScene: 0,
+    returnMs: Math.round(TELEPORT_BACK_DURATION_S * 1000),
+  }
 }
 
 /** Press is 0. The country frame is the same instant as the outward peak. */

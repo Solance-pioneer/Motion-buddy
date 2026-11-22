@@ -1,4 +1,46 @@
-import { audioContext, unlockSound } from './sfx.ts'
+import { audioContext, prepareAudio, unlockSound } from './sfx.ts'
+
+const warmBuffers = new Map<string, AudioBuffer>()
+
+/** Decode a clip soundtrack ahead of the press. Playback still waits for the gesture gate. */
+export async function warmClipBuffer(url: string): Promise<AudioBuffer | null> {
+  const cached = warmBuffers.get(url)
+  if (cached) return cached
+  const audio = prepareAudio()
+  if (!audio || !url) return null
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const decoded = await audio.decodeAudioData((await response.arrayBuffer()).slice(0))
+    warmBuffers.set(url, decoded)
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+/** Play a buffer that was already decoded. duration stops it at the film cut. */
+export function playClipBuffer(buffer: AudioBuffer, offset = 0, duration?: number): () => void {
+  const audio = audioContext()
+  if (!audio) return () => {}
+  const node = audio.createBufferSource()
+  node.buffer = buffer
+  node.connect(audio.destination)
+  const stop = () => {
+    try {
+      node.stop()
+    } catch {
+      // The buffer already ended.
+    }
+  }
+  try {
+    if (duration != null) node.start(audio.currentTime, offset, Math.max(0.05, duration))
+    else node.start(audio.currentTime, offset)
+  } catch {
+    return () => {}
+  }
+  return stop
+}
 
 /**
  * Play a clip's soundtrack apart from its <video>. The element stays muted so

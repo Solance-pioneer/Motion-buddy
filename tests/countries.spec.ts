@@ -57,6 +57,7 @@ test.describe('country scenes', () => {
         lead: main?.getAttribute('data-lead') ?? '',
         disabled: chip?.getAttribute('aria-disabled') ?? '',
         bolt: document.querySelector('[data-part="portal-bolt"]')?.getAttribute('data-on') ?? '',
+        film: document.querySelector('.portal-film[data-on="1"]')?.getAttribute('data-on') ?? '',
         boltReduced: document.querySelector('[data-part="portal-bolt"]')?.getAttribute('data-reduced') ?? '',
         controls: main?.getAttribute('data-controls') ?? '',
         x: box?.x ?? 0,
@@ -73,8 +74,8 @@ test.describe('country scenes', () => {
     await portal.click()
     await page.waitForFunction(() => document.querySelector('main')?.getAttribute('data-transition') === '1')
     const lead = await read()
-    expect(lead.lead).toBe('220')
-    expect(lead.bolt).toBe('1')
+    expect(['220', '375']).toContain(lead.lead)
+    expect(lead.lead === '375' ? lead.film : lead.bolt).toBe('1')
     expect(lead.boltReduced).toBe('0')
     expect(lead.disabled).toBe('true')
     expect(lead.width).toBeGreaterThanOrEqual(44)
